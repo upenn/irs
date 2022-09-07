@@ -4,8 +4,8 @@ const WritingAttribute = "AUWR"
 const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060"]
 
 enum GradeType {
-    PassFail,
-    ForCredit,
+    PassFail = "PassFail",
+    ForCredit = "ForCredit",
 }
 
 abstract class DegreeRequirement {
@@ -172,6 +172,8 @@ class RequirementCisElective extends DegreeRequirement {
 class RequirementTechElectiveEngineering extends DegreeRequirement {
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        let cuPrio = courses.slice()
+        cuPrio.sort(sortByCUsDecreasing)
         return courses.find((c: CourseTaken): boolean => {
             return RequirementTechElectiveEngineering.isEngineering(c) &&
                 c.grading == GradeType.ForCredit &&
@@ -187,8 +189,11 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
 class RequirementTechElective extends DegreeRequirement {
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        let cuPrio = courses.slice()
+        cuPrio.sort(sortByCUsDecreasing)
+
         const specialTEList = ["LING 0500", "PHIL 2620", "PHIL 2640", "OIDD 2200", "OIDD 3210", "OIDD 3250"]
-        return courses.find((c: CourseTaken): boolean => {
+        return cuPrio.find((c: CourseTaken): boolean => {
             return c.grading == GradeType.ForCredit &&
                 (DegreeRequirement.isEngineering(c) || c.attributes.includes("EUMS") || specialTEList.includes(c.code())) &&
                 this.applyCourse(c, "TechElective")
@@ -232,12 +237,10 @@ class RequirementSsh extends RequirementAttributes {
 class RequirementFreeElective extends DegreeRequirement {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         // prioritize 1.0 CU courses
-        const fePrio: CourseTaken[] = courses.slice()
-        fePrio.sort((a,b) =>
-            b.courseUnits - a.courseUnits
-        )
+        const largerCUsFirst: CourseTaken[] = courses.slice()
+        largerCUsFirst.sort(sortByCUsDecreasing)
 
-        return fePrio.find((c: CourseTaken): boolean => {
+        return largerCUsFirst.find((c: CourseTaken): boolean => {
             const noCreditNsci = c.subject == "NSCI" && ![1020,2010,2020,3010,4010,4020].includes(c.courseNumberInt)
             const noCreditStat = c.subject == "STAT" && c.courseNumberInt < 4300 && !["STAT 4050", "STAT 4220"].includes(c.code())
             const noCreditPhys = c.subject == "PHYS" && c.courseNumberInt < 140 && !["PHYS 0050", "PHYS 0051"].includes(c.code())
@@ -260,6 +263,10 @@ class RequirementFreeElective extends DegreeRequirement {
     public toString(): string {
         return "Free Elective"
     }
+}
+
+function sortByCUsDecreasing(a: CourseTaken, b: CourseTaken): number {
+    return b.courseUnitsRemaining - a.courseUnitsRemaining
 }
 
 /** Records a course that was taken and passed, so it can conceivably count towards some requirement */
@@ -414,8 +421,8 @@ function main(): void {
                 new RequirementNamedCourses(16, "Major", ["CIS 3200"]),
                 new RequirementNamedCourses(17, "Major", ["CIS 4710"]),
                 new RequirementNamedCourses(18, "Major", ["CIS 3800"]),
-                new RequirementNamedCourses(19, "Major", ["CIS 4000","ESE 4500"]),
-                new RequirementNamedCourses(20, "Major", ["CIS 4010","ESE 4510"]),
+                new RequirementNamedCourses(19, "Major", ["CIS 4000","ESE 4500","MEAM 4450"]),
+                new RequirementNamedCourses(20, "Major", ["CIS 4010","ESE 4510","MEAM 4460"]),
 
                 // Project Elective
                 new RequirementNamedCourses(21, "Project Elective", [
@@ -424,9 +431,8 @@ function main(): void {
                     "CIS 4500","CIS 5500",
                     "CIS 4550","CIS 5550",
                     "CIS 4600","CIS 5600",
-                    "CIS 5050","CIS 5530"
-                    // TODO: exclude ESE 3500 for now, accounting for its 1.5 CUs is annoying
-                    // "ESE 3500"
+                    "CIS 5050","CIS 5530",
+                    "ESE 3500"
                 ]),
 
                 new RequirementCisElective(22, 1000),
@@ -525,7 +531,7 @@ function main(): void {
         }
         totalRemainingCUs += req.remainingCUs
     })
-    reqOutcomes.sort((a,b) => a[0] = b[0])
+    reqOutcomes.sort((a,b) => a[0] - b[0])
     reqOutcomes.forEach((o: [number,string]) => {
         $("#degreeRequirements").append(o[1])
     })
