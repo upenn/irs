@@ -12,7 +12,7 @@ abstract class DegreeRequirement {
     public remainingCUs: number = 1.0
     abstract satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined
     protected applyCourse(c: CourseTaken, tag: string): boolean {
-        if (c.consumedBy == null && c.courseUnitsRemaining > 0) {
+        if (c.consumedBy == null && c.courseUnitsRemaining > 0 && !(c.courseUnitsRemaining == 1 && this.remainingCUs == 0.5)) {
             c.consumedBy = tag
             const cusToUse = Math.min(c.courseUnitsRemaining, this.remainingCUs)
             console.log(`${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulling ${cusToUse} from ${c.code()} for ${this}`)
