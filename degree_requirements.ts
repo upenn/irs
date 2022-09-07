@@ -425,8 +425,6 @@ function main(): void {
                 new RequirementNamedCourses("Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses("Math", ["CIS 1600"]),
                 new RequirementNamedCourses("Math", ["CIS 2610","ESE 3010","ENM 3210","STAT 4300"]),
-                new RequirementAttributes("Math", ["EUMA"]),
-                new RequirementAttributes("Math", ["EUMA"]),
 
                 new RequirementNamedCourses("Natural Science", ["PHYS 0150","PHYS 0170","MEAM 1100"]),
                 new RequirementNamedCourses("Natural Science", ["PHYS 0151","PHYS 0171","ESE 1120"]),
@@ -461,6 +459,9 @@ function main(): void {
                 new RequirementCisElective(1000),
                 new RequirementCisElective(2000),
                 new RequirementCisElective(2000),
+
+                new RequirementAttributes("Math", ["EUMA"]),
+                new RequirementAttributes("Math", ["EUMA"]),
 
                 new RequirementSsh(["EUSS"]),
                 new RequirementSsh(["EUSS"]),
@@ -548,6 +549,36 @@ function main(): void {
         $("#unusedCourses").append(`<div>unused course: ${c}</div>`)
     )
 
-    // TODO: handle special SSH ShareWith requirements: writing, ethics, depth
-
+    // handle special SSH ShareWith requirements: writing, ethics, depth
+    const sshCourses = coursesTaken.filter(c => c.consumedBy == SsHTbsTag)
+    console.log(sshCourses)
+    sshCourses.forEach(c => {
+        c.consumedBy = null
+        c.courseUnitsRemaining = c.courseUnits
+    })
+    const ssh40cuRequirements = [
+        new RequirementAttributes("Writing", [WritingAttribute]),
+        new RequirementNamedCourses("Engineering Ethics", CsciEthicsCourses),
+    ]
+    ssh40cuRequirements.forEach(req => {
+        const matched = req.satisfiedBy(sshCourses)
+        if (matched == undefined) {
+            $("#degreeRequirements").append(`<div style="color: red">${req} NOT satisfied</div>`)
+        } else {
+            $("#degreeRequirements").append(`<div style="color: gray">${req} satisfied by ${matched.code()}</div>`)
+        }
+    })
+    interface CountMap {
+        [index: string]: number;
+    }
+    const counts: CountMap = {}
+    sshCourses.forEach(c =>
+        counts[c.subject] = counts[c.subject] ? counts[c.subject] + 1 : 1
+    )
+    const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
+    if (depthKeys.length == 0) {
+        $("#degreeRequirements").append(`<div style="color: red">SSH Depth Requirement NOT satisfied</div>`)
+    } else {
+        $("#degreeRequirements").append(`<div style="color: gray">SSH Depth Requirement satisfied by ${depthKeys[0]}</div>`)
+    }
 }
