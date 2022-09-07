@@ -12,9 +12,11 @@ abstract class DegreeRequirement {
     remainingCUs: number = 1.0
     abstract satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined
     protected applyCourse(c: CourseTaken, tag: string): boolean {
-        if (c.consumedBy == null && c.courseUnits <= this.remainingCUs) {
+        if (c.consumedBy == null && c.courseUnitsRemaining > 0) {
             c.consumedBy = tag
-            this.remainingCUs -= c.courseUnits
+            const cusToUse = Math.min(c.courseUnitsRemaining, this.remainingCUs)
+            c.courseUnitsRemaining -= cusToUse
+            this.remainingCUs -= cusToUse
             return true
         }
         return false
@@ -85,62 +87,101 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
     }
 }
 
-class RequirementCsci40PhysicsAndLabs extends DegreeRequirement {
-    static readonly tag: string = "Physics & Labs"
-    constructor() {
-        super()
-        this.remainingCUs = 3.0
+class RequirementNaturalScienceLab extends RequirementNamedCourses {
+    constructor(tag: string) {
+        const coursesWithLabs = [
+            // 1.5 CUs
+            "BIOL 1101", "BIOL 1102",
+            "PHYS 0150", "PHYS 0151",
+            "PHYS 0170", "PHYS 0171",
+            "ESE 1120",
+
+            // 0.5 CUs
+            "CHEM 1101", "CHEM 1102",
+            "PHYS 0050", "PHYS 0051",
+            "MEAM 1470",
+        ]
+        super(tag, coursesWithLabs)
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        const tag = RequirementCsci40PhysicsAndLabs.tag
-        // TODO: BIOL 1101/1102 are 1.5 CUs each, would satisfy lab requirement and EUNS
-        const standaloneLabs = [/*"BIOL 1101", "BIOL 1102",*/ "CHEM 1101", "CHEM 1102", "PHYS 0050", "PHYS 0051"]
+        console.log(courses.filter(c => this.courses.includes(c.code())))
 
-        const mechanics = courses.find((c) => c.code() == "PHYS 0140")
-        const em = courses.find((c) => c.code() == "PHYS 0141")
+        let matched = courses.find(c =>
+            this.courses.includes(c.code()) &&
+            c.grading == GradeType.ForCredit &&
+            c.courseUnitsRemaining >= 0.5)
+        if (matched == undefined) return undefined
 
-        // TODO: MEAM 1100 + 1470
-        const mechanicsWithLab = courses.find((c) => ["PHYS 0150", "PHYS 0170"].includes(c.code()))
-        const emWithLab = courses.find((c) => ["PHYS 0151", "PHYS 0171", "ESE 1120"].includes(c.code()))
-        let mechanicsDone = mechanicsWithLab != undefined && mechanicsWithLab.grading == GradeType.ForCredit && this.applyCourse(mechanicsWithLab, tag)
-        let emDone = emWithLab != undefined && emWithLab.grading == GradeType.ForCredit && this.applyCourse(emWithLab, tag)
-        if (mechanicsDone && emDone) {
-            // TODO: allow this requirement to be satisfied by multiple courses...
-            return emWithLab
+        if (matched.consumedBy == null) {
+            matched.consumedBy = this.tag
         }
-        if (mechanicsDone || emDone) { // got 1.5 CUs done
-            if ((mechanicsDone && mechanics != undefined) ||
-                (emDone && em != undefined)) {
-                throw new Error("took two equivalent physics courses???")
-            }
-            if (mechanics == undefined && em == undefined) {
-                throw new Error("unimplemented")
-            }
-            // has 2.5 CUs, look for 0.5 CU lab
-            const lab = courses.find(c => standaloneLabs.includes(c.code()))
-            if (lab != undefined && lab.grading == GradeType.ForCredit && this.applyCourse(lab, tag)) {
-                // TODO: allow this requirement to be satisfied by multiple courses...
-                return lab
-            }
-            return undefined
-        }
-
-        // didn't do any physics courses with labs, need two labs
-        let labs = courses.filter(c => standaloneLabs.includes(c.code()))
-        if (labs.length >= 2) {
-            if (labs.slice(0,2).every(c => c.grading == GradeType.ForCredit && this.applyCourse(c, tag))) {
-                return labs[0]
-            }
-        }
-        return undefined
+        matched.courseUnitsRemaining -= 0.5
+        this.remainingCUs -= 0.5
+        return matched
     }
-
 
     public toString(): string {
-        return RequirementCsci40PhysicsAndLabs.tag
+        return this.tag
     }
 }
+
+// class RequirementCsci40PhysicsAndLabs extends DegreeRequirement {
+//     static readonly tag: string = "Physics & Labs"
+//     constructor() {
+//         super()
+//         this.remainingCUs = 3.0
+//     }
+//
+//     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+//         const tag = RequirementCsci40PhysicsAndLabs.tag
+//         // TODO: BIOL 1101/1102 are 1.5 CUs each, would satisfy lab requirement and EUNS
+//         const standaloneLabs = [/*"BIOL 1101", "BIOL 1102",*/ "CHEM 1101", "CHEM 1102", "PHYS 0050", "PHYS 0051"]
+//
+//         const mechanics = courses.find((c) => c.code() == "PHYS 0140")
+//         const em = courses.find((c) => c.code() == "PHYS 0141")
+//
+//         // TODO: MEAM 1100 + 1470
+//         const mechanicsWithLab = courses.find((c) => ["PHYS 0150", "PHYS 0170"].includes(c.code()))
+//         const emWithLab = courses.find((c) => ["PHYS 0151", "PHYS 0171", "ESE 1120"].includes(c.code()))
+//         let mechanicsDone = mechanicsWithLab != undefined && mechanicsWithLab.grading == GradeType.ForCredit && this.applyCourse(mechanicsWithLab, tag)
+//         let emDone = emWithLab != undefined && emWithLab.grading == GradeType.ForCredit && this.applyCourse(emWithLab, tag)
+//         if (mechanicsDone && emDone) {
+//             // TODO: allow this requirement to be satisfied by multiple courses...
+//             return emWithLab
+//         }
+//         if (mechanicsDone || emDone) { // got 1.5 CUs done
+//             if ((mechanicsDone && mechanics != undefined) ||
+//                 (emDone && em != undefined)) {
+//                 throw new Error("took two equivalent physics courses???")
+//             }
+//             if (mechanics == undefined && em == undefined) {
+//                 throw new Error("unimplemented")
+//             }
+//             // has 2.5 CUs, look for 0.5 CU lab
+//             const lab = courses.find(c => standaloneLabs.includes(c.code()))
+//             if (lab != undefined && lab.grading == GradeType.ForCredit && this.applyCourse(lab, tag)) {
+//                 // TODO: allow this requirement to be satisfied by multiple courses...
+//                 return lab
+//             }
+//             return undefined
+//         }
+//
+//         // didn't do any physics courses with labs, need two labs
+//         let labs = courses.filter(c => standaloneLabs.includes(c.code()))
+//         if (labs.length >= 2) {
+//             if (labs.slice(0,2).every(c => c.grading == GradeType.ForCredit && this.applyCourse(c, tag))) {
+//                 return labs[0]
+//             }
+//         }
+//         return undefined
+//     }
+//
+//
+//     public toString(): string {
+//         return RequirementCsci40PhysicsAndLabs.tag
+//     }
+// }
 
 class RequirementCisElective extends DegreeRequirement {
     readonly minLevel: number
@@ -200,8 +241,8 @@ class RequirementSsh extends RequirementAttributes {
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         // prioritize writing+ethics courses
-        const sshPrio: CourseTaken[] = []
-        courses.forEach(c => sshPrio.push(Object.assign({}, c)));
+        const sshPrio: CourseTaken[] = courses.slice()
+        // courses.forEach(c => sshPrio.push(Object.assign({}, c)));
         sshPrio.sort((a,b) => {
             if ((a.attributes.includes(WritingAttribute) || CsciEthicsCourses.includes(a.code())) &&
                 (!b.attributes.includes(WritingAttribute) && !CsciEthicsCourses.includes(b.code()))) {
@@ -241,7 +282,7 @@ class RequirementFreeElective extends DegreeRequirement {
                 "FNCE 0001", "FNCE 0002", "HCMG 0001", "MGMT 0004", "MKTG 0001", "OIDD 0001"]
 
             // no-credit subject areas
-            const nocredit = ["CIT", "MSCI", "DYNM", "MED"].includes(c.subject) ||
+            const nocredit = (["CIT", "MSCI", "DYNM", "MED"].includes(c.subject)) ||
                 noCreditList.includes(c.code()) ||
                 noCreditPhys ||
                 noCreditNsci ||
@@ -271,6 +312,8 @@ class CourseTaken {
 
     /** tracks which (if any) requirement has been satisfied by this course */
     consumedBy: string | null = null
+    /** the number of CUs of this course consumed so far. Used mainly for NS lab courses */
+    courseUnitsRemaining: number
 
     constructor(subject: string,
                 courseNumber: string,
@@ -286,6 +329,7 @@ class CourseTaken {
         this.courseNumberInt = parseInt(courseNumber)
         this._3dName = _3dName
         this.courseUnits = cus
+        this.courseUnitsRemaining = cus
         this.grading = grading
         this.term = term
         this.completed = completed
@@ -373,9 +417,9 @@ function main(): void {
                 new RequirementNamedCourses("Math", ["CIS 1600"]),
                 new RequirementNamedCourses("Math", ["CIS 2610","ESE 3010","ENM 3210","STAT 4300"]),
 
-                // TODO: support PHYS 140 + PHYS 141 + 1cu lab + 1cu EUNS
-                new RequirementNamedCourses("Natural Science", List("PHYS 0150","PHYS 0170"), 1.5), // TODO: MEAM 110 + 1470?
-                new RequirementNamedCourses("Natural Science", List("PHYS 0151","PHYS 0171","ESE 1120"), 1.5),
+                new RequirementNamedCourses("Natural Science", ["PHYS 0150","PHYS 0170","MEAM 1100"]),
+                new RequirementNamedCourses("Natural Science", ["PHYS 0151","PHYS 0171","ESE 1120"]),
+                new RequirementNaturalScienceLab("Natural Science Lab"),
 
                 new RequirementNamedCourses("Major", ["CIS 1100"]),
                 new RequirementNamedCourses("Major", ["CIS 1200"]),
@@ -469,5 +513,33 @@ function main(): void {
         // TODO: parse unofficial transcripts
     }
 
+    // apply courses to degree requirements
+    let totalRemainingCUs = 0.0
+    degreeRequirements.forEach(req => {
+        const matched1 = req.satisfiedBy(coursesTaken)
+        if (matched1 == undefined) {
+            $("#degreeRequirements").append(`<div style="color: red">${req} NOT satisfied</div>`)
+        } else if (req.remainingCUs > 0) {
+            const matched2 = req.satisfiedBy(coursesTaken)
+            if (matched2 == undefined) {
+                $("#degreeRequirements").append(`<div style="color: blue">${req} PARTIALLY satisfied by ${matched1.code()}</div>`)
+            } else {
+                // fully satisfied by 2 courses
+                $("#degreeRequirements").append(`<div style="color: gray">${req} satisfied by ${matched1.code()} and ${matched2.code()}</div>`)
+            }
+        } else {
+            // fully satisfied
+            $("#degreeRequirements").append(`<div style="color: gray">${req} satisfied by ${matched1.code()}</div>`)
+        }
+        totalRemainingCUs += req.remainingCUs
+    })
+
+    $("#remainingCUs").append(`<div>${totalRemainingCUs} CUs needed</div>`)
+
+    coursesTaken.filter(c => c.consumedBy == null).forEach(c =>
+        $("#unusedCourses").append(`<div>unused course: ${c}</div>`)
+    )
+
+    // TODO: handle special SSH ShareWith requirements: writing, ethics, depth
 
 }
