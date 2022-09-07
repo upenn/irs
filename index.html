@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Institutional Requirements System</title>
+    <script src="node_modules/jquery/dist/jquery.js" type="application/javascript"></script>
+    <script>var exports = {};</script>
+    <script src="degree_requirements.js" type="application/javascript"></script>
+</head>
+<body>
+
+<div>
+<textarea id="coursesTaken" name="coursesTaken" rows="30" cols="50">
+Paste courses taken here.
+</textarea>
+</div>
+
+<div>
+    <button onclick="main()">apply courses to requirements</button>
+</div>
+
+<div id="degreeRequirements"></div>
+<div id="remainingCUs"></div>
+<div id="unusedCourses"></div>
+
+</body>
+</html>
