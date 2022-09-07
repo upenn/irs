@@ -15,10 +15,10 @@ abstract class DegreeRequirement {
         if (c.consumedBy == null && c.courseUnitsRemaining > 0 && !(c.courseUnitsRemaining == 1 && this.remainingCUs == 0.5)) {
             c.consumedBy = tag
             const cusToUse = Math.min(c.courseUnitsRemaining, this.remainingCUs)
-            console.log(`${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulling ${cusToUse} from ${c.code()} for ${this}`)
+            // console.log(`${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulling ${cusToUse} from ${c.code()} for ${this}`)
             c.courseUnitsRemaining -= cusToUse
             this.remainingCUs -= cusToUse
-            console.log(`   ${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulled ${cusToUse} from ${c.code()} for ${this}, ${this.remainingCUs > 0}`)
+            // console.log(`   ${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulled ${cusToUse} from ${c.code()} for ${this}, ${this.remainingCUs > 0}`)
             return true
         }
         return false
@@ -192,7 +192,7 @@ class RequirementCisElective extends DegreeRequirement {
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        console.log(courses.filter(c => c.subject == "NETS"))
+        // console.log(courses.filter(c => c.subject == "NETS"))
 
         const byNumber = courses.slice()
         byNumber.sort((a,b) => a.courseNumberInt - b.courseNumberInt)
@@ -411,6 +411,10 @@ class CourseTaken {
 }
 
 function main(): void {
+    $("#degreeRequirements").empty()
+    $("#remainingCUs").empty()
+    $("#unusedCourses").empty()
+
     let degreeRequirements: DegreeRequirement[] = []
     const degree = $("input[name='degree']:checked").val()
 
@@ -421,10 +425,17 @@ function main(): void {
                 new RequirementNamedCourses("Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses("Math", ["CIS 1600"]),
                 new RequirementNamedCourses("Math", ["CIS 2610","ESE 3010","ENM 3210","STAT 4300"]),
+                new RequirementAttributes("Math", ["EUMA"]),
+                new RequirementAttributes("Math", ["EUMA"]),
 
                 new RequirementNamedCourses("Natural Science", ["PHYS 0150","PHYS 0170","MEAM 1100"]),
                 new RequirementNamedCourses("Natural Science", ["PHYS 0151","PHYS 0171","ESE 1120"]),
                 new RequirementNaturalScienceLab("Natural Science Lab"),
+                // PSYC 121 also listed on PiT, but seems discontinued
+                new RequirementNamedCoursesOrAttributes(
+                    "Natural Science",
+                    ["LING 2500","PSYC 1340","PSYC 121"],
+                    ["EUNS"]),
 
                 new RequirementNamedCourses("Major", ["CIS 1100"]),
                 new RequirementNamedCourses("Major", ["CIS 1200"]),
@@ -450,14 +461,6 @@ function main(): void {
                 new RequirementCisElective(1000),
                 new RequirementCisElective(2000),
                 new RequirementCisElective(2000),
-
-                new RequirementAttributes("Math", ["EUMA"]),
-                new RequirementAttributes("Math", ["EUMA"]),
-                // PSYC 121 also listed on PiT, but seems discontinued
-                new RequirementNamedCoursesOrAttributes(
-                    "Natural Science",
-                    ["LING 2500","PSYC 1340","PSYC 121"],
-                    ["EUNS"]),
 
                 new RequirementSsh(["EUSS"]),
                 new RequirementSsh(["EUSS"]),
@@ -525,7 +528,6 @@ function main(): void {
         if (matched1 == undefined) {
             $("#degreeRequirements").append(`<div style="color: red">${req} NOT satisfied</div>`)
         } else if (req.remainingCUs > 0) {
-            console.log("jld: " + req.remainingCUs + " " + matched1)
             const matched2 = req.satisfiedBy(coursesTaken)
             if (matched2 == undefined) {
                 $("#degreeRequirements").append(`<div style="color: blue">${req} PARTIALLY satisfied by ${matched1.code()}</div>`)
