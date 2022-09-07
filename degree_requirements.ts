@@ -114,7 +114,13 @@ class CourseTaken {
 }
 
 function main(): void {
+    const degree = $("input[name='degree']:checked").val()
+    if (degree != "csci_40") {
+        console.error("Only 40cu CSCI is supported for now")
+    }
+
     const text = $("#coursesTaken").val() as string
+
     if (text.includes("Degree Works Release")) {
         const courseTakenPattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})(?<restOfLine>.*)\nAttributes\t(?<attributes>.*)`, "g")
         let coursesTaken: CourseTaken[] = []
@@ -135,6 +141,7 @@ function main(): void {
             numHits++
         }
 
+        // can't take both EAS 0091 and CHEM 1012
         console.assert(!(
                 coursesTaken.find((c: CourseTaken) => c.code() == "EAS 0091") &&
                 coursesTaken.find((c: CourseTaken) => c.code() == "CHEM 1012")
