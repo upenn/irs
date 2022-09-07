@@ -127,63 +127,6 @@ class RequirementNaturalScienceLab extends RequirementNamedCourses {
     }
 }
 
-// class RequirementCsci40PhysicsAndLabs extends DegreeRequirement {
-//     static readonly tag: string = "Physics & Labs"
-//     constructor() {
-//         super()
-//         this.remainingCUs = 3.0
-//     }
-//
-//     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-//         const tag = RequirementCsci40PhysicsAndLabs.tag
-//         // TODO: BIOL 1101/1102 are 1.5 CUs each, would satisfy lab requirement and EUNS
-//         const standaloneLabs = [/*"BIOL 1101", "BIOL 1102",*/ "CHEM 1101", "CHEM 1102", "PHYS 0050", "PHYS 0051"]
-//
-//         const mechanics = courses.find((c) => c.code() == "PHYS 0140")
-//         const em = courses.find((c) => c.code() == "PHYS 0141")
-//
-//         // TODO: MEAM 1100 + 1470
-//         const mechanicsWithLab = courses.find((c) => ["PHYS 0150", "PHYS 0170"].includes(c.code()))
-//         const emWithLab = courses.find((c) => ["PHYS 0151", "PHYS 0171", "ESE 1120"].includes(c.code()))
-//         let mechanicsDone = mechanicsWithLab != undefined && mechanicsWithLab.grading == GradeType.ForCredit && this.applyCourse(mechanicsWithLab, tag)
-//         let emDone = emWithLab != undefined && emWithLab.grading == GradeType.ForCredit && this.applyCourse(emWithLab, tag)
-//         if (mechanicsDone && emDone) {
-//             // TODO: allow this requirement to be satisfied by multiple courses...
-//             return emWithLab
-//         }
-//         if (mechanicsDone || emDone) { // got 1.5 CUs done
-//             if ((mechanicsDone && mechanics != undefined) ||
-//                 (emDone && em != undefined)) {
-//                 throw new Error("took two equivalent physics courses???")
-//             }
-//             if (mechanics == undefined && em == undefined) {
-//                 throw new Error("unimplemented")
-//             }
-//             // has 2.5 CUs, look for 0.5 CU lab
-//             const lab = courses.find(c => standaloneLabs.includes(c.code()))
-//             if (lab != undefined && lab.grading == GradeType.ForCredit && this.applyCourse(lab, tag)) {
-//                 // TODO: allow this requirement to be satisfied by multiple courses...
-//                 return lab
-//             }
-//             return undefined
-//         }
-//
-//         // didn't do any physics courses with labs, need two labs
-//         let labs = courses.filter(c => standaloneLabs.includes(c.code()))
-//         if (labs.length >= 2) {
-//             if (labs.slice(0,2).every(c => c.grading == GradeType.ForCredit && this.applyCourse(c, tag))) {
-//                 return labs[0]
-//             }
-//         }
-//         return undefined
-//     }
-//
-//
-//     public toString(): string {
-//         return RequirementCsci40PhysicsAndLabs.tag
-//     }
-// }
-
 class RequirementCisElective extends DegreeRequirement {
     readonly minLevel: number
     constructor(minLevel: number) {
@@ -379,8 +322,8 @@ class CourseTaken {
             gradingType = GradeType.ForCredit
         }
 
-        if (!inProgress && ["F","I","NS"].includes(grade)) {
-            console.log(`Ignoring failed course ${code} from ${term}`)
+        if (!inProgress && !["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","P"].includes(grade)) {
+            console.log(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${grade}`)
             return null
         }
 
@@ -411,6 +354,7 @@ class CourseTaken {
 }
 
 function main(): void {
+    // reset output
     $("#degreeRequirements").empty()
     $("#remainingCUs").empty()
     $("#unusedCourses").empty()
@@ -453,8 +397,10 @@ function main(): void {
                     "CIS 4500","CIS 5500",
                     "CIS 4550","CIS 5550",
                     "CIS 4600","CIS 5600",
-                    "CIS 5050","CIS 5530"]),
-                // TODO: exclude ESE 3500 for now, need to account for its 1.5 CUs...
+                    "CIS 5050","CIS 5530"
+                    // TODO: exclude ESE 3500 for now, accounting for its 1.5 CUs is annoying
+                    // "ESE 3500"
+                ]),
 
                 new RequirementCisElective(1000),
                 new RequirementCisElective(2000),
@@ -522,7 +468,8 @@ function main(): void {
         // TODO: parse unofficial transcripts
     }
 
-    // apply courses to degree requirements
+    // APPLY COURSES TO DEGREE REQUIREMENTS
+
     let totalRemainingCUs = 0.0
     degreeRequirements.forEach(req => {
         const matched1 = req.satisfiedBy(coursesTaken)
