@@ -9,14 +9,16 @@ enum GradeType {
 }
 
 abstract class DegreeRequirement {
-    remainingCUs: number = 1.0
+    public remainingCUs: number = 1.0
     abstract satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined
     protected applyCourse(c: CourseTaken, tag: string): boolean {
         if (c.consumedBy == null && c.courseUnitsRemaining > 0) {
             c.consumedBy = tag
             const cusToUse = Math.min(c.courseUnitsRemaining, this.remainingCUs)
+            console.log(`${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulling ${cusToUse} from ${c.code()} for ${this}`)
             c.courseUnitsRemaining -= cusToUse
             this.remainingCUs -= cusToUse
+            console.log(`   ${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulled ${cusToUse} from ${c.code()} for ${this}, ${this.remainingCUs > 0}`)
             return true
         }
         return false
@@ -59,7 +61,7 @@ class RequirementAttributes extends DegreeRequirement {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         return courses.find((c) => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
-            foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, this.tag)
+            return foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, this.tag)
         })
     }
 
@@ -78,7 +80,7 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         return courses.find((c) => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a)) || this.courses.includes(c.code())
-            foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, this.tag)
+            return foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, this.tag)
         })
     }
 
@@ -105,8 +107,7 @@ class RequirementNaturalScienceLab extends RequirementNamedCourses {
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        console.log(courses.filter(c => this.courses.includes(c.code())))
-
+        // only take 0.5 CUs at a time, representing the lab portion
         let matched = courses.find(c =>
             this.courses.includes(c.code()) &&
             c.grading == GradeType.ForCredit &&
@@ -191,15 +192,19 @@ class RequirementCisElective extends DegreeRequirement {
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        return courses.find((c) => {
-            const courseNumberInt = parseInt(c.courseNumber)
-            const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && courseNumberInt >= this.minLevel && !c.attributes.includes("EUNE")
-            foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, "CisElective")
+        console.log(courses.filter(c => c.subject == "NETS"))
+
+        const byNumber = courses.slice()
+        byNumber.sort((a,b) => a.courseNumberInt - b.courseNumberInt)
+
+        return byNumber.find((c) => {
+            const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && c.courseNumberInt >= this.minLevel && !c.attributes.includes("EUNE")
+            return foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, "CisElective")
         })
     }
 
     public toString(): string {
-        return `CIS Elective ≥ ${this.minLevel}`
+        return `CIS Elective >= ${this.minLevel}`
     }
 }
 
@@ -255,7 +260,7 @@ class RequirementSsh extends RequirementAttributes {
         return sshPrio.find((c) => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
-            foundMatch && gradeOk && this.applyCourse(c, this.tag)
+            return foundMatch && gradeOk && this.applyCourse(c, this.tag)
         })
     }
 
@@ -267,8 +272,8 @@ class RequirementSsh extends RequirementAttributes {
 class RequirementFreeElective extends DegreeRequirement {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         // prioritize 1.0 CU courses
-        const fePrio: CourseTaken[] = []
-        courses.forEach(c => fePrio.push(Object.assign({}, c)));
+        const fePrio: CourseTaken[] = courses.slice()
+        // courses.forEach(c => fePrio.push(Object.assign({}, c)));
         fePrio.sort((a,b) =>
             b.courseUnits - a.courseUnits
         )
@@ -289,7 +294,7 @@ class RequirementFreeElective extends DegreeRequirement {
                 noCreditStat
 
             // if we made it here, it counts as a Free Elective! NB: Pass/Fail is ok
-            !nocredit && this.applyCourse(c, "FreeElective")
+            return !nocredit && this.applyCourse(c, "FreeElective")
         })
     }
 
@@ -520,6 +525,7 @@ function main(): void {
         if (matched1 == undefined) {
             $("#degreeRequirements").append(`<div style="color: red">${req} NOT satisfied</div>`)
         } else if (req.remainingCUs > 0) {
+            console.log("jld: " + req.remainingCUs + " " + matched1)
             const matched2 = req.satisfiedBy(coursesTaken)
             if (matched2 == undefined) {
                 $("#degreeRequirements").append(`<div style="color: blue">${req} PARTIALLY satisfied by ${matched1.code()}</div>`)
