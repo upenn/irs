@@ -355,8 +355,7 @@ class CourseTaken {
         }
 
         if (!inProgress && !["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","P","TR"].includes(grade)) {
-            // TODO: write to html instead
-            console.log(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${grade}`)
+            $("#messages").append(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${grade}`)
             return null
         }
 
@@ -502,8 +501,8 @@ function main(): void {
             coursesTaken.find((c: CourseTaken) => c.code() == "CHEM 1012")) {
             throw new Error("took two equivalent CHEM courses???")
         }
-        // TODO: write to html instead
-        console.log(`${coursesTaken.length} courses taken`)
+        $("#messages").append(`${coursesTaken.length} courses taken`)
+        // TODO: write to HTML instead, beneath a dropdown section
         coursesTaken.forEach((c) => console.log(c.toString()))
     } else {
         // TODO: parse unofficial transcripts
@@ -548,7 +547,7 @@ function main(): void {
 
     // handle special SSH ShareWith requirements: writing, ethics, depth
     const sshCourses = coursesTaken.filter(c => c.consumedBy == SsHTbsTag)
-    console.log(sshCourses)
+
     sshCourses.forEach(c => {
         c.consumedBy = null
         c.courseUnitsRemaining = c.courseUnits
