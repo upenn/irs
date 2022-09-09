@@ -366,7 +366,9 @@ class CourseTaken {
     }
 
     public toString(): string {
-        return `${this.subject} ${this.courseNumber}, ${this.courseUnits} CUs, ${this.grading}, taken in ${this.term}, completed = ${this.completed}, ${this.attributes} inMinor:${this.partOfMinor}`
+        let complete = this.completed ? "completed" : "in progress"
+        let minor = this.partOfMinor ? "in minor" : ""
+        return `${this.subject} ${this.courseNumber}, ${this.courseUnits} CUs, ${this.grading}, taken in ${this.term}, ${complete}, ${this.attributes} ${minor}`
     }
 
     /** Return a course code like "ENGL 1234" */
@@ -430,7 +432,7 @@ const NodeDegreeRequirements = "#degreeRequirements"
 const NodeRemainingCUs = "#remainingCUs"
 const NodeUnusedCourses = "#unusedCourses"
 const NodeMessages = "#messages"
-const NodeCoursesApplied = "#coursesApplied"
+const NodeAllCourses = "#allCourses"
 
 function main(): void {
     // reset output
@@ -438,7 +440,7 @@ function main(): void {
     $(NodeRemainingCUs).empty()
     $(NodeUnusedCourses).empty()
     $(NodeMessages).empty()
-    $(NodeCoursesApplied).empty()
+    $(NodeAllCourses).empty()
 
     fetch(window.location.origin + "/37cu_csci_tech_elective_list.json")
         .then(response => response.text())
@@ -460,10 +462,11 @@ interface TechElectiveDecision {
 function run(csci37techElectiveList: TechElectiveDecision[]): void {
     let degreeRequirements: DegreeRequirement[] = []
     const degree = $("input[name='degree']:checked").val()
+    $(NodeMessages).append("<h3>Notes</h3>")
 
     // NB: below, requirements are listed from highest => lowest priority. Display order is orthogonal.
     switch (degree) {
-        case "csci_40":
+        case "40cu CSCI":
             degreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
@@ -577,10 +580,25 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
             throw new Error("took EAS 0091 & CHEM 1012, uh-oh")
         }
         $(NodeMessages).append(`${coursesTaken.length} courses taken`)
-        // TODO: write to HTML instead, beneath a dropdown section
-        //coursesTaken.forEach((c) => console.log(c.toString()))
+        const allCourses = coursesTaken.map((c: CourseTaken): string => `<div><small>${c.toString()}</small></div>`).join("")
+        $(NodeAllCourses).append(`
+<div class="accordion" id="accordionExample">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingTwo">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+      All Courses
+      </button>
+    </h2>
+    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+      <div class="accordion-body">
+        ${allCourses}
+      </div>
+    </div>
+  </div>
+</div>`)
     } else {
         // TODO: parse unofficial transcripts
+        throw new Error("unsupported format")
     }
 
     // APPLY COURSES TO DEGREE REQUIREMENTS
@@ -590,35 +608,41 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
     degreeRequirements.forEach(req => {
         const matched1 = req.satisfiedBy(coursesTaken)
         if (matched1 == undefined) {
-            reqOutcomes.push([req.displayIndex, `<div style="color: red">${req} NOT satisfied</div>`])
+            reqOutcomes.push([req.displayIndex, `<li class="list-group-item list-group-item-danger">${req} NOT satisfied</li>`])
         } else if (req.remainingCUs > 0) {
             const matched2 = req.satisfiedBy(coursesTaken)
             if (matched2 == undefined) {
-                reqOutcomes.push([req.displayIndex, `<div style="color: blue">${req} PARTIALLY satisfied by ${matched1.code()}</div>`])
+                reqOutcomes.push([req.displayIndex, `<li class="list-group-item list-group-item-warning">${req} PARTIALLY satisfied by ${matched1.code()}</li>`])
             } else {
                 // fully satisfied by 2 courses
-                reqOutcomes.push([req.displayIndex, `<div style="color: gray">${req} satisfied by ${matched1.code()} and ${matched2.code()}</div>`])
+                reqOutcomes.push([req.displayIndex, `<li class="list-group-item disabled">${req} satisfied by ${matched1.code()} and ${matched2.code()}</li>`])
             }
         } else {
             // fully satisfied
-            reqOutcomes.push([req.displayIndex, `<div style="color: gray">${req} satisfied by ${matched1.code()}</div>`])
+            reqOutcomes.push([req.displayIndex, `<li class="list-group-item disabled">${req} satisfied by ${matched1.code()}</li>`])
         }
         totalRemainingCUs += req.remainingCUs
     })
+    $(NodeDegreeRequirements).append(`<h3>${degree} Degree Requirements</h3>`)
     reqOutcomes.sort((a,b) => a[0] - b[0])
     reqOutcomes.forEach((o: [number,string]) => {
         $(NodeDegreeRequirements).append(o[1])
     })
 
-    $(NodeRemainingCUs).append(`<div>${totalRemainingCUs} CUs needed</div>`)
+    $(NodeRemainingCUs).append(`<div class="alert alert-primary" role="alert">${totalRemainingCUs} CUs needed to graduate</div>`)
 
-    coursesTaken.filter(c => c.courseUnitsRemaining > 0).forEach(c => {
-        if (c.consumedBy == null) {
-            $(NodeUnusedCourses).append(`<div>unused course: ${c}</div>`)
-        } else {
-            $(NodeUnusedCourses).append(`<div>partially unused course: ${c.courseUnitsRemaining} CUs unused from ${c}</div>`)
-        }
-    })
+    if (coursesTaken.some(c => c.courseUnitsRemaining > 0)) {
+        $(NodeUnusedCourses).append(`<h3>Unused Courses</h3>`)
+        coursesTaken.filter(c => c.courseUnitsRemaining > 0).forEach(c => {
+            if (c.consumedBy == null) {
+                $(NodeUnusedCourses).append(`<div>${c}</div>`)
+            } else {
+                $(NodeUnusedCourses).append(`<div>${c.courseUnitsRemaining} CUs unused from ${c}</div>`)
+            }
+        })
+    } else {
+        $(NodeMessages).append("<div>all courses applied to degree requirements</div>")
+    }
 
     // handle special SSH ShareWith requirements: writing, ethics, depth
     const sshCourses = coursesTaken.filter(c => c.consumedBy == SsHTbsTag)
@@ -634,9 +658,9 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
     ssh40cuRequirements.forEach(req => {
         const matched = req.satisfiedBy(sshCourses)
         if (matched == undefined) {
-            $(NodeDegreeRequirements).append(`<div style="color: red">${req} NOT satisfied</div>`)
+            $(NodeDegreeRequirements).append(`<li class="list-group-item list-group-item-danger">${req} NOT satisfied</li>`)
         } else {
-            $(NodeDegreeRequirements).append(`<div style="color: gray">${req} satisfied by ${matched.code()}</div>`)
+            $(NodeDegreeRequirements).append(`<li class="list-group-item disabled">${req} satisfied by ${matched.code()}</li>`)
         }
     })
 
@@ -644,8 +668,8 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
     const counts: CountMap = countBySubject(sshCourses)
     const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
     if (depthKeys.length == 0) {
-        $(NodeDegreeRequirements).append(`<div style="color: red">SSH Depth Requirement NOT satisfied</div>`)
+        $(NodeDegreeRequirements).append(`<li class="list-group-item list-group-item-danger">SSH Depth Requirement NOT satisfied</li>`)
     } else {
-        $(NodeDegreeRequirements).append(`<div style="color: gray">SSH Depth Requirement satisfied by ${depthKeys[0]}</div>`)
+        $(NodeDegreeRequirements).append(`<li class="list-group-item disabled">SSH Depth Requirement satisfied by ${depthKeys[0]}</li>`)
     }
 }

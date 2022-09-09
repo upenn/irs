@@ -3,34 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <title>Institutional Requirements System</title>
-    <script src="node_modules/jquery/dist/jquery.js" type="application/javascript"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
+</head>
+<!--    <link href="node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">-->
+    <script src="node_modules/jquery/dist/jquery.min.js" type="application/javascript"></script>
+<!--    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js" type="application/javascript"></script>-->
     <script>var exports = {};</script>
     <script src="degree_requirements.js" type="application/javascript"></script>
 </head>
+
 <body>
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <div>
+                <textarea id="coursesTaken" name="coursesTaken" rows="20" cols="50" placeholder="paste DegreeWorks Diagnostics page here">
+                </textarea>
+            </div>
+            <div>
+                <input class="form-check-input" type="radio" id="csci_40" name="degree" value="40cu CSCI" checked>
+                <label class="form-check-label" for="csci_40">40cu CSCI</label><br>
+                <input class="form-check-input" type="radio" id="ascs_40" name="degree" value="40cu ASCS" disabled>
+                <label class="form-check-label" for="ascs_40">40cu ASCS (not supported yet)</label><br>
+                <input class="form-check-input" type="radio" id="cmpe_40" name="degree" value="40cu CMPE" disabled>
+                <label class="form-check-label" for="cmpe_40">40cu CMPE (not supported yet)</label><br>
+            </div>
 
-<div>
-<textarea id="coursesTaken" name="coursesTaken" rows="30" cols="50" placeholder="paste DegreeWorks Diagnostics page here">
-</textarea>
+            <div>
+                <button type="button" class="btn btn-primary my-2" onclick="main()">apply courses to requirements</button>
+            </div>
+        </div>
+    </div>
+    <div class="row py-4">
+        <div class="col">
+            <ul class="list-group list-group-flush" id="degreeRequirements"></ul>
+            <div id="remainingCUs"></div>
+            <div id="unusedCourses"></div>
+            <div id="messages"></div>
+            <div id="allCourses"></div>
+        </div>
+    </div>
 </div>
-<div>
-    <input type="radio" id="csci_40" name="degree" value="csci_40" checked>
-    <label for="csci_40">40cu CSCI</label><br>
-    <input type="radio" id="ascs_40" name="degree" value="ascs_40" disabled>
-    <label for="ascs_40">40cu ASCS (not supported yet)</label><br>
-    <input type="radio" id="cmpe_40" name="degree" value="cmpe_40" disabled>
-    <label for="cmpe_40">40cu CMPE (not supported yet)</label><br>
-</div>
 
-<div>
-    <button onclick="main()">apply courses to requirements</button>
-</div>
-
-<div id="degreeRequirements"></div>
-<div id="remainingCUs"></div>
-<div id="unusedCourses"></div>
-<div id="messages"></div>
-<div id="coursesApplied"></div>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-u1OknCvxWvY5kfmNBILK2hRnQC3Pr17a+RTT6rIHI7NnikvbZlHgTPOOmMi466C8" crossorigin="anonymous"></script>
 </body>
 </html>
