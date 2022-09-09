@@ -50,8 +50,9 @@ abstract class DegreeRequirement {
 class RequirementNamedCourses extends DegreeRequirement {
     readonly tag: string
     readonly courses: string[]
-    constructor(displayIndex: number, tag: string, courses: string[]) {
+    constructor(displayIndex: number, tag: string, courses: string[], cus: number = 1.0) {
         super(displayIndex)
+        this.remainingCUs = cus
         this.tag = tag
         this.courses = courses
     }
@@ -108,7 +109,7 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
 }
 
 class RequirementNaturalScienceLab extends RequirementNamedCourses {
-    constructor(displayIndex: number, tag: string) {
+    constructor(displayIndex: number, tag: string, cus: number) {
         const coursesWithLabs = [
             // 1.5 CUs
             "BIOL 1101", "BIOL 1102",
@@ -122,6 +123,7 @@ class RequirementNaturalScienceLab extends RequirementNamedCourses {
             "MEAM 1470",
         ]
         super(displayIndex, tag, coursesWithLabs)
+        this.remainingCUs = cus
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
@@ -183,7 +185,7 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
     }
 }
 
-class RequirementTechElective extends DegreeRequirement {
+class RequirementCsci40TechElective extends DegreeRequirement {
 
     readonly teHashmap: { [key: string]: null }
 
@@ -475,7 +477,7 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
 
                 new RequirementNamedCourses(7, "Natural Science", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
                 new RequirementNamedCourses(8, "Natural Science", ["PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120"]),
-                new RequirementNaturalScienceLab(9, "Natural Science Lab"),
+                new RequirementNaturalScienceLab(9, "Natural Science Lab", 1.0),
                 // PSYC 121 also listed on PiT, but seems discontinued
                 new RequirementNamedCoursesOrAttributes(10,
                     "Natural Science",
@@ -513,10 +515,10 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
 
                 new RequirementTechElectiveEngineering(25),
                 new RequirementTechElectiveEngineering(26),
-                new RequirementTechElective(27, csci37techElectiveList),
-                new RequirementTechElective(28, csci37techElectiveList),
-                new RequirementTechElective(29, csci37techElectiveList),
-                new RequirementTechElective(30, csci37techElectiveList),
+                new RequirementCsci40TechElective(27, csci37techElectiveList),
+                new RequirementCsci40TechElective(28, csci37techElectiveList),
+                new RequirementCsci40TechElective(29, csci37techElectiveList),
+                new RequirementCsci40TechElective(30, csci37techElectiveList),
 
                 new RequirementSsh(31, ["EUSS"]),
                 new RequirementSsh(32, ["EUSS"]),
@@ -529,6 +531,56 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementFreeElective(38),
                 new RequirementFreeElective(39),
                 new RequirementFreeElective(40),
+            ]
+            break
+        case "40cu CMPE":
+            degreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["MATH 2400","MATH 2600"]),
+                new RequirementNamedCourses(4, "Math", ["CIS 2610","ESE 3010","ENM 3210","STAT 4300"]),
+                new RequirementNamedCourses(5, "Math", ["CIS 1600"]),
+
+                new RequirementNamedCourses(6, "Natural Science", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
+                new RequirementNamedCourses(7, "Natural Science", ["PHYS 0151","PHYS 0171","ESE 1120"], 1.5),
+                new RequirementNamedCourses(8, "Natural Science", ["CHEM 1012","BIOL 1101","BIOL 1121","EAS 0091"]),
+                new RequirementNaturalScienceLab(9, "Natural Science Lab", 0.5),
+
+                new RequirementNamedCourses(11, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(13, "Major", ["ESE 1500"]),
+                new RequirementNamedCourses(14, "Major", ["ESE 2150"], 1.5),
+                new RequirementNamedCourses(15, "Major", ["CIS 2400"]),
+                new RequirementNamedCourses(16, "Major", ["ESE 3500"], 1.5),
+                new RequirementNamedCourses(17, "Major", ["CIS 3500","CIS 4600","CIS 5600"]),
+                new RequirementNamedCourses(18, "Major", ["ESE 3700"]),
+                new RequirementNamedCourses(19, "Major", ["CIS 4710","CIS 5710"]),
+                new RequirementNamedCourses(20, "Major", ["CIS 3800"]),
+                new RequirementNamedCourses(21, "Major", ["CIS 4410","CIS 5410"]),
+                new RequirementNamedCourses(22, "Major", ["ESE 4070","CIS 5530"]),
+                new RequirementNamedCourses(23, "Major", ["CIS 4550","CIS 5550","CIS 5050","ESE 5320","CIS 5650"]),
+                new RequirementNamedCourses(24, "Major", ["CIS 4000","ESE 4500","MEAM 4450"]),
+                new RequirementNamedCourses(25, "Major", ["CIS 4010","ESE 4510","MEAM 4460"]),
+
+                new RequirementAttributes(10, "Math/Natural Science", ["EUMA","EUNS"]),
+
+                // TODO: at most two 1000-level TEs, should add a level constraint to these
+                new RequirementAttributes(26, "Tech Elective", ["EUMS"]),
+                new RequirementAttributes(27, "Tech Elective", ["EUMS"]),
+                new RequirementAttributes(28, "Tech Elective", ["EUMS"]),
+                new RequirementNamedCoursesOrAttributes(29, "Tech Elective", ["ESE 4000","EAS 5450","EAS 5950","MGMT 237","OIDD 236"], ["EUMS"]),
+
+                new RequirementSsh(30, ["EUSS"]),
+                new RequirementSsh(31, ["EUSS"]),
+                new RequirementSsh(32, ["EUHS"]),
+                new RequirementSsh(33, ["EUHS"]),
+                new RequirementSsh(34, ["EUSS","EUHS"]),
+                new RequirementSsh(35, ["EUSS","EUHS","EUTB"]),
+                new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
+
+                new RequirementFreeElective(37),
+                new RequirementFreeElective(38),
+                new RequirementFreeElective(39),
             ]
             break
         default:
