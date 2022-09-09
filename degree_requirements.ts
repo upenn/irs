@@ -492,8 +492,8 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementNamedCourses(16, "Major", ["CIS 3200"]),
                 new RequirementNamedCourses(17, "Major", ["CIS 4710"]),
                 new RequirementNamedCourses(18, "Major", ["CIS 3800"]),
-                new RequirementNamedCourses(19, "Major", ["CIS 4000","ESE 4500","MEAM 4450"]),
-                new RequirementNamedCourses(20, "Major", ["CIS 4010","ESE 4510","MEAM 4460"]),
+                new RequirementNamedCourses(19, "Senior Design", ["CIS 4000","ESE 4500","MEAM 4450"]),
+                new RequirementNamedCourses(20, "Senior Design", ["CIS 4010","ESE 4510","MEAM 4460"]),
 
                 // Project Elective
                 new RequirementNamedCourses(21, "Project Elective", [
@@ -557,10 +557,10 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementNamedCourses(19, "Major", ["CIS 4710","CIS 5710"]),
                 new RequirementNamedCourses(20, "Major", ["CIS 3800"]),
                 new RequirementNamedCourses(21, "Major", ["CIS 4410","CIS 5410"]),
-                new RequirementNamedCourses(22, "Major", ["ESE 4070","CIS 5530"]),
-                new RequirementNamedCourses(23, "Major", ["CIS 4550","CIS 5550","CIS 5050","ESE 5320","CIS 5650"]),
-                new RequirementNamedCourses(24, "Major", ["CIS 4000","ESE 4500","MEAM 4450"]),
-                new RequirementNamedCourses(25, "Major", ["CIS 4010","ESE 4510","MEAM 4460"]),
+                new RequirementNamedCourses(22, "Networking", ["ESE 4070","CIS 5530"]),
+                new RequirementNamedCourses(23, "Concurrency Lab", ["CIS 4550","CIS 5550","CIS 5050","ESE 5320","CIS 5650"]),
+                new RequirementNamedCourses(24, "Senior Design", ["CIS 4000","ESE 4500","MEAM 4450"]),
+                new RequirementNamedCourses(25, "Senior Design", ["CIS 4010","ESE 4510","MEAM 4460"]),
 
                 new RequirementAttributes(10, "Math/Natural Science", ["EUMA","EUNS"]),
 
