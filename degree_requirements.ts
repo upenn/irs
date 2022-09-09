@@ -192,7 +192,10 @@ class RequirementTechElective extends DegreeRequirement {
             .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
             return c.grading == GradeType.ForCredit &&
-                (DegreeRequirement.isEngineering(c) || c.attributes.includes("EUMS") || specialTEList.includes(c.code())) &&
+                (DegreeRequirement.isEngineering(c) ||
+                    c.attributes.includes("EUMS") ||
+                    specialTEList.includes(c.code()) ||
+                    c.partOfMinor) &&
                 this.applyCourse(c, "TechElective")
         })
     }
@@ -222,16 +225,16 @@ class RequirementSsh extends RequirementAttributes {
             if (
                 (a.attributes.includes(WritingAttribute) || CsciEthicsCourses.includes(a.code())) //&&
             ) {
-                return -1;
+                return -1
             }
             if (mostPopularSubjectFirst.includes(a.subject) &&
                 (!mostPopularSubjectFirst.includes(b.subject) &&
                     !b.attributes.includes(WritingAttribute) &&
                     !CsciEthicsCourses.includes(b.code()))
             ) {
-                return -1;
+                return -1
             }
-            return 1;
+            return 1
         }).find((c: CourseTaken): boolean => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
@@ -264,8 +267,9 @@ class RequirementFreeElective extends DegreeRequirement {
                 noCreditNsci ||
                 noCreditStat
 
-            // if we made it here, it counts as a Free Elective! NB: Pass/Fail is ok
-            return !nocredit && this.applyCourse(c, "FreeElective")
+            // if we made it here, the course counts as a Free Elective
+            const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
+            return !nocredit && gradeOk && this.applyCourse(c, "FreeElective")
         })
     }
 
@@ -276,7 +280,7 @@ class RequirementFreeElective extends DegreeRequirement {
 
 /** A map from Subject => number of courses from that subject */
 interface CountMap {
-    [index: string]: number;
+    [index: string]: number
 }
 /** Compute a CountMap for the given `courses`. Used for the SSH Depth Requirement */
 function countBySubject(courses: CourseTaken[]): CountMap {
@@ -514,21 +518,29 @@ function main(): void {
             numHits++
         }
 
-        const minorPattern = new RegExp(String.raw`^Block\\s+Hide\\s+Minor in (?<minor>.+)(.|\\s)*?Applied:\\s+(?<courses>.*)`, "g")
+        const minorPattern = new RegExp(String.raw`^Block\s+Hide\s+Minor in (?<minor>[^-]+)(.|\s)*?Applied:\s+(?<courses>.*)`, "gm")
         let hits = minorPattern.exec(text)
         if (hits != null) {
-            $("#messages").append(`<div>found minor in ${hits.groups!["minor"]}</div>`)
-            const minorCoursePattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4}) \((?<cus>(\d|[.])+)\)`)
+            // list of courses applied to the minor looks like this on DegreeWorks:
+            // LING 071 (1.0) LING 072 (1.0) LING 106 (1.0) LING 230 (1.0) LING 250 (1.0) LING 3810 (1.0)
+            $("#messages").append(`<div>found minor in ${hits.groups!["minor"].trim()}, using for Tech Electives</div>`)
+            hits.groups!["courses"].split(")").forEach(c => {
+                let name = c.split("(")[0].trim()
+                let course = coursesTaken.find((c: CourseTaken): boolean => c.code() == name || c._3dName == name)
+                if (course != undefined) {
+                    course.partOfMinor = true
+                }
+            })
         }
 
         // can't take both EAS 0091 and CHEM 1012
         if (coursesTaken.find((c: CourseTaken) => c.code() == "EAS 0091") &&
             coursesTaken.find((c: CourseTaken) => c.code() == "CHEM 1012")) {
-            throw new Error("took two equivalent CHEM courses???")
+            throw new Error("took EAS 0091 & CHEM 1012, uh-oh")
         }
         $("#messages").append(`${coursesTaken.length} courses taken`)
         // TODO: write to HTML instead, beneath a dropdown section
-        coursesTaken.forEach((c) => console.log(c.toString()))
+        //coursesTaken.forEach((c) => console.log(c.toString()))
     } else {
         // TODO: parse unofficial transcripts
     }
