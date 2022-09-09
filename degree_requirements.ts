@@ -185,6 +185,18 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
 
 class RequirementTechElective extends DegreeRequirement {
 
+    readonly teHashmap: { [key: string]: null }
+
+    constructor(displayIndex: number, teList: TechElectiveDecision[]) {
+        super(displayIndex)
+        this.teHashmap = {}
+        teList
+            .filter((te: TechElectiveDecision): boolean => te.status == "yes")
+            .forEach((te: TechElectiveDecision) => {
+                this.teHashmap[te.course4d] = null
+            })
+    }
+
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         const specialTEList = ["LING 0500", "PHIL 2620", "PHIL 2640", "OIDD 2200", "OIDD 3210", "OIDD 3250"]
 
@@ -195,6 +207,7 @@ class RequirementTechElective extends DegreeRequirement {
                 (DegreeRequirement.isEngineering(c) ||
                     c.attributes.includes("EUMS") ||
                     specialTEList.includes(c.code()) ||
+                    this.teHashmap.hasOwnProperty(c.code()) ||
                     c.partOfMinor) &&
                 this.applyCourse(c, "TechElective")
         })
@@ -427,6 +440,24 @@ function main(): void {
     $(NodeMessages).empty()
     $(NodeCoursesApplied).empty()
 
+    fetch(window.location.origin + "/37cu_csci_tech_elective_list.json")
+        .then(response => response.text())
+        .then(json => {
+            let telist = JSON.parse(json);
+            run(telist)
+        })
+
+
+}
+
+interface TechElectiveDecision {
+    course4d: string,
+    course3d: string,
+    title: string,
+    status: "yes" | "no" | "ask"
+}
+
+function run(csci37techElectiveList: TechElectiveDecision[]): void {
     let degreeRequirements: DegreeRequirement[] = []
     const degree = $("input[name='degree']:checked").val()
 
@@ -479,10 +510,10 @@ function main(): void {
 
                 new RequirementTechElectiveEngineering(25),
                 new RequirementTechElectiveEngineering(26),
-                new RequirementTechElective(27),
-                new RequirementTechElective(28),
-                new RequirementTechElective(29),
-                new RequirementTechElective(30),
+                new RequirementTechElective(27, csci37techElectiveList),
+                new RequirementTechElective(28, csci37techElectiveList),
+                new RequirementTechElective(29, csci37techElectiveList),
+                new RequirementTechElective(30, csci37techElectiveList),
 
                 new RequirementSsh(31, ["EUSS"]),
                 new RequirementSsh(32, ["EUSS"]),
