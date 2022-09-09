@@ -153,12 +153,9 @@ class RequirementCisElective extends DegreeRequirement {
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        // console.log(courses.filter(c => c.subject == "NETS"))
-
-        const byNumber = courses.slice()
-        byNumber.sort((a,b) => a.courseNumberInt - b.courseNumberInt)
-
-        return byNumber.find((c: CourseTaken): boolean => {
+        return courses.slice() // NB: have to use slice since sort() is in-place
+            .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
+            .find((c: CourseTaken): boolean => {
             const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && c.courseNumberInt >= this.minLevel && !c.attributes.includes("EUNE")
             return foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, "CisElective")
         })
@@ -172,9 +169,9 @@ class RequirementCisElective extends DegreeRequirement {
 class RequirementTechElectiveEngineering extends DegreeRequirement {
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        let cuPrio = courses.slice()
-        cuPrio.sort(sortByCUsDecreasing)
-        return courses.find((c: CourseTaken): boolean => {
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
             return RequirementTechElectiveEngineering.isEngineering(c) &&
                 c.grading == GradeType.ForCredit &&
                 this.applyCourse(c, "TechElective")
@@ -189,11 +186,11 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
 class RequirementTechElective extends DegreeRequirement {
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        let cuPrio = courses.slice()
-        cuPrio.sort(sortByCUsDecreasing)
-
         const specialTEList = ["LING 0500", "PHIL 2620", "PHIL 2640", "OIDD 2200", "OIDD 3210", "OIDD 3250"]
-        return cuPrio.find((c: CourseTaken): boolean => {
+
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
             return c.grading == GradeType.ForCredit &&
                 (DegreeRequirement.isEngineering(c) || c.attributes.includes("EUMS") || specialTEList.includes(c.code())) &&
                 this.applyCourse(c, "TechElective")
@@ -212,17 +209,15 @@ class RequirementSsh extends RequirementAttributes {
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         // prioritize writing+ethics courses
-        const sshPrio: CourseTaken[] = courses.slice()
-        sshPrio.sort((a,b) => {
+        // TODO: prioritize for Depth Requirement
+        return courses.slice()
+            .sort((a,b) => {
             if ((a.attributes.includes(WritingAttribute) || CsciEthicsCourses.includes(a.code())) &&
                 (!b.attributes.includes(WritingAttribute) && !CsciEthicsCourses.includes(b.code()))) {
                 return -1
             }
             return 1
-        })
-        // TODO: prioritize for Depth Requirement
-
-        return sshPrio.find((c: CourseTaken): boolean => {
+        }).find((c: CourseTaken): boolean => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
             return foundMatch && gradeOk && this.applyCourse(c, this.tag)
@@ -237,10 +232,9 @@ class RequirementSsh extends RequirementAttributes {
 class RequirementFreeElective extends DegreeRequirement {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         // prioritize 1.0 CU courses
-        const largerCUsFirst: CourseTaken[] = courses.slice()
-        largerCUsFirst.sort(sortByCUsDecreasing)
-
-        return largerCUsFirst.find((c: CourseTaken): boolean => {
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
             const noCreditNsci = c.subject == "NSCI" && ![1020,2010,2020,3010,4010,4020].includes(c.courseNumberInt)
             const noCreditStat = c.subject == "STAT" && c.courseNumberInt < 4300 && !["STAT 4050", "STAT 4220"].includes(c.code())
             const noCreditPhys = c.subject == "PHYS" && c.courseNumberInt < 140 && !["PHYS 0050", "PHYS 0051"].includes(c.code())
@@ -265,7 +259,7 @@ class RequirementFreeElective extends DegreeRequirement {
     }
 }
 
-function sortByCUsDecreasing(a: CourseTaken, b: CourseTaken): number {
+function byHighestCUsFirst(a: CourseTaken, b: CourseTaken): number {
     return b.courseUnitsRemaining - a.courseUnitsRemaining
 }
 
@@ -390,6 +384,8 @@ function main(): void {
     $("#degreeRequirements").empty()
     $("#remainingCUs").empty()
     $("#unusedCourses").empty()
+    $("#messages").empty()
+    $("#usedCourses").empty()
 
     let degreeRequirements: DegreeRequirement[] = []
     const degree = $("input[name='degree']:checked").val()
@@ -403,8 +399,8 @@ function main(): void {
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
                 new RequirementNamedCourses(4, "Math", ["CIS 2610","ESE 3010","ENM 3210","STAT 4300"]),
 
-                new RequirementNamedCourses(7, "Natural Science", ["PHYS 0150","PHYS 0170","MEAM 1100"]),
-                new RequirementNamedCourses(8, "Natural Science", ["PHYS 0151","PHYS 0171","ESE 1120"]),
+                new RequirementNamedCourses(7, "Natural Science", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
+                new RequirementNamedCourses(8, "Natural Science", ["PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120"]),
                 new RequirementNaturalScienceLab(9, "Natural Science Lab"),
                 // PSYC 121 also listed on PiT, but seems discontinued
                 new RequirementNamedCoursesOrAttributes(10,
