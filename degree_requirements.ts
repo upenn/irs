@@ -564,11 +564,14 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
 
                 new RequirementAttributes(10, "Math/Natural Science", ["EUMA","EUNS"]),
 
-                // TODO: at most two 1000-level TEs, should add a level constraint to these
                 new RequirementAttributes(26, "Tech Elective", ["EUMS"]),
                 new RequirementAttributes(27, "Tech Elective", ["EUMS"]),
+                // TODO: add a ≥2000 level constraint to these last two
                 new RequirementAttributes(28, "Tech Elective", ["EUMS"]),
-                new RequirementNamedCoursesOrAttributes(29, "Tech Elective", ["ESE 4000","EAS 5450","EAS 5950","MGMT 237","OIDD 236"], ["EUMS"]),
+                new RequirementNamedCoursesOrAttributes(29,
+                    "Tech Elective",
+                    ["ESE 4000","EAS 5450","EAS 5950","MGMT 2370","OIDD 2360"],
+                    ["EUMS"]),
 
                 new RequirementSsh(30, ["EUSS"]),
                 new RequirementSsh(31, ["EUSS"]),
