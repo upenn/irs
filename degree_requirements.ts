@@ -208,15 +208,30 @@ class RequirementSsh extends RequirementAttributes {
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        // prioritize writing+ethics courses
-        // TODO: prioritize for Depth Requirement
+        // count by subject for SS/H/TBS courses
+        let counts = countBySubject(courses
+            .filter((c: CourseTaken): boolean =>
+                c.attributes.includes("EUHS") || c.attributes.includes("EUSS") || c.attributes.includes("EUTB")))
+        const mostPopularSubjectFirst = Object.keys(counts)
+            .sort((a,b) => counts[b] - counts[a])
+            .filter((s: string): boolean => counts[s] >= 2)
+
+        // prioritize writing+ethics courses and satisfying the Depth Requirement
         return courses.slice()
             .sort((a,b) => {
-            if ((a.attributes.includes(WritingAttribute) || CsciEthicsCourses.includes(a.code())) &&
-                (!b.attributes.includes(WritingAttribute) && !CsciEthicsCourses.includes(b.code()))) {
-                return -1
+            if (
+                (a.attributes.includes(WritingAttribute) || CsciEthicsCourses.includes(a.code())) //&&
+            ) {
+                return -1;
             }
-            return 1
+            if (mostPopularSubjectFirst.includes(a.subject) &&
+                (!mostPopularSubjectFirst.includes(b.subject) &&
+                    !b.attributes.includes(WritingAttribute) &&
+                    !CsciEthicsCourses.includes(b.code()))
+            ) {
+                return -1;
+            }
+            return 1;
         }).find((c: CourseTaken): boolean => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
@@ -259,6 +274,20 @@ class RequirementFreeElective extends DegreeRequirement {
     }
 }
 
+/** A map from Subject => number of courses from that subject */
+interface CountMap {
+    [index: string]: number;
+}
+/** Compute a CountMap for the given `courses`. Used for the SSH Depth Requirement */
+function countBySubject(courses: CourseTaken[]): CountMap {
+    const counts: CountMap = {}
+    courses.forEach(c =>
+        counts[c.subject] = counts[c.subject] ? counts[c.subject] + 1 : 1
+    )
+    return counts
+}
+
+/** used when sorting CourseTaken[] */
 function byHighestCUsFirst(a: CourseTaken, b: CourseTaken): number {
     return b.courseUnitsRemaining - a.courseUnitsRemaining
 }
@@ -562,13 +591,7 @@ function main(): void {
     })
 
     // TODO: Depth Requirement may have to be from SS/H courses?
-    interface CountMap {
-        [index: string]: number;
-    }
-    const counts: CountMap = {}
-    sshCourses.forEach(c =>
-        counts[c.subject] = counts[c.subject] ? counts[c.subject] + 1 : 1
-    )
+    const counts: CountMap = countBySubject(sshCourses)
     const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
     if (depthKeys.length == 0) {
         $("#degreeRequirements").append(`<div style="color: red">SSH Depth Requirement NOT satisfied</div>`)
