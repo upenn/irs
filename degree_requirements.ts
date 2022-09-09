@@ -412,13 +412,20 @@ class CourseTaken {
     }
 }
 
+const NodeCoursesTaken = "#coursesTaken"
+const NodeDegreeRequirements = "#degreeRequirements"
+const NodeRemainingCUs = "#remainingCUs"
+const NodeUnusedCourses = "#unusedCourses"
+const NodeMessages = "#messages"
+const NodeCoursesApplied = "#coursesApplied"
+
 function main(): void {
     // reset output
-    $("#degreeRequirements").empty()
-    $("#remainingCUs").empty()
-    $("#unusedCourses").empty()
-    $("#messages").empty()
-    $("#usedCourses").empty()
+    $(NodeDegreeRequirements).empty()
+    $(NodeRemainingCUs).empty()
+    $(NodeUnusedCourses).empty()
+    $(NodeMessages).empty()
+    $(NodeCoursesApplied).empty()
 
     let degreeRequirements: DegreeRequirement[] = []
     const degree = $("input[name='degree']:checked").val()
@@ -496,7 +503,7 @@ function main(): void {
     const degreeCUs = degreeRequirements.map(r => r.remainingCUs).reduce((sum, e) => sum + e, 0)
     if (40 != degreeCUs) throw new Error(`degree should be 40 CUs but was ${degreeCUs}`)
 
-    const text = $("#coursesTaken").val() as string
+    const text = $(NodeCoursesTaken).val() as string
     let coursesTaken: CourseTaken[] = []
 
     if (text.includes("Degree Works Release")) {
@@ -523,7 +530,7 @@ function main(): void {
         if (hits != null) {
             // list of courses applied to the minor looks like this on DegreeWorks:
             // LING 071 (1.0) LING 072 (1.0) LING 106 (1.0) LING 230 (1.0) LING 250 (1.0) LING 3810 (1.0)
-            $("#messages").append(`<div>found minor in ${hits.groups!["minor"].trim()}, using for Tech Electives</div>`)
+            $(NodeMessages).append(`<div>found minor in ${hits.groups!["minor"].trim()}, using for Tech Electives</div>`)
             hits.groups!["courses"].split(")").forEach(c => {
                 let name = c.split("(")[0].trim()
                 let course = coursesTaken.find((c: CourseTaken): boolean => c.code() == name || c._3dName == name)
@@ -538,7 +545,7 @@ function main(): void {
             coursesTaken.find((c: CourseTaken) => c.code() == "CHEM 1012")) {
             throw new Error("took EAS 0091 & CHEM 1012, uh-oh")
         }
-        $("#messages").append(`${coursesTaken.length} courses taken`)
+        $(NodeMessages).append(`${coursesTaken.length} courses taken`)
         // TODO: write to HTML instead, beneath a dropdown section
         //coursesTaken.forEach((c) => console.log(c.toString()))
     } else {
@@ -569,16 +576,16 @@ function main(): void {
     })
     reqOutcomes.sort((a,b) => a[0] - b[0])
     reqOutcomes.forEach((o: [number,string]) => {
-        $("#degreeRequirements").append(o[1])
+        $(NodeDegreeRequirements).append(o[1])
     })
 
-    $("#remainingCUs").append(`<div>${totalRemainingCUs} CUs needed</div>`)
+    $(NodeRemainingCUs).append(`<div>${totalRemainingCUs} CUs needed</div>`)
 
     coursesTaken.filter(c => c.courseUnitsRemaining > 0).forEach(c => {
         if (c.consumedBy == null) {
-            $("#unusedCourses").append(`<div>unused course: ${c}</div>`)
+            $(NodeUnusedCourses).append(`<div>unused course: ${c}</div>`)
         } else {
-            $("#unusedCourses").append(`<div>partially unused course: ${c.courseUnitsRemaining} CUs unused from ${c}</div>`)
+            $(NodeUnusedCourses).append(`<div>partially unused course: ${c.courseUnitsRemaining} CUs unused from ${c}</div>`)
         }
     })
 
@@ -596,9 +603,9 @@ function main(): void {
     ssh40cuRequirements.forEach(req => {
         const matched = req.satisfiedBy(sshCourses)
         if (matched == undefined) {
-            $("#degreeRequirements").append(`<div style="color: red">${req} NOT satisfied</div>`)
+            $(NodeDegreeRequirements).append(`<div style="color: red">${req} NOT satisfied</div>`)
         } else {
-            $("#degreeRequirements").append(`<div style="color: gray">${req} satisfied by ${matched.code()}</div>`)
+            $(NodeDegreeRequirements).append(`<div style="color: gray">${req} satisfied by ${matched.code()}</div>`)
         }
     })
 
@@ -606,8 +613,8 @@ function main(): void {
     const counts: CountMap = countBySubject(sshCourses)
     const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
     if (depthKeys.length == 0) {
-        $("#degreeRequirements").append(`<div style="color: red">SSH Depth Requirement NOT satisfied</div>`)
+        $(NodeDegreeRequirements).append(`<div style="color: red">SSH Depth Requirement NOT satisfied</div>`)
     } else {
-        $("#degreeRequirements").append(`<div style="color: gray">SSH Depth Requirement satisfied by ${depthKeys[0]}</div>`)
+        $(NodeDegreeRequirements).append(`<div style="color: gray">SSH Depth Requirement satisfied by ${depthKeys[0]}</div>`)
     }
 }
