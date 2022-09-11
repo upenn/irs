@@ -40,6 +40,12 @@ abstract class DegreeRequirement {
         return false
     }
 
+    /** Set the required CUs for this requirement to be `n` */
+    withCUs(n: number): DegreeRequirement {
+        this.remainingCUs = n
+        return this
+    }
+
     /** return true if `c` is an Engineering course, per the SUH */
     static isEngineering(c: CourseTaken): boolean {
         return ["BE","CBE","CIS","ENGR","ESE","IPD","MEAM","MSE","NETS"].includes(c.subject) &&
@@ -50,9 +56,8 @@ abstract class DegreeRequirement {
 class RequirementNamedCourses extends DegreeRequirement {
     readonly tag: string
     readonly courses: string[]
-    constructor(displayIndex: number, tag: string, courses: string[], cus: number = 1.0) {
+    constructor(displayIndex: number, tag: string, courses: string[]) {
         super(displayIndex)
-        this.remainingCUs = cus
         this.tag = tag
         this.courses = courses
     }
@@ -78,7 +83,9 @@ class RequirementAttributes extends DegreeRequirement {
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        return courses.find((c: CourseTaken): boolean => {
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             return foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, this.tag)
         })
@@ -109,7 +116,7 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
 }
 
 class RequirementNaturalScienceLab extends RequirementNamedCourses {
-    constructor(displayIndex: number, tag: string, cus: number) {
+    constructor(displayIndex: number, tag: string) {
         const coursesWithLabs = [
             // 1.5 CUs
             "BIOL 1101", "BIOL 1102",
@@ -123,7 +130,6 @@ class RequirementNaturalScienceLab extends RequirementNamedCourses {
             "MEAM 1470",
         ]
         super(displayIndex, tag, coursesWithLabs)
-        this.remainingCUs = cus
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
@@ -226,10 +232,8 @@ class RequirementSsh extends RequirementAttributes {
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        // count by subject for SS/H/TBS courses
-        let counts = countBySubject(courses
-            .filter((c: CourseTaken): boolean =>
-                c.attributes.includes("EUHS") || c.attributes.includes("EUSS") || c.attributes.includes("EUTB")))
+        // count by subject for SS/H courses for the Depth Requirement
+        let counts = countBySubjectSshDepth(courses)
         const mostPopularSubjectFirst = Object.keys(counts)
             .sort((a,b) => counts[b] - counts[a])
             .filter((s: string): boolean => counts[s] >= 2)
@@ -297,12 +301,15 @@ class RequirementFreeElective extends DegreeRequirement {
 interface CountMap {
     [index: string]: number
 }
-/** Compute a CountMap for the given `courses`. Used for the SSH Depth Requirement */
-function countBySubject(courses: CourseTaken[]): CountMap {
+/** Compute a CountMap of SS+H courses for the given `courses`. Used for the SSH Depth Requirement */
+function countBySubjectSshDepth(courses: CourseTaken[]): CountMap {
     const counts: CountMap = {}
-    courses.forEach(c =>
-        counts[c.subject] = counts[c.subject] ? counts[c.subject] + 1 : 1
-    )
+    courses
+        .filter((c: CourseTaken): boolean =>
+            c.attributes.includes("EUHS") || c.attributes.includes("EUSS"))
+        .forEach(c =>
+            counts[c.subject] = counts[c.subject] ? counts[c.subject] + 1 : 1
+        )
     return counts
 }
 
@@ -354,16 +361,18 @@ class CourseTaken {
             .filter((s) => s.includes("ATTRIBUTE="))
             .map((s) => s.trim().split("=")[1])
 
-        // MANUAL DEGREEWORKS HACKS
+        // MANUAL HACKS DUE TO INFO MISSING IN CURRICULUM MANAGER
 
         // EAS 0091 is, practically speaking, EUNS (conflicts with CHEM 1012, though)
         if (this.code() == "EAS 0091") {
             this.attributes.push("EUNS")
         }
-
         if (this.code() == "CIS 4230" || this.code() == "CIS 5230") {
             delete this.attributes[this.attributes.indexOf("EUMS")]
             this.attributes.push("EUNE")
+        }
+        if (this.code() == "ESE 2920") {
+            this.attributes.push("EUMS")
         }
     }
 
@@ -477,7 +486,7 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
 
                 new RequirementNamedCourses(7, "Natural Science", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
                 new RequirementNamedCourses(8, "Natural Science", ["PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120"]),
-                new RequirementNaturalScienceLab(9, "Natural Science Lab", 1.0),
+                new RequirementNaturalScienceLab(9, "Natural Science Lab").withCUs(1.0),
                 // PSYC 121 also listed on PiT, but seems discontinued
                 new RequirementNamedCoursesOrAttributes(10,
                     "Natural Science",
@@ -542,16 +551,16 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementNamedCourses(5, "Math", ["CIS 1600"]),
 
                 new RequirementNamedCourses(6, "Natural Science", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
-                new RequirementNamedCourses(7, "Natural Science", ["PHYS 0151","PHYS 0171","ESE 1120"], 1.5),
+                new RequirementNamedCourses(7, "Natural Science", ["PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
                 new RequirementNamedCourses(8, "Natural Science", ["CHEM 1012","BIOL 1101","BIOL 1121","EAS 0091"]),
-                new RequirementNaturalScienceLab(9, "Natural Science Lab", 0.5),
+                new RequirementNaturalScienceLab(9, "Natural Science Lab").withCUs(0.5),
 
                 new RequirementNamedCourses(11, "Major", ["CIS 1200"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1210"]),
                 new RequirementNamedCourses(13, "Major", ["ESE 1500"]),
-                new RequirementNamedCourses(14, "Major", ["ESE 2150"], 1.5),
+                new RequirementNamedCourses(14, "Major", ["ESE 2150"]).withCUs(1.5),
                 new RequirementNamedCourses(15, "Major", ["CIS 2400"]),
-                new RequirementNamedCourses(16, "Major", ["ESE 3500"], 1.5),
+                new RequirementNamedCourses(16, "Major", ["ESE 3500"]).withCUs(1.5),
                 new RequirementNamedCourses(17, "Major", ["CIS 3500","CIS 4600","CIS 5600"]),
                 new RequirementNamedCourses(18, "Major", ["ESE 3700"]),
                 new RequirementNamedCourses(19, "Major", ["CIS 4710","CIS 5710"]),
@@ -658,6 +667,9 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
 
     // APPLY COURSES TO DEGREE REQUIREMENTS
 
+    // use undergrad courses first, reserve grad courses for AM
+    coursesTaken.sort((a,b): number => a.courseNumberInt - b.courseNumberInt)
+
     let totalRemainingCUs = 0.0
     let reqOutcomes: [number,string][] = []
     degreeRequirements.forEach(req => {
@@ -719,8 +731,8 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
         }
     })
 
-    // TODO: Depth Requirement may have to be from SS/H courses?
-    const counts: CountMap = countBySubject(sshCourses)
+    // SS/H Depth requirement
+    const counts: CountMap = countBySubjectSshDepth(sshCourses)
     const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
     if (depthKeys.length == 0) {
         $(NodeDegreeRequirements).append(`<li class="list-group-item list-group-item-danger">SSH Depth Requirement NOT satisfied</li>`)
