@@ -439,7 +439,9 @@ class CourseTaken {
 }
 
 const NodeCoursesTaken = "#coursesTaken"
-const NodeDegreeRequirements = "#degreeRequirements"
+const NodeDegreeRequirementsHeader = "#degreeRequirementsHeader"
+const NodeDegreeRequirementsColumn1 = "#degreeRequirementsCol1"
+const NodeDegreeRequirementsColumn2 = "#degreeRequirementsCol2"
 const NodeRemainingCUs = "#remainingCUs"
 const NodeUnusedCourses = "#unusedCourses"
 const NodeMessages = "#messages"
@@ -447,7 +449,9 @@ const NodeAllCourses = "#allCourses"
 
 function main(): void {
     // reset output
-    $(NodeDegreeRequirements).empty()
+    $(NodeDegreeRequirementsHeader).empty()
+    $(NodeDegreeRequirementsColumn1).empty()
+    $(NodeDegreeRequirementsColumn2).empty()
     $(NodeRemainingCUs).empty()
     $(NodeUnusedCourses).empty()
     $(NodeMessages).empty()
@@ -536,10 +540,11 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementSsh(35, ["EUSS","EUHS"]),
                 new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
                 new RequirementSsh(37, ["EUSS","EUHS","EUTB"]),
+                // NB: Writing, Ethics, SSH Depth are [40,42]
 
-                new RequirementFreeElective(38),
-                new RequirementFreeElective(39),
-                new RequirementFreeElective(40),
+                new RequirementFreeElective(43),
+                new RequirementFreeElective(44),
+                new RequirementFreeElective(45),
             ]
             break
         case "40cu CMPE":
@@ -589,10 +594,11 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementSsh(34, ["EUSS","EUHS"]),
                 new RequirementSsh(35, ["EUSS","EUHS","EUTB"]),
                 new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
+                // NB: Writing, Ethics, SSH Depth are [40,42]
 
-                new RequirementFreeElective(37),
-                new RequirementFreeElective(38),
-                new RequirementFreeElective(39),
+                new RequirementFreeElective(43),
+                new RequirementFreeElective(44),
+                new RequirementFreeElective(45),
             ]
             break
         default:
@@ -690,11 +696,6 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
         }
         totalRemainingCUs += req.remainingCUs
     })
-    $(NodeDegreeRequirements).append(`<h3>${degree} Degree Requirements</h3>`)
-    reqOutcomes.sort((a,b) => a[0] - b[0])
-    reqOutcomes.forEach((o: [number,string]) => {
-        $(NodeDegreeRequirements).append(o[1])
-    })
 
     $(NodeRemainingCUs).append(`<div class="alert alert-primary" role="alert">${totalRemainingCUs} CUs needed to graduate</div>`)
 
@@ -719,15 +720,15 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
         c.courseUnitsRemaining = c.courseUnits
     })
     const ssh40cuRequirements = [
-        new RequirementAttributes(0, "Writing", [WritingAttribute]),
-        new RequirementNamedCourses(0, "Engineering Ethics", CsciEthicsCourses),
+        new RequirementAttributes(40, "Writing", [WritingAttribute]),
+        new RequirementNamedCourses(41, "Engineering Ethics", CsciEthicsCourses),
     ]
     ssh40cuRequirements.forEach(req => {
         const matched = req.satisfiedBy(sshCourses)
         if (matched == undefined) {
-            $(NodeDegreeRequirements).append(`<li class="list-group-item list-group-item-danger">${req} NOT satisfied</li>`)
+            reqOutcomes.push([req.displayIndex,`<li class="list-group-item list-group-item-danger">${req} NOT satisfied</li>`])
         } else {
-            $(NodeDegreeRequirements).append(`<li class="list-group-item disabled">${req} satisfied by ${matched.code()}</li>`)
+            reqOutcomes.push([req.displayIndex,`<li class="list-group-item disabled">${req} satisfied by ${matched.code()}</li>`])
         }
     })
 
@@ -735,8 +736,19 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
     const counts: CountMap = countBySubjectSshDepth(sshCourses)
     const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
     if (depthKeys.length == 0) {
-        $(NodeDegreeRequirements).append(`<li class="list-group-item list-group-item-danger">SSH Depth Requirement NOT satisfied</li>`)
+        reqOutcomes.push([42,`<li class="list-group-item list-group-item-danger">SSH Depth Requirement NOT satisfied</li>`])
     } else {
-        $(NodeDegreeRequirements).append(`<li class="list-group-item disabled">SSH Depth Requirement satisfied by ${depthKeys[0]}</li>`)
+        reqOutcomes.push([42,`<li class="list-group-item disabled">SSH Depth Requirement satisfied by ${depthKeys[0]}</li>`])
     }
+
+    // display degree reqs in two columns
+    $(NodeDegreeRequirementsHeader).append(`<h3>${degree} Degree Requirements</h3>`)
+    reqOutcomes.sort((a,b) => a[0] - b[0])
+    reqOutcomes.forEach((o: [number,string], i: number, allReqs: ([number,string])[]) => {
+        let column = NodeDegreeRequirementsColumn1
+        if (i > allReqs.length/2) {
+            column = NodeDegreeRequirementsColumn2
+        }
+        $(column).append(o[1])
+    })
 }
