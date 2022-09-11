@@ -2,6 +2,15 @@
 const SsHTbsTag = "SS/H/TBS"
 const WritingAttribute = "AUWR"
 const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060"]
+const CisProjectElectives = [
+    "NETS 2120","CIS 3410","CIS 3500",
+    "CIS 4410","CIS 5410",
+    "CIS 4500","CIS 5500",
+    "CIS 4550","CIS 5550",
+    "CIS 4600","CIS 5600",
+    "CIS 5050","CIS 5530",
+    "ESE 3500"
+]
 
 enum GradeType {
     PassFail = "PassFail",
@@ -12,6 +21,9 @@ abstract class DegreeRequirement {
     /** How many CUs are needed to fulfill this requirement. Decremented as courses are applied to this requirement,
      * e.g., with 0.5 CU courses */
     public remainingCUs: number = 1.0
+
+    /** The requirement needs courses to be at least this level, e.g., 2000. Use a 4-digit course number */
+    public minLevel: number = 0
 
     /** Used to sort requirements for display */
     readonly displayIndex: number
@@ -46,6 +58,12 @@ abstract class DegreeRequirement {
         return this
     }
 
+    /** Set the min course level (e.g., 2000) for this requirement */
+    withMinLevel(n: number): DegreeRequirement {
+        this.minLevel = n
+        return this
+    }
+
     /** return true if `c` is an Engineering course, per the SUH */
     static isEngineering(c: CourseTaken): boolean {
         return ["BE","CBE","CIS","ENGR","ESE","IPD","MEAM","MSE","NETS"].includes(c.subject) &&
@@ -64,7 +82,10 @@ class RequirementNamedCourses extends DegreeRequirement {
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         return courses.find((c: CourseTaken): boolean => {
-            return this.courses.includes(c.code()) && c.grading == GradeType.ForCredit && this.applyCourse(c, this.tag)
+            return this.courses.includes(c.code()) &&
+                c.grading == GradeType.ForCredit &&
+                this.applyCourse(c, this.tag) &&
+                c.courseNumberInt >= this.minLevel
         })
     }
 
@@ -87,7 +108,10 @@ class RequirementAttributes extends DegreeRequirement {
             .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
-            return foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, this.tag)
+            return foundMatch &&
+                c.grading == GradeType.ForCredit &&
+                this.applyCourse(c, this.tag) &&
+                c.courseNumberInt >= this.minLevel
         })
     }
 
@@ -106,7 +130,10 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         return courses.find((c: CourseTaken): boolean => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a)) || this.courses.includes(c.code())
-            return foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, this.tag)
+            return foundMatch &&
+                c.grading == GradeType.ForCredit &&
+                this.applyCourse(c, this.tag) &&
+                c.courseNumberInt >= this.minLevel
         })
     }
 
@@ -137,7 +164,8 @@ class RequirementNaturalScienceLab extends RequirementNamedCourses {
         let matched = courses.find((c: CourseTaken): boolean =>
             this.courses.includes(c.code()) &&
             c.grading == GradeType.ForCredit &&
-            c.courseUnitsRemaining >= 0.5)
+            c.courseUnitsRemaining >= 0.5 &&
+            c.courseNumberInt >= this.minLevel)
         if (matched == undefined) return undefined
 
         if (matched.consumedBy == null) {
@@ -154,18 +182,19 @@ class RequirementNaturalScienceLab extends RequirementNamedCourses {
 }
 
 class RequirementCisElective extends DegreeRequirement {
-    readonly minLevel: number
-    constructor(displayIndex: number, minLevel: number) {
+    constructor(displayIndex: number) {
         super(displayIndex)
-        this.minLevel = minLevel
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         return courses.slice() // NB: have to use slice since sort() is in-place
             .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
             .find((c: CourseTaken): boolean => {
-            const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && c.courseNumberInt >= this.minLevel && !c.attributes.includes("EUNE")
-            return foundMatch && c.grading == GradeType.ForCredit && this.applyCourse(c, "CisElective")
+            const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes("EUNE")
+            return foundMatch &&
+                c.grading == GradeType.ForCredit &&
+                this.applyCourse(c, "CisElective") &&
+                c.courseNumberInt >= this.minLevel
         })
     }
 
@@ -182,7 +211,8 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
             .find((c: CourseTaken): boolean => {
             return RequirementTechElectiveEngineering.isEngineering(c) &&
                 c.grading == GradeType.ForCredit &&
-                this.applyCourse(c, "TechElective")
+                this.applyCourse(c, "TechElective") &&
+                c.courseNumberInt >= this.minLevel
         })
     }
 
@@ -217,8 +247,47 @@ class RequirementCsci40TechElective extends DegreeRequirement {
                     specialTEList.includes(c.code()) ||
                     this.teHashmap.hasOwnProperty(c.code()) ||
                     c.partOfMinor) &&
-                this.applyCourse(c, "TechElective")
+                this.applyCourse(c, "TechElective") &&
+                c.courseNumberInt >= this.minLevel
         })
+    }
+
+    public toString(): string {
+        return "Tech Elective"
+    }
+}
+
+class RequirementAscs40TechElective extends DegreeRequirement {
+
+    readonly teHashmap: { [key: string]: null }
+
+    constructor(displayIndex: number, teList: TechElectiveDecision[]) {
+        super(displayIndex)
+        this.teHashmap = {}
+        teList
+            .filter((te: TechElectiveDecision): boolean => te.status == "yes")
+            .forEach((te: TechElectiveDecision) => {
+                this.teHashmap[te.course4d] = null
+            })
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        // PHIL 411 & PSYC 413 also listed on 40cu ASCS in PiT, but I think they got cancelled. So this list is actually
+        // the same as 40cu CSCI
+        const specialTEList = ["LING 0500", "PHIL 2620", "PHIL 2640", "OIDD 2200", "OIDD 3210", "OIDD 3250"]
+
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
+                return c.grading == GradeType.ForCredit &&
+                    (DegreeRequirement.isEngineering(c) ||
+                        c.attributes.includes("EUMS") ||
+                        specialTEList.includes(c.code()) ||
+                        this.teHashmap.hasOwnProperty(c.code()) ||
+                        c.partOfMinor) &&
+                    this.applyCourse(c, "TechElective") &&
+                    c.courseNumberInt >= this.minLevel
+            })
     }
 
     public toString(): string {
@@ -257,7 +326,9 @@ class RequirementSsh extends RequirementAttributes {
         }).find((c: CourseTaken): boolean => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
-            return foundMatch && gradeOk && this.applyCourse(c, this.tag)
+            return foundMatch &&
+                gradeOk && this.applyCourse(c, this.tag) &&
+                c.courseNumberInt >= this.minLevel
         })
     }
 
@@ -288,7 +359,10 @@ class RequirementFreeElective extends DegreeRequirement {
 
             // if we made it here, the course counts as a Free Elective
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
-            return !nocredit && gradeOk && this.applyCourse(c, "FreeElective")
+            return !nocredit &&
+                gradeOk &&
+                this.applyCourse(c, "FreeElective") &&
+                c.courseNumberInt >= this.minLevel
         })
     }
 
@@ -323,6 +397,7 @@ class CourseTaken {
     readonly subject: string
     readonly courseNumber: string
     readonly courseNumberInt: number
+    readonly title: string
     readonly _3dName: string | null
     readonly courseUnits: number
     readonly grading: GradeType
@@ -339,6 +414,7 @@ class CourseTaken {
 
     constructor(subject: string,
                 courseNumber: string,
+                title: string,
                 _3dName: string | null,
                 cus: number,
                 grading: GradeType,
@@ -348,6 +424,7 @@ class CourseTaken {
                 ) {
         this.subject = subject
         this.courseNumber = courseNumber
+        this.title = title
         this.courseNumberInt = parseInt(courseNumber)
         this._3dName = _3dName
         this.courseUnits = cus
@@ -379,7 +456,7 @@ class CourseTaken {
     public toString(): string {
         let complete = this.completed ? "completed" : "in progress"
         let minor = this.partOfMinor ? "in minor" : ""
-        return `${this.subject} ${this.courseNumber}, ${this.courseUnits} CUs, ${this.grading}, taken in ${this.term}, ${complete}, ${this.attributes} ${minor}`
+        return `${this.subject} ${this.courseNumber} ${this.title}, ${this.courseUnits} CUs, ${this.grading}, taken in ${this.term}, ${complete}, ${this.attributes} ${minor}`
     }
 
     /** Return a course code like "ENGL 1234" */
@@ -397,7 +474,7 @@ class CourseTaken {
         const passFail = parts[9] == "YFP"
         let gradingType = passFail ? GradeType.PassFail : GradeType.ForCredit
         // const numericGrade = parseFloat(parts[12])
-        // const title = parts[21].trim()
+        const title = parts[21].trim()
 
         const _4d = parts[28]
             .replace("[", "")
@@ -418,6 +495,7 @@ class CourseTaken {
             return new CourseTaken(
                 _4dparts[0],
                 _4dparts[1],
+                title,
                 code,
                 creditUnits,
                 gradingType,
@@ -429,6 +507,7 @@ class CourseTaken {
         return new CourseTaken(
             subject,
             courseNumber,
+            title,
             null,
             creditUnits,
             gradingType,
@@ -508,20 +587,11 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementNamedCourses(19, "Senior Design", ["CIS 4000","ESE 4500","MEAM 4450"]),
                 new RequirementNamedCourses(20, "Senior Design", ["CIS 4010","ESE 4510","MEAM 4460"]),
 
-                // Project Elective
-                new RequirementNamedCourses(21, "Project Elective", [
-                    "NETS 2120","CIS 3410","CIS 3500",
-                    "CIS 4410","CIS 5410",
-                    "CIS 4500","CIS 5500",
-                    "CIS 4550","CIS 5550",
-                    "CIS 4600","CIS 5600",
-                    "CIS 5050","CIS 5530",
-                    "ESE 3500"
-                ]),
+                new RequirementNamedCourses(21, "Project Elective", CisProjectElectives),
 
-                new RequirementCisElective(22, 1000),
-                new RequirementCisElective(23, 2000),
-                new RequirementCisElective(24, 2000),
+                new RequirementCisElective(22),
+                new RequirementCisElective(23).withMinLevel(2000),
+                new RequirementCisElective(24).withMinLevel(2000),
 
                 new RequirementAttributes(5, "Math", ["EUMA"]),
                 new RequirementAttributes(6, "Math", ["EUMA"]),
@@ -532,6 +602,79 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementCsci40TechElective(28, csci37techElectiveList),
                 new RequirementCsci40TechElective(29, csci37techElectiveList),
                 new RequirementCsci40TechElective(30, csci37techElectiveList),
+
+                new RequirementSsh(31, ["EUSS"]),
+                new RequirementSsh(32, ["EUSS"]),
+                new RequirementSsh(33, ["EUHS"]),
+                new RequirementSsh(34, ["EUHS"]),
+                new RequirementSsh(35, ["EUSS","EUHS"]),
+                new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
+                new RequirementSsh(37, ["EUSS","EUHS","EUTB"]),
+                // NB: Writing, Ethics, SSH Depth are [40,42]
+
+                new RequirementFreeElective(43),
+                new RequirementFreeElective(44),
+                new RequirementFreeElective(45),
+            ]
+            break
+        case "40cu ASCS":
+            degreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
+                new RequirementNamedCourses(4, "Math", ["CIS 2620"]),
+
+                new RequirementNamedCourses(7, "Natural Science",
+                    ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100",
+                        "PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120",
+                        "EAS 0091","CHEM 1012","BIOL 1101","BIOL 1121"]),
+                new RequirementNamedCourses(8, "Natural Science",
+                    ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100",
+                        "PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120",
+                        "EAS 0091","CHEM 1012","BIOL 1101","BIOL 1121"]),
+                new RequirementNamedCoursesOrAttributes(9,
+                    "Natural Science",
+                    ["LING 2500", "LING 2300", "LING 5310", "LING 5320",
+                        "LING 5510", "LING 5520", "LING 6300", "LING 6400",
+                        "PHIL 4840",
+                        "PSYC 1210", "PSYC 1340", "PSYC 1310", "PSYC 2310", "PSYC 2737",
+                    ],
+                    ["EUNS"]),
+                new RequirementNamedCoursesOrAttributes(10,
+                    "Natural Science",
+                    ["LING 2500", "LING 2300", "LING 5310", "LING 5320",
+                        "LING 5510", "LING 5520", "LING 6300", "LING 6400",
+                        "PHIL 4840",
+                        "PSYC 1210", "PSYC 1340", "PSYC 1310", "PSYC 2310", "PSYC 2737",
+                    ],
+                    ["EUNS"]),
+
+                new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(13, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(14, "Major", ["CIS 2400"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 3200"]),
+                new RequirementNamedCourses(18, "Project Elective", CisProjectElectives),
+                new RequirementNamedCourses(19, "Project Elective", CisProjectElectives),
+                new RequirementNamedCourses(22, "Senior Capstone", ["EAS 4990","CIS 4980","CIS 4010","ESE 4510","MEAM 4460"]),
+
+                new RequirementCisElective(16),
+                new RequirementCisElective(17).withMinLevel(2000),
+
+                new RequirementAttributes(5, "Math", ["EUMA"]),
+                new RequirementAttributes(6, "Math", ["EUMA"]),
+
+                new RequirementTechElectiveEngineering(20),
+                new RequirementTechElectiveEngineering(21),
+
+                new RequirementAscs40TechElective(23, csci37techElectiveList),
+                new RequirementAscs40TechElective(24, csci37techElectiveList),
+                new RequirementAscs40TechElective(25, csci37techElectiveList),
+                new RequirementAscs40TechElective(26, csci37techElectiveList),
+                new RequirementAscs40TechElective(27, csci37techElectiveList),
+                new RequirementAscs40TechElective(28, csci37techElectiveList),
+                new RequirementAscs40TechElective(29, csci37techElectiveList),
+                new RequirementAscs40TechElective(30, csci37techElectiveList),
 
                 new RequirementSsh(31, ["EUSS"]),
                 new RequirementSsh(32, ["EUSS"]),
@@ -580,12 +723,12 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
 
                 new RequirementAttributes(26, "Tech Elective", ["EUMS"]),
                 new RequirementAttributes(27, "Tech Elective", ["EUMS"]),
-                // TODO: add a ≥2000 level constraint to these last two
-                new RequirementAttributes(28, "Tech Elective", ["EUMS"]),
+                new RequirementAttributes(28, "Tech Elective", ["EUMS"]).withMinLevel(2000),
                 new RequirementNamedCoursesOrAttributes(29,
                     "Tech Elective",
                     ["ESE 4000","EAS 5450","EAS 5950","MGMT 2370","OIDD 2360"],
-                    ["EUMS"]),
+                    ["EUMS"])
+                    .withMinLevel(2000),
 
                 new RequirementSsh(30, ["EUSS"]),
                 new RequirementSsh(31, ["EUSS"]),
@@ -594,7 +737,7 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementSsh(34, ["EUSS","EUHS"]),
                 new RequirementSsh(35, ["EUSS","EUHS","EUTB"]),
                 new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
-                // NB: Writing, Ethics, SSH Depth are [40,42]
+                // NB: Writing, Ethics, SSH Depth are always [40,42]
 
                 new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
