@@ -11,6 +11,8 @@ const CisProjectElectives = [
     "CIS 5050","CIS 5530",
     "ESE 3500"
 ]
+const SeniorDesign1stSem = ["CIS 4000","ESE 4500","MEAM 4450"]
+const SeniorDesign2ndSem = ["CIS 4010","ESE 4510","MEAM 4460"]
 
 enum GradeType {
     PassFail = "PassFail",
@@ -257,37 +259,11 @@ class RequirementCsci40TechElective extends DegreeRequirement {
     }
 }
 
-class RequirementAscs40TechElective extends DegreeRequirement {
-
-    readonly teHashmap: { [key: string]: null }
-
-    constructor(displayIndex: number, teList: TechElectiveDecision[]) {
-        super(displayIndex)
-        this.teHashmap = {}
-        teList
-            .filter((te: TechElectiveDecision): boolean => te.status == "yes")
-            .forEach((te: TechElectiveDecision) => {
-                this.teHashmap[te.course4d] = null
-            })
-    }
-
+class RequirementAscs40TechElective extends RequirementCsci40TechElective {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        // PHIL 411 & PSYC 413 also listed on 40cu ASCS in PiT, but I think they got cancelled. So this list is actually
-        // the same as 40cu CSCI
-        const specialTEList = ["LING 0500", "PHIL 2620", "PHIL 2640", "OIDD 2200", "OIDD 3210", "OIDD 3250"]
-
-        return courses.slice()
-            .sort(byHighestCUsFirst)
-            .find((c: CourseTaken): boolean => {
-                return c.grading == GradeType.ForCredit &&
-                    (DegreeRequirement.isEngineering(c) ||
-                        c.attributes.includes("EUMS") ||
-                        specialTEList.includes(c.code()) ||
-                        this.teHashmap.hasOwnProperty(c.code()) ||
-                        c.partOfMinor) &&
-                    this.applyCourse(c, "TechElective") &&
-                    c.courseNumberInt >= this.minLevel
-            })
+        // PHIL 411 & PSYC 413 also listed on 40cu ASCS in PiT as valid TEs, but I think they got cancelled. So our TE
+        // list is actually the same as 40cu CSCI atm.
+        return super.satisfiedBy(courses)
     }
 
     public toString(): string {
@@ -584,8 +560,8 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementNamedCourses(16, "Major", ["CIS 3200"]),
                 new RequirementNamedCourses(17, "Major", ["CIS 4710"]),
                 new RequirementNamedCourses(18, "Major", ["CIS 3800"]),
-                new RequirementNamedCourses(19, "Senior Design", ["CIS 4000","ESE 4500","MEAM 4450"]),
-                new RequirementNamedCourses(20, "Senior Design", ["CIS 4010","ESE 4510","MEAM 4460"]),
+                new RequirementNamedCourses(19, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(20, "Senior Design", SeniorDesign2ndSem),
 
                 new RequirementNamedCourses(21, "Project Elective", CisProjectElectives),
 
@@ -618,36 +594,24 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
             ]
             break
         case "40cu ASCS":
+            const ascsNSCourses = ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100",
+                "PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120",
+                "EAS 0091","CHEM 1012","BIOL 1101","BIOL 1121"]
+            const ascsNSElectives = ["LING 2500", "LING 2300", "LING 5310", "LING 5320",
+                "LING 5510", "LING 5520", "LING 6300", "LING 6400",
+                "PHIL 4840",
+                "PSYC 1210", "PSYC 1340", "PSYC 1310", "PSYC 2310", "PSYC 2737",
+            ]
             degreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
                 new RequirementNamedCourses(4, "Math", ["CIS 2620"]),
 
-                new RequirementNamedCourses(7, "Natural Science",
-                    ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100",
-                        "PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120",
-                        "EAS 0091","CHEM 1012","BIOL 1101","BIOL 1121"]),
-                new RequirementNamedCourses(8, "Natural Science",
-                    ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100",
-                        "PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120",
-                        "EAS 0091","CHEM 1012","BIOL 1101","BIOL 1121"]),
-                new RequirementNamedCoursesOrAttributes(9,
-                    "Natural Science",
-                    ["LING 2500", "LING 2300", "LING 5310", "LING 5320",
-                        "LING 5510", "LING 5520", "LING 6300", "LING 6400",
-                        "PHIL 4840",
-                        "PSYC 1210", "PSYC 1340", "PSYC 1310", "PSYC 2310", "PSYC 2737",
-                    ],
-                    ["EUNS"]),
-                new RequirementNamedCoursesOrAttributes(10,
-                    "Natural Science",
-                    ["LING 2500", "LING 2300", "LING 5310", "LING 5320",
-                        "LING 5510", "LING 5520", "LING 6300", "LING 6400",
-                        "PHIL 4840",
-                        "PSYC 1210", "PSYC 1340", "PSYC 1310", "PSYC 2310", "PSYC 2737",
-                    ],
-                    ["EUNS"]),
+                new RequirementNamedCourses(7, "Natural Science", ascsNSCourses),
+                new RequirementNamedCourses(8, "Natural Science",ascsNSCourses),
+                new RequirementNamedCoursesOrAttributes(9, "Natural Science", ascsNSElectives, ["EUNS"]),
+                new RequirementNamedCoursesOrAttributes(10, "Natural Science", ascsNSElectives, ["EUNS"]),
 
                 new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
@@ -656,7 +620,7 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementNamedCourses(15, "Major", ["CIS 3200"]),
                 new RequirementNamedCourses(18, "Project Elective", CisProjectElectives),
                 new RequirementNamedCourses(19, "Project Elective", CisProjectElectives),
-                new RequirementNamedCourses(22, "Senior Capstone", ["EAS 4990","CIS 4980","CIS 4010","ESE 4510","MEAM 4460"]),
+                new RequirementNamedCourses(22, "Senior Capstone", ["EAS 4990","CIS 4980"].concat(SeniorDesign2ndSem)),
 
                 new RequirementCisElective(16),
                 new RequirementCisElective(17).withMinLevel(2000),
@@ -716,8 +680,8 @@ function run(csci37techElectiveList: TechElectiveDecision[]): void {
                 new RequirementNamedCourses(21, "Major", ["CIS 4410","CIS 5410"]),
                 new RequirementNamedCourses(22, "Networking", ["ESE 4070","CIS 5530"]),
                 new RequirementNamedCourses(23, "Concurrency Lab", ["CIS 4550","CIS 5550","CIS 5050","ESE 5320","CIS 5650"]),
-                new RequirementNamedCourses(24, "Senior Design", ["CIS 4000","ESE 4500","MEAM 4450"]),
-                new RequirementNamedCourses(25, "Senior Design", ["CIS 4010","ESE 4510","MEAM 4460"]),
+                new RequirementNamedCourses(24, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(25, "Senior Design", SeniorDesign2ndSem),
 
                 new RequirementAttributes(10, "Math/Natural Science", ["EUMA","EUNS"]),
 
