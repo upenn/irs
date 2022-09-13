@@ -2,7 +2,8 @@
   "name": "irs",
   "version": "1.0.0",
   "devDependencies": {
-    "@types/jquery": "^3.5.14"
+    "@types/jquery": "^3.5.14",
+    "@types/node": "^18.7.17"
   },
   "dependencies": {
     "bootstrap": "^5.2.1",

@@ -95,8 +95,8 @@ class RequirementNamedCourses extends DegreeRequirement {
         return courses.find((c: CourseTaken): boolean => {
             return this.courses.includes(c.code()) &&
                 c.grading == GradeType.ForCredit &&
-                this.applyCourse(c, this.tag) &&
-                c.courseNumberInt >= this.minLevel
+                c.courseNumberInt >= this.minLevel &&
+                this.applyCourse(c, this.tag)
         })
     }
 
@@ -121,8 +121,8 @@ class RequirementAttributes extends DegreeRequirement {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             return foundMatch &&
                 c.grading == GradeType.ForCredit &&
-                this.applyCourse(c, this.tag) &&
-                c.courseNumberInt >= this.minLevel
+                c.courseNumberInt >= this.minLevel &&
+                this.applyCourse(c, this.tag)
         })
     }
 
@@ -143,8 +143,8 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a)) || this.courses.includes(c.code())
             return foundMatch &&
                 c.grading == GradeType.ForCredit &&
-                this.applyCourse(c, this.tag) &&
-                c.courseNumberInt >= this.minLevel
+                c.courseNumberInt >= this.minLevel &&
+                this.applyCourse(c, this.tag)
         })
     }
 
@@ -202,10 +202,12 @@ class RequirementCisElective extends DegreeRequirement {
             .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
             .find((c: CourseTaken): boolean => {
             const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes("EUNE")
-            return foundMatch &&
+            const result = foundMatch &&
                 c.grading == GradeType.ForCredit &&
-                this.applyCourse(c, "CisElective") &&
-                c.courseNumberInt >= this.minLevel
+                c.courseNumberInt >= this.minLevel &&
+                this.applyCourse(c, "CisElective")
+            console.log([result, foundMatch, c.courseNumberInt >= this.minLevel, this.minLevel, c.consumedBy, c.courseUnitsRemaining, this.remainingCUs, c.toString()])
+            return result
         })
     }
 
@@ -222,8 +224,8 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
             .find((c: CourseTaken): boolean => {
             return RequirementTechElectiveEngineering.isEngineering(c) &&
                 c.grading == GradeType.ForCredit &&
-                this.applyCourse(c, "TechElective") &&
-                c.courseNumberInt >= this.minLevel
+                c.courseNumberInt >= this.minLevel &&
+                this.applyCourse(c, "TechElective")
         })
     }
 
@@ -258,8 +260,8 @@ class RequirementCsci40TechElective extends DegreeRequirement {
                     specialTEList.includes(c.code()) ||
                     this.teHashmap.hasOwnProperty(c.code()) ||
                     c.partOfMinor) &&
-                this.applyCourse(c, "TechElective") &&
-                c.courseNumberInt >= this.minLevel
+                c.courseNumberInt >= this.minLevel &&
+                this.applyCourse(c, "TechElective")
         })
     }
 
@@ -312,8 +314,8 @@ class RequirementSsh extends RequirementAttributes {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
             return foundMatch &&
-                gradeOk && this.applyCourse(c, this.tag) &&
-                c.courseNumberInt >= this.minLevel
+                gradeOk && c.courseNumberInt >= this.minLevel && this.applyCourse(c, this.tag)
+
         })
     }
 
@@ -346,8 +348,8 @@ class RequirementFreeElective extends DegreeRequirement {
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
             return !nocredit &&
                 gradeOk &&
-                this.applyCourse(c, "FreeElective") &&
-                c.courseNumberInt >= this.minLevel
+                c.courseNumberInt >= this.minLevel &&
+                this.applyCourse(c, "FreeElective")
         })
     }
 
@@ -366,7 +368,8 @@ function countBySubjectSshDepth(courses: CourseTaken[]): CountMap {
     courses
         .filter((c: CourseTaken): boolean =>
             // SSH Depth courses need to be SS or H, though EAS 5450 + 5460 is (sometimes?) allowed via petition
-            c.attributes.includes("EUHS") || c.attributes.includes("EUSS"))
+            c.attributes.includes("EUHS") || c.attributes.includes("EUSS") ||
+            c.code() == "EAS 5450" || c.code() == "EAS 5460")
         .forEach(c =>
             counts[c.subject] = counts[c.subject] ? counts[c.subject] + 1 : 1
         )
@@ -471,7 +474,7 @@ class CourseTaken {
         }
 
         if (!inProgress && !["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","P","TR"].includes(grade)) {
-            $("#messages").append(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${grade}`)
+            myLog(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${grade}`)
             return null
         }
 
@@ -601,12 +604,91 @@ function webMain(): void {
         })
 }
 
+let fs = null
 if (typeof window === 'undefined') {
+    fs = require('fs');
     cliMain()
 }
-
 function cliMain(): void {
-    console.log("Hello, Typescript cli world!")
+    if (process.argv.length != 4) {
+        console.log(`Usage: ${process.argv[1]} DW_WORKSHEET ANALYSIS_OUTPUT_FILE`)
+        return
+    }
+
+    const originalEmit = process.emit;
+    process.emit = function (name, data, ...args) {
+        if (
+            name === `warning` &&
+            typeof data === `object` &&
+            data!.name === `ExperimentalWarning`
+            //if you want to only stop certain messages, test for the message here:
+            && data!.message.includes(`Fetch API`)
+        ) {
+            return false;
+        }
+        return originalEmit.apply(process, args);
+    };
+
+    try {
+        const coursesText: string = fs.readFileSync(process.argv[2], 'utf8');
+        let coursesTaken: CourseTaken[] = []
+        if (coursesText.includes("Degree Works Release")) {
+            coursesTaken = parseDegreeWorksWorksheet(coursesText)
+        } else {
+            // TODO: parse unofficial transcripts
+            console.error("unsupported format")
+            return
+        }
+
+        // infer degree
+        let degree: Degree = "40cu CSCI"
+        if (coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CSCI\s+`)) != -1) {
+            degree = "40cu CSCI"
+        } else if (coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ASCS\s+`)) != -1) {
+            degree = "40cu ASCS"
+        } else if (coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CMPE\s+`)) != -1) {
+            degree = "40cu CMPE"
+        } else {
+            // console.error(`can't infer degree from ${process.argv[2]}`)
+            return
+        }
+        fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
+            .then(response => response.text())
+            .then(json => {
+                const telist = JSON.parse(json);
+                const result = run(telist, degree, coursesTaken)
+
+                const unsat = result.requirementOutcomes
+                    .filter(r => r[0] != RequirementOutcome.Satisfied)
+                    .map(r => "  " + r[1])
+                    .join("\n")
+                const unconsumed = result.unconsumedCourses
+                    .map(r => "  " + r.toString())
+                    .join("\n")
+                    const summary = `
+${result.cusRemaining} CUs remaining in ${degree}
+
+unsatisfied requirements:
+${unsat}
+
+unused courses:
+${unconsumed}
+
+`
+                // console.log(summary)
+                fs.writeFileSync(process.argv[3], summary + JSON.stringify(result, null, 2) + coursesText)
+            })
+    } catch (err) {
+        console.error(err + " when processing " + process.argv[2]);
+    }
+}
+
+function myLog(msg: string): void {
+    if (typeof window === 'undefined') {
+        // console.log(msg)
+    } else {
+        $(NodeMessages).append(`<div>${msg}</div>`)
+    }
 }
 
 function parseDegreeWorksWorksheet(text: string): CourseTaken[] {
@@ -635,7 +717,7 @@ function parseDegreeWorksWorksheet(text: string): CourseTaken[] {
     if (hits != null) {
         // list of courses applied to the minor looks like this on DegreeWorks:
         // LING 071 (1.0) LING 072 (1.0) LING 106 (1.0) LING 230 (1.0) LING 250 (1.0) LING 3810 (1.0)
-        $(NodeMessages).append(`<div>found minor in ${hits.groups!["minor"].trim()}, using for Tech Electives</div>`)
+        myLog(`found minor in ${hits.groups!["minor"].trim()}, using for Tech Electives`)
         hits.groups!["courses"].split(")").forEach(c => {
             let name = c.split("(")[0].trim()
             let course = coursesTaken.find((c: CourseTaken): boolean => c.code() == name || c._3dName == name)
@@ -648,7 +730,8 @@ function parseDegreeWorksWorksheet(text: string): CourseTaken[] {
     // can't take both EAS 0091 and CHEM 1012
     if (coursesTaken.find((c: CourseTaken) => c.code() == "EAS 0091") &&
         coursesTaken.find((c: CourseTaken) => c.code() == "CHEM 1012")) {
-        throw new Error("took EAS 0091 & CHEM 1012, uh-oh")
+        myLog("took EAS 0091 & CHEM 1012, uh-oh")
+        console.log("took EAS 0091 & CHEM 1012, uh-oh")
     }
 
     return coursesTaken
@@ -906,10 +989,11 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
     // SS/H Depth requirement
     const counts: CountMap = countBySubjectSshDepth(sshCourses)
     const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
-    if (depthKeys.length == 0) {
-        reqOutcomes.push([42, RequirementOutcome.Unsatisfied, `SSH Depth Requirement NOT satisfied`])
-    } else {
+    if (depthKeys.length > 0 ||
+        (sshCourses.some(c => c.code() == "EAS 5450") && sshCourses.some(c => c.code() == "EAS 5460"))) {
         reqOutcomes.push([42, RequirementOutcome.Satisfied, `SSH Depth Requirement satisfied by ${depthKeys[0]}`])
+    } else {
+        reqOutcomes.push([42, RequirementOutcome.Unsatisfied, `SSH Depth Requirement NOT satisfied`])
     }
 
     reqOutcomes.sort((a,b) => a[0] - b[0])
