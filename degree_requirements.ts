@@ -202,12 +202,10 @@ class RequirementCisElective extends DegreeRequirement {
             .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
             .find((c: CourseTaken): boolean => {
             const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes("EUNE")
-            const result = foundMatch &&
+            return foundMatch &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
                 this.applyCourse(c, "CisElective")
-            console.log([result, foundMatch, c.courseNumberInt >= this.minLevel, this.minLevel, c.consumedBy, c.courseUnitsRemaining, this.remainingCUs, c.toString()])
-            return result
         })
     }
 
@@ -437,8 +435,14 @@ class CourseTaken {
             delete this.attributes[this.attributes.indexOf("EUMS")]
             this.attributes.push("EUNE")
         }
+        if (this.code() == "LAWM 5060") {
+            this.attributes.push("EUTB")
+        }
         if (this.code() == "ESE 2920") {
             this.attributes.push("EUMS")
+        }
+        if (this.code() == "BEPP 2200") {
+            this.attributes.push("EUSS")
         }
     }
 
@@ -604,33 +608,25 @@ function webMain(): void {
         })
 }
 
-let fs = null
 if (typeof window === 'undefined') {
-    fs = require('fs');
     cliMain()
 }
 function cliMain(): void {
-    if (process.argv.length != 4) {
-        console.log(`Usage: ${process.argv[1]} DW_WORKSHEET ANALYSIS_OUTPUT_FILE`)
+    if (process.argv.length < 3) {
+        console.log(`Usage: ${process.argv[1]} DW_WORKSHEETS...`)
         return
     }
+    const path = require('path');
+    process.argv.slice(2).forEach((worksheetFile: string) => {
+        const output = "/Users/devietti/Projects/irs/dw-analysis/" + path.basename(worksheetFile) + ".analysis.txt"
+        runOneWorksheet(worksheetFile, output)
+    })
+}
 
-    const originalEmit = process.emit;
-    process.emit = function (name, data, ...args) {
-        if (
-            name === `warning` &&
-            typeof data === `object` &&
-            data!.name === `ExperimentalWarning`
-            //if you want to only stop certain messages, test for the message here:
-            && data!.message.includes(`Fetch API`)
-        ) {
-            return false;
-        }
-        return originalEmit.apply(process, args);
-    };
-
+function runOneWorksheet(worksheetFile: string, analysisOutput: string): void {
+    const fs = require('fs');
     try {
-        const coursesText: string = fs.readFileSync(process.argv[2], 'utf8');
+        const coursesText: string = fs.readFileSync(worksheetFile, 'utf8');
         let coursesTaken: CourseTaken[] = []
         if (coursesText.includes("Degree Works Release")) {
             coursesTaken = parseDegreeWorksWorksheet(coursesText)
@@ -642,14 +638,17 @@ function cliMain(): void {
 
         // infer degree
         let degree: Degree = "40cu CSCI"
-        if (coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CSCI\s+`)) != -1) {
+        if (coursesText.includes("Degree in Bachelor of Science in Engineering") &&
+            coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CSCI\s+`)) != -1) {
             degree = "40cu CSCI"
+            // TODO: heuristic to identify folks who are actually ASCS, e.g., no 4710, no 4100
+
         } else if (coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ASCS\s+`)) != -1) {
             degree = "40cu ASCS"
         } else if (coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CMPE\s+`)) != -1) {
             degree = "40cu CMPE"
         } else {
-            // console.error(`can't infer degree from ${process.argv[2]}`)
+            // can't infer degree, just skip it
             return
         }
         fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
@@ -676,7 +675,7 @@ ${unconsumed}
 
 `
                 // console.log(summary)
-                fs.writeFileSync(process.argv[3], summary + JSON.stringify(result, null, 2) + coursesText)
+                fs.writeFileSync(analysisOutput, summary + JSON.stringify(result, null, 2) + coursesText)
             })
     } catch (err) {
         console.error(err + " when processing " + process.argv[2]);
@@ -728,10 +727,13 @@ function parseDegreeWorksWorksheet(text: string): CourseTaken[] {
     }
 
     // can't take both EAS 0091 and CHEM 1012
-    if (coursesTaken.find((c: CourseTaken) => c.code() == "EAS 0091") &&
-        coursesTaken.find((c: CourseTaken) => c.code() == "CHEM 1012")) {
+    if (coursesTaken.some((c: CourseTaken) => c.code() == "EAS 0091") &&
+        coursesTaken.some((c: CourseTaken) => c.code() == "CHEM 1012")) {
         myLog("took EAS 0091 & CHEM 1012, uh-oh")
         console.log("took EAS 0091 & CHEM 1012, uh-oh")
+        let eas0091 = coursesTaken.find((c: CourseTaken) => c.code() == "EAS 0091")
+        // discard EAS 0091
+        eas0091!.courseUnitsRemaining = 0
     }
 
     return coursesTaken
@@ -781,7 +783,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(14, "Major", ["CIS 2400"]),
                 new RequirementNamedCourses(15, "Major", ["CIS 2620"]),
                 new RequirementNamedCourses(16, "Major", ["CIS 3200"]),
-                new RequirementNamedCourses(17, "Major", ["CIS 4710"]),
+                new RequirementNamedCourses(17, "Major", ["CIS 4710","CIS 5710"]),
                 new RequirementNamedCourses(18, "Major", ["CIS 3800"]),
                 new RequirementNamedCourses(19, "Senior Design", SeniorDesign1stSem),
                 new RequirementNamedCourses(20, "Senior Design", SeniorDesign2ndSem),
