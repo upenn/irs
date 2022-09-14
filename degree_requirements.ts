@@ -1,4 +1,7 @@
 
+// DW analysis files go here
+const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
+
 const SsHTbsTag = "SS/H/TBS"
 const WritingAttribute = "AUWR"
 const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060"]
@@ -26,7 +29,9 @@ interface TechElectiveDecision {
     status: "yes" | "no" | "ask"
 }
 
-type Degree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE"
+type Degree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC"
+
+let IncorrectCMAttributes = new Map<string,null>()
 
 abstract class DegreeRequirement {
     /** How many CUs are needed to fulfill this requirement. Decremented as courses are applied to this requirement,
@@ -425,7 +430,7 @@ class CourseTaken {
             .filter((s) => s.includes("ATTRIBUTE="))
             .map((s) => s.trim().split("=")[1])
 
-        // MANUAL HACKS DUE TO INFO MISSING IN CURRICULUM MANAGER
+        // MANUAL HACKS DUE TO ATTRIBUTES MISSING IN CURRICULUM MANAGER
 
         // EAS 0091 is, practically speaking, EUNS (conflicts with CHEM 1012, though)
         if (this.code() == "EAS 0091") {
@@ -435,14 +440,24 @@ class CourseTaken {
             delete this.attributes[this.attributes.indexOf("EUMS")]
             this.attributes.push("EUNE")
         }
-        if (this.code() == "LAWM 5060") {
-            this.attributes.push("EUTB")
-        }
         if (this.code() == "ESE 2920") {
             this.attributes.push("EUMS")
         }
-        if (this.code() == "BEPP 2200") {
+        if (this.suhSaysSS() && !this.attributes.includes("EUSS")) {
             this.attributes.push("EUSS")
+            IncorrectCMAttributes.set(`${this.code()} missing EUSS`, null)
+        }
+        if (this.suhSaysHum() && !this.attributes.includes("EUHS")) {
+            this.attributes.push("EUHS")
+            IncorrectCMAttributes.set(`${this.code()} missing EUHS`, null)
+        }
+        if (this.suhSaysTbs() && !this.attributes.includes("EUTB")) {
+            this.attributes.push("EUTB")
+            IncorrectCMAttributes.set(`${this.code()} missing EUTB`, null)
+        }
+        if (this.attributes.includes("EUTB") && !this.suhSaysTbs()) {
+            this.attributes = this.attributes.filter(a => a != "EUTB")
+            IncorrectCMAttributes.set(`${this.code()} incorrectly has EUTB`, null)
         }
     }
 
@@ -455,6 +470,51 @@ class CourseTaken {
     /** Return a course code like "ENGL 1234" */
     public code(): string {
         return `${this.subject} ${this.courseNumber}`
+    }
+
+    /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Social Science. NB: this is not
+     * an exhaustive list, and should be used in addition to course attributes. */
+    private suhSaysSS(): boolean {
+        // TODO: ASAM, ECON, LING, PSYC, SOCI courses not captured here, since they aren't universally SS
+        const ssSubjects = ["COMM","CRIM","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
+        const ssCourses = [
+            "BEPP 2010","BEPP 2030","BEPP 2120","BEPP 2200","BEPP 2500",
+            "EAS 2030","FNCE 1010",
+            "LGST 1000","LGST 1010","LGST 2120","LGST 2150","LGST 2200",
+            "NURS 3130","NURS 3150","NURS 3160","NURS 3300","NURS 5250"]
+        return (this.courseNumberInt < 5000 && ssSubjects.includes(this.subject)) ||
+            ssCourses.includes(this.code())
+    }
+
+    /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Humanities. NB: this is not an
+     * exhaustive list, and should be used in addition to course attributes. */
+    private suhSaysHum(): boolean {
+        // TODO: "non-logic" PHIL courses not handled here
+        const humSubjects = [
+            "ANTH","ANCH","ANEL","ARTH","ASLD","CLST","LATN","GREK","COML","EALC","ENGL","FNAR",
+            "FOLK","GRMN","DTCH","SCND","HIST","HSSC","JWST","LALS","MUSC","NELC","RELS","FREN",
+            "ITAL","PRTG","ROML","SPAN","CZCH","REES","PLSH","RUSS","SARS","SAST","THAR",]
+        const humCourses = [
+            "DSGN 1020","DSGN 1030","DSGN 2010","DSGN 1040","DSGN 2030","DSGN 2040","DSGN 5001","DSGN 2510","DSGN 1050",
+            "ARCH 1010","ARCH 2010","ARCH 2020","ARCH 3010","ARCH 3020","ARCH 4010","ARCH 4110","ARCH 4120",
+            "CIS 1060","IPD 5090"]
+        return (this.courseNumberInt < 5000 && humSubjects.includes(this.subject)) ||
+            humCourses.includes(this.code()) ||
+            (this.subject == "VLST" && this.courseNumberInt != 2090)
+    }
+
+    /** If this returns true, the SEAS Undergraduate Handbook classifies this course as TBS. NB: this IS an
+     * exhaustive list. */
+    private suhSaysTbs(): boolean {
+        const tbsCourses = [
+            "CIS 1070","CIS 1250","CIS 4230","CIS 5230","DSGN 0020",
+            "EAS 2040", "EAS 2200", "EAS 2210", "EAS 2220", "EAS 2230", "EAS 2240", "EAS 2250", "EAS 2260", "EAS 2270",
+            "EAS 2280", "EAS 2420", "EAS 2900", "EAS 3010", "EAS 3060", "EAS 3200", "EAS 4010", "EAS 4020", "EAS 4030",
+            "EAS 4080", "EAS 5010", "EAS 5020", "EAS 5050", "EAS 5070", "EAS 5100", "EAS 5120", "EAS 5450", "EAS 5460",
+            "EAS 5490", "EAS 5900", "EAS 5950",
+            "IPD 5090","IPD 5450","LAWM 5060","MGMT 2370","OIDD 2360","OIDD 2340","WH 1010",
+        ]
+        return tbsCourses.includes(this.code()) || (this.code() == "TFXR 000" && this.title == "PFP FREE")
     }
 
     public static parseDegreeWorksCourse(subject: string, courseNumber: string, courseInfo: string, rawAttrs: string): CourseTaken | null {
@@ -618,9 +678,12 @@ function cliMain(): void {
     }
     const path = require('path');
     process.argv.slice(2).forEach((worksheetFile: string) => {
-        const output = "/Users/devietti/Projects/irs/dw-analysis/" + path.basename(worksheetFile) + ".analysis.txt"
-        runOneWorksheet(worksheetFile, output)
+        runOneWorksheet(worksheetFile, path.basename(worksheetFile))
     })
+    if (IncorrectCMAttributes.size > 0) {
+        console.log(`found ${IncorrectCMAttributes.size} incorrect/missing attributes in CM`)
+        console.log(IncorrectCMAttributes.keys())
+    }
 }
 
 function runOneWorksheet(worksheetFile: string, analysisOutput: string): void {
@@ -641,8 +704,14 @@ function runOneWorksheet(worksheetFile: string, analysisOutput: string): void {
         if (coursesText.includes("Degree in Bachelor of Science in Engineering") &&
             coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CSCI\s+`)) != -1) {
             degree = "40cu CSCI"
-            // TODO: heuristic to identify folks who are actually ASCS, e.g., no 4710, no 4100
-
+            // heuristic to identify folks who are actually ASCS
+            if (
+                (!coursesTaken.some(c => c.code() == "CIS 4710") && !coursesTaken.some(c => c.code() == "CIS 5710")) &&
+                // !coursesTaken.some(c => c.code() == "CIS 3800") &&
+                !coursesTaken.some(c => c.code() == "CIS 4100")
+            ) {
+                degree = "40cu ASCS"
+            }
         } else if (coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ASCS\s+`)) != -1) {
             degree = "40cu ASCS"
         } else if (coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CMPE\s+`)) != -1) {
@@ -675,7 +744,8 @@ ${unconsumed}
 
 `
                 // console.log(summary)
-                fs.writeFileSync(analysisOutput, summary + JSON.stringify(result, null, 2) + coursesText)
+                const outputFile = `${AnalysisOutputDir}${result.cusRemaining}left-${analysisOutput}.analysis.txt`
+                fs.writeFileSync(outputFile, summary + JSON.stringify(result, null, 2) + coursesText)
             })
     } catch (err) {
         console.error(err + " when processing " + process.argv[2]);
@@ -759,6 +829,15 @@ class RunResult {
 function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, coursesTaken: CourseTaken[]): RunResult {
     let degreeRequirements: DegreeRequirement[] = []
 
+    const ascsNSCourses = ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100",
+        "PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120",
+        "EAS 0091","CHEM 1012","BIOL 1101","BIOL 1121"]
+    const ascsNSElectives = ["LING 2500", "LING 2300", "LING 5310", "LING 5320",
+        "LING 5510", "LING 5520", "LING 6300", "LING 6400",
+        "PHIL 4840",
+        "PSYC 1210", "PSYC 1340", "PSYC 1310", "PSYC 2310", "PSYC 2737",
+    ]
+
     // NB: below, requirements are listed from highest => lowest priority. Display order is orthogonal.
     switch (degree) {
         case "40cu CSCI":
@@ -819,14 +898,6 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
             ]
             break
         case "40cu ASCS":
-            const ascsNSCourses = ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100",
-                "PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120",
-                "EAS 0091","CHEM 1012","BIOL 1101","BIOL 1121"]
-            const ascsNSElectives = ["LING 2500", "LING 2300", "LING 5310", "LING 5320",
-                "LING 5510", "LING 5520", "LING 6300", "LING 6400",
-                "PHIL 4840",
-                "PSYC 1210", "PSYC 1340", "PSYC 1310", "PSYC 2310", "PSYC 2737",
-            ]
             degreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
@@ -849,6 +920,59 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
 
                 new RequirementCisElective(16),
                 new RequirementCisElective(17).withMinLevel(2000),
+
+                new RequirementAttributes(5, "Math", ["EUMA"]),
+                new RequirementAttributes(6, "Math", ["EUMA"]),
+
+                new RequirementTechElectiveEngineering(20),
+                new RequirementTechElectiveEngineering(21),
+
+                new RequirementAscs40TechElective(23, csci37techElectiveList),
+                new RequirementAscs40TechElective(24, csci37techElectiveList),
+                new RequirementAscs40TechElective(25, csci37techElectiveList),
+                new RequirementAscs40TechElective(26, csci37techElectiveList),
+                new RequirementAscs40TechElective(27, csci37techElectiveList),
+                new RequirementAscs40TechElective(28, csci37techElectiveList),
+                new RequirementAscs40TechElective(29, csci37techElectiveList),
+                new RequirementAscs40TechElective(30, csci37techElectiveList),
+
+                new RequirementSsh(31, ["EUSS"]),
+                new RequirementSsh(32, ["EUSS"]),
+                new RequirementSsh(33, ["EUHS"]),
+                new RequirementSsh(34, ["EUHS"]),
+                new RequirementSsh(35, ["EUSS","EUHS"]),
+                new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
+                new RequirementSsh(37, ["EUSS","EUHS","EUTB"]),
+                // NB: Writing, Ethics, SSH Depth are [40,42]
+
+                new RequirementFreeElective(43),
+                new RequirementFreeElective(44),
+                new RequirementFreeElective(45),
+            ]
+            break
+        case "40cu ASCC":
+            degreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
+                new RequirementNamedCourses(4, "Math", ["CIS 2620"]),
+
+                new RequirementNamedCourses(7, "Natural Science", ascsNSCourses),
+                new RequirementNamedCourses(8, "Natural Science",ascsNSCourses),
+                new RequirementNamedCoursesOrAttributes(9, "Natural Science", ascsNSElectives, ["EUNS"]),
+                new RequirementNamedCoursesOrAttributes(10, "Natural Science", ascsNSElectives, ["EUNS"]),
+
+                new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(13, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(13, "Major", ["CIS 1400","COGS 1001"]),
+                new RequirementNamedCourses(14, "Major", ["CIS 2400"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 3200"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 4210","CIS 5210"]),
+                new RequirementNamedCourses(22, "Senior Capstone", ["EAS 4990","CIS 4980"].concat(SeniorDesign2ndSem)),
+
+                new RequirementCisElective(16),
+                new RequirementCisElective(17),
 
                 new RequirementAttributes(5, "Math", ["EUMA"]),
                 new RequirementAttributes(6, "Math", ["EUMA"]),
