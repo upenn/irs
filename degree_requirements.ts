@@ -5,7 +5,7 @@ const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 const SsHTbsTag = "SS/H/TBS"
 const WritingAttribute = "AUWR"
 const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060"]
-const CisProjectElectives = [
+const CsciProjectElectives = [
     "NETS 2120","CIS 3410","CIS 3500",
     "CIS 4410","CIS 5410",
     "CIS 4500","CIS 5500",
@@ -14,8 +14,75 @@ const CisProjectElectives = [
     "CIS 5050","CIS 5530",
     "ESE 3500"
 ]
-const SeniorDesign1stSem = ["CIS 4000","ESE 4500","MEAM 4450"]
-const SeniorDesign2ndSem = ["CIS 4010","ESE 4510","MEAM 4460"]
+const AscsProjectElectives = CsciProjectElectives.concat(["CIS 4710","CIS 5710","CIS 3800"])
+const SeniorDesign1stSem = ["CIS 4000","CIS 4100","ESE 4500","MEAM 4450","BE 4950"]
+const SeniorDesign2ndSem = ["CIS 4010","CIS 4110","ESE 4510","MEAM 4460","BE 4960"]
+
+const WritingSeminarSsHTbs: { [index: string]: string} = {
+    "WRIT 0020": "EUHS",
+    "WRIT 009": "EUHS",
+    "WRIT 0100": "EUHS",
+    "WRIT 0110": "EUHS",
+    "WRIT 012": "EUHS",
+    "WRIT 0130": "EUHS",
+    "WRIT 0140": "EUHS",
+    "WRIT 0150": "EUHS",
+    "WRIT 0160": "EUSS",
+    "WRIT 0170": "EUSS",
+    "WRIT 0200": "EUHS",
+    "WRIT 0210": "EUTB",
+    "WRIT 0220": "EUTB",
+    "WRIT 023": "EUHS",
+    "WRIT 024": "EUTB",
+    "WRIT 0250": "EUHS",
+    "WRIT 0260": "EUHS",
+    "WRIT 0270": "EUHS",
+    "WRIT 0280": "EUSS",
+    "WRIT 029": "EUSS",
+    "WRIT 0300": "EUHS",
+    "WRIT 0310": "EUTB",
+    "WRIT 032": "EUHS",
+    "WRIT 0330": "EUHS",
+    "WRIT 0340": "EUSS",
+    "WRIT 035": "EUSS",
+    "WRIT 036": "EUHS",
+    "WRIT 0370": "EUSS",
+    "WRIT 0380": "EUSS",
+    "WRIT 0390": "EUHS",
+    "WRIT 0400": "EUTB",
+    "WRIT 0410": "EUHS",
+    "WRIT 042": "EUHS",
+    "WRIT 047": "EUHS",
+    "WRIT 0480": "EUSS",
+    "WRIT 0490": "EUHS",
+    "WRIT 0500": "EUSS",
+    "WRIT 0550": "EUSS",
+    "WRIT 056": "EUHS",
+    "WRIT 0580": "EUHS",
+    "WRIT 0590": "EUSS",
+    "WRIT 0650": "EUTB",
+    "WRIT 066": "EUHS",
+    "WRIT 0670": "EUHS",
+    "WRIT 0680": "EUHS",
+    "WRIT 0730": "EUHS",
+    "WRIT 0740": "EUTB",
+    "WRIT 075": "EUSS",
+    "WRIT 0760": "EUSS",
+    "WRIT 0770": "EUSS",
+    "WRIT 0820": "EUHS",
+    "WRIT 0830": "EUHS",
+    "WRIT 084": "EUHS",
+    "WRIT 085": "EUSS",
+    "WRIT 086": "EUHS",
+    "WRIT 087": "EUHS",
+    "WRIT 0880": "EUSS",
+    "WRIT 0890": "EUSS",
+    "WRIT 090": "EUTB",
+    "WRIT 0910": "EUHS",
+    "WRIT 0920": "EUSS",
+    "WRIT 125": "EUHS",
+    //WRIT135 & WRIT 138 PEER TUTOR TRAINING, count as FEs
+}
 
 enum GradeType {
     PassFail = "PassFail",
@@ -281,7 +348,7 @@ class RequirementAscs40TechElective extends RequirementCsci40TechElective {
     }
 
     public toString(): string {
-        return "Tech Elective"
+        return "Concentration"
     }
 }
 
@@ -433,15 +500,19 @@ class CourseTaken {
         // MANUAL HACKS DUE TO ATTRIBUTES MISSING IN CURRICULUM MANAGER
 
         // EAS 0091 is, practically speaking, EUNS (conflicts with CHEM 1012, though)
-        if (this.code() == "EAS 0091") {
+        if (this.code() == "EAS 0091" || this.code() == "PHYS 0050") {
             this.attributes.push("EUNS")
         }
         if (this.code() == "CIS 4230" || this.code() == "CIS 5230") {
             delete this.attributes[this.attributes.indexOf("EUMS")]
             this.attributes.push("EUNE")
         }
-        if (this.code() == "ESE 2920") {
+        if (["ESE 2920","CIS 1890","CIS 1900","CIS 2330"].includes(this.code())) {
             this.attributes.push("EUMS")
+        }
+        if (this.code() == "ESE 1120") {
+            this.attributes.push("EUNE")
+            this.attributes.push("EUNS")
         }
         if (this.suhSaysSS() && !this.attributes.includes("EUSS")) {
             this.attributes.push("EUSS")
@@ -475,7 +546,10 @@ class CourseTaken {
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Social Science. NB: this is not
      * an exhaustive list, and should be used in addition to course attributes. */
     private suhSaysSS(): boolean {
-        // TODO: ASAM, ECON, LING, PSYC, SOCI courses not captured here, since they aren't universally SS
+        // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SARS
+        // TODO: ECON except statistics, probability, and math courses, [ECON 104 is not allowed]
+        // TODO: LING except language courses which can be used as Humanities electives and LING 0700 which can be used as a free elective
+        // TODO: PSYC, SOCI except statistics, probability, and math courses
         const ssSubjects = ["COMM","CRIM","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
         const ssCourses = [
             "BEPP 2010","BEPP 2030","BEPP 2120","BEPP 2200","BEPP 2500",
@@ -483,28 +557,32 @@ class CourseTaken {
             "LGST 1000","LGST 1010","LGST 2120","LGST 2150","LGST 2200",
             "NURS 3130","NURS 3150","NURS 3160","NURS 3300","NURS 5250"]
         return (this.courseNumberInt < 5000 && ssSubjects.includes(this.subject)) ||
-            ssCourses.includes(this.code())
+            ssCourses.includes(this.code()) ||
+            WritingSeminarSsHTbs[this.code()] == "EUSS"
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Humanities. NB: this is not an
      * exhaustive list, and should be used in addition to course attributes. */
     private suhSaysHum(): boolean {
-        // TODO: "non-logic" PHIL courses not handled here
+        // TODO: ASAM cross-listed with AMES, ENGL, FNAR, HIST, and SARS only
+        // TODO: PHIL except 005, 006, and all other logic courses
+        // TODO: any foreign language course
         const humSubjects = [
             "ANTH","ANCH","ANEL","ARTH","ASLD","CLST","LATN","GREK","COML","EALC","ENGL","FNAR",
             "FOLK","GRMN","DTCH","SCND","HIST","HSSC","JWST","LALS","MUSC","NELC","RELS","FREN",
-            "ITAL","PRTG","ROML","SPAN","CZCH","REES","PLSH","RUSS","SARS","SAST","THAR",]
+            "ITAL","PRTG","ROML","SPAN","CZCH","REES","PLSH","RUSS","SARS","SAST","THAR","SWAH"]
         const humCourses = [
             "DSGN 1020","DSGN 1030","DSGN 2010","DSGN 1040","DSGN 2030","DSGN 2040","DSGN 5001","DSGN 2510","DSGN 1050",
             "ARCH 1010","ARCH 2010","ARCH 2020","ARCH 3010","ARCH 3020","ARCH 4010","ARCH 4110","ARCH 4120",
             "CIS 1060","IPD 5090"]
         return (this.courseNumberInt < 5000 && humSubjects.includes(this.subject)) ||
             humCourses.includes(this.code()) ||
-            (this.subject == "VLST" && this.courseNumberInt != 2090)
+            (this.subject == "VLST" && this.courseNumberInt != 2090) ||
+            WritingSeminarSsHTbs[this.code()] == "EUHS"
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as TBS. NB: this IS an
-     * exhaustive list. */
+     * exhaustive list, except for WRIT courses that are EUTB */
     private suhSaysTbs(): boolean {
         const tbsCourses = [
             "CIS 1070","CIS 1250","CIS 4230","CIS 5230","DSGN 0020",
@@ -514,10 +592,78 @@ class CourseTaken {
             "EAS 5490", "EAS 5900", "EAS 5950",
             "IPD 5090","IPD 5450","LAWM 5060","MGMT 2370","OIDD 2360","OIDD 2340","WH 1010",
         ]
-        return tbsCourses.includes(this.code()) || (this.code() == "TFXR 000" && this.title == "PFP FREE")
+        return tbsCourses.includes(this.code()) ||
+            (this.code() == "TFXR 000" && this.title == "PFP FREE") ||
+            WritingSeminarSsHTbs[this.code()] == "EUTB"
+    }
+}
+
+class UnofficialTranscript {
+    public static extractCourses(transcriptText: string): CourseTaken[] {
+        throw new Error("can't parse unofficial transcripts yet")
+    }
+}
+
+class DegreeWorks {
+    public static extractPennID(worksheetText: string): string | undefined {
+        const matches = worksheetText.match(/Student\s+(\d{8})/)
+        console.log(matches)
+        if (matches != null) {
+            return matches![1]
+        }
+        return undefined
     }
 
-    public static parseDegreeWorksCourse(subject: string, courseNumber: string, courseInfo: string, rawAttrs: string): CourseTaken | null {
+    public static extractCourses(worksheetText: string): CourseTaken[] {
+        let coursesTaken: CourseTaken[] = []
+
+        const courseTakenPattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})(?<restOfLine>.*)\nAttributes\t(?<attributes>.*)`, "g")
+        let numHits = 0
+        while (numHits < 100) {
+            let hits = courseTakenPattern.exec(worksheetText)
+            if (hits == null) {
+                break
+            }
+            let c = DegreeWorks.parseOneCourse(
+                hits.groups!["subject"],
+                hits.groups!["number"],
+                hits.groups!["restOfLine"],
+                hits.groups!["attributes"])
+            if (c != null) {
+                coursesTaken.push(c)
+            }
+            numHits++
+        }
+
+        const minorPattern = new RegExp(String.raw`^Block\s+Hide\s+Minor in (?<minor>[^-]+)(.|\s)*?Applied:\s+(?<courses>.*)`, "gm")
+        let hits = minorPattern.exec(worksheetText)
+        if (hits != null) {
+            // list of courses applied to the minor looks like this on DegreeWorks:
+            // LING 071 (1.0) LING 072 (1.0) LING 106 (1.0) LING 230 (1.0) LING 250 (1.0) LING 3810 (1.0)
+            myLog(`found minor in ${hits.groups!["minor"].trim()}, using for Tech Electives`)
+            hits.groups!["courses"].split(")").forEach(c => {
+                let name = c.split("(")[0].trim()
+                let course = coursesTaken.find((c: CourseTaken): boolean => c.code() == name || c._3dName == name)
+                if (course != undefined) {
+                    course.partOfMinor = true
+                }
+            })
+        }
+
+        // can't take both EAS 0091 and CHEM 1012
+        if (coursesTaken.some((c: CourseTaken) => c.code() == "EAS 0091") &&
+            coursesTaken.some((c: CourseTaken) => c.code() == "CHEM 1012")) {
+            myLog("took EAS 0091 & CHEM 1012, uh-oh")
+            console.log("took EAS 0091 & CHEM 1012, uh-oh")
+            let eas0091 = coursesTaken.find((c: CourseTaken) => c.code() == "EAS 0091")
+            // discard EAS 0091
+            eas0091!.courseUnitsRemaining = 0
+        }
+
+        return coursesTaken
+    }
+
+    private static parseOneCourse(subject: string, courseNumber: string, courseInfo: string, rawAttrs: string): CourseTaken | null {
         const code = `${subject} ${courseNumber}`
         const parts = courseInfo.split("\t")
         const grade = parts[1].trim()
@@ -568,6 +714,29 @@ class CourseTaken {
             rawAttrs,
             !inProgress)
     }
+
+    public static inferDegree(worksheetText: string, coursesTaken: CourseTaken[]): Degree | undefined {
+        if (worksheetText.includes("Degree in Bachelor of Science in Engineering") &&
+            worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CSCI\s+`)) != -1) {
+            // heuristic to identify folks who are actually ASCS
+            if (
+                (!coursesTaken.some(c => c.code() == "CIS 4710") && !coursesTaken.some(c => c.code() == "CIS 5710")) &&
+                // !coursesTaken.some(c => c.code() == "CIS 3800") &&
+                !coursesTaken.some(c => c.code() == "CIS 4100")
+            ) {
+                myLog("CSCI declared, but coursework is closer to ASCS")
+                return "40cu ASCS"
+            }
+            return "40cu CSCI"
+
+        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ASCS\s+`)) != -1) {
+            return "40cu ASCS"
+
+        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CMPE\s+`)) != -1) {
+            return "40cu CMPE"
+        }
+        return undefined
+    }
 }
 
 const NodeCoursesTaken = "#coursesTaken"
@@ -575,6 +744,7 @@ const NodeDegreeRequirementsHeader = "#degreeRequirementsHeader"
 const NodeDegreeRequirementsColumn1 = "#degreeRequirementsCol1"
 const NodeDegreeRequirementsColumn2 = "#degreeRequirementsCol2"
 const NodeRemainingCUs = "#remainingCUs"
+const NodeStudentInfo = "#studentInfo"
 const NodeUnusedCoursesHeader = "#unusedCoursesHeader"
 const NodeUnusedCoursesList = "#unusedCoursesList"
 const NodeMessages = "#messages"
@@ -586,22 +756,33 @@ function webMain(): void {
     $(NodeDegreeRequirementsColumn1).empty()
     $(NodeDegreeRequirementsColumn2).empty()
     $(NodeRemainingCUs).empty()
+    $(NodeStudentInfo).empty()
     $(NodeUnusedCoursesHeader).empty()
     $(NodeUnusedCoursesList).empty()
     $(NodeMessages).empty()
     $(NodeAllCourses).empty()
 
-    const degree = <Degree>$("input[name='degree']:checked").val()
+    let degreeChoice = $("input[name='degree']:checked").val()
     $(NodeMessages).append("<h3>Notes</h3>")
 
     let coursesTaken: CourseTaken[] = []
-    const coursesText = $(NodeCoursesTaken).val() as string
-    if (coursesText.includes("Degree Works Release")) {
-        coursesTaken = parseDegreeWorksWorksheet(coursesText)
+    const worksheetText = $(NodeCoursesTaken).val() as string
+    if (worksheetText.includes("Degree Works Release")) {
+        const pennid = DegreeWorks.extractPennID(worksheetText)
+        if (pennid != undefined) {
+            $(NodeStudentInfo).append(`<div class="alert alert-secondary" role="alert">PennID: ${pennid}</div>`)
+        }
+        coursesTaken = DegreeWorks.extractCourses(worksheetText)
+        if (degreeChoice == "auto") {
+            degreeChoice = DegreeWorks.inferDegree(worksheetText, coursesTaken)
+            if (degreeChoice == undefined) {
+                throw new Error("could not infer degree")
+            }
+        }
     } else {
-        // TODO: parse unofficial transcripts
-        throw new Error("unsupported format")
+        coursesTaken = UnofficialTranscript.extractCourses(worksheetText)
     }
+    const degree = <Degree>degreeChoice
 
     $(NodeMessages).append(`${coursesTaken.length} courses taken`)
     const allCourses = coursesTaken.map((c: CourseTaken): string => `<div><small>${c.toString()}</small></div>`).join("")
@@ -692,34 +873,19 @@ function runOneWorksheet(worksheetFile: string, analysisOutput: string): void {
         const coursesText: string = fs.readFileSync(worksheetFile, 'utf8');
         let coursesTaken: CourseTaken[] = []
         if (coursesText.includes("Degree Works Release")) {
-            coursesTaken = parseDegreeWorksWorksheet(coursesText)
+            coursesTaken = DegreeWorks.extractCourses(coursesText)
         } else {
-            // TODO: parse unofficial transcripts
-            console.error("unsupported format")
-            return
+            coursesTaken = UnofficialTranscript.extractCourses(coursesText)
         }
 
         // infer degree
-        let degree: Degree = "40cu CSCI"
-        if (coursesText.includes("Degree in Bachelor of Science in Engineering") &&
-            coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CSCI\s+`)) != -1) {
-            degree = "40cu CSCI"
-            // heuristic to identify folks who are actually ASCS
-            if (
-                (!coursesTaken.some(c => c.code() == "CIS 4710") && !coursesTaken.some(c => c.code() == "CIS 5710")) &&
-                // !coursesTaken.some(c => c.code() == "CIS 3800") &&
-                !coursesTaken.some(c => c.code() == "CIS 4100")
-            ) {
-                degree = "40cu ASCS"
-            }
-        } else if (coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ASCS\s+`)) != -1) {
-            degree = "40cu ASCS"
-        } else if (coursesText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CMPE\s+`)) != -1) {
-            degree = "40cu CMPE"
-        } else {
+        let deg: Degree | undefined = DegreeWorks.inferDegree(coursesText, coursesTaken)
+        if (deg == undefined) {
             // can't infer degree, just skip it
             return
         }
+        const degree: Degree = deg
+
         fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
             .then(response => response.text())
             .then(json => {
@@ -744,6 +910,9 @@ ${unconsumed}
 
 `
                 // console.log(summary)
+                if (!fs.existsSync(AnalysisOutputDir)) {
+                    fs.mkdirSync(AnalysisOutputDir)
+                }
                 const outputFile = `${AnalysisOutputDir}${result.cusRemaining}left-${analysisOutput}.analysis.txt`
                 fs.writeFileSync(outputFile, summary + JSON.stringify(result, null, 2) + coursesText)
             })
@@ -758,55 +927,6 @@ function myLog(msg: string): void {
     } else {
         $(NodeMessages).append(`<div>${msg}</div>`)
     }
-}
-
-function parseDegreeWorksWorksheet(text: string): CourseTaken[] {
-    let coursesTaken: CourseTaken[] = []
-
-    const courseTakenPattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})(?<restOfLine>.*)\nAttributes\t(?<attributes>.*)`, "g")
-    let numHits = 0
-    while (numHits < 100) {
-        let hits = courseTakenPattern.exec(text)
-        if (hits == null) {
-            break
-        }
-        let c = CourseTaken.parseDegreeWorksCourse(
-            hits.groups!["subject"],
-            hits.groups!["number"],
-            hits.groups!["restOfLine"],
-            hits.groups!["attributes"])
-        if (c != null) {
-            coursesTaken.push(c)
-        }
-        numHits++
-    }
-
-    const minorPattern = new RegExp(String.raw`^Block\s+Hide\s+Minor in (?<minor>[^-]+)(.|\s)*?Applied:\s+(?<courses>.*)`, "gm")
-    let hits = minorPattern.exec(text)
-    if (hits != null) {
-        // list of courses applied to the minor looks like this on DegreeWorks:
-        // LING 071 (1.0) LING 072 (1.0) LING 106 (1.0) LING 230 (1.0) LING 250 (1.0) LING 3810 (1.0)
-        myLog(`found minor in ${hits.groups!["minor"].trim()}, using for Tech Electives`)
-        hits.groups!["courses"].split(")").forEach(c => {
-            let name = c.split("(")[0].trim()
-            let course = coursesTaken.find((c: CourseTaken): boolean => c.code() == name || c._3dName == name)
-            if (course != undefined) {
-                course.partOfMinor = true
-            }
-        })
-    }
-
-    // can't take both EAS 0091 and CHEM 1012
-    if (coursesTaken.some((c: CourseTaken) => c.code() == "EAS 0091") &&
-        coursesTaken.some((c: CourseTaken) => c.code() == "CHEM 1012")) {
-        myLog("took EAS 0091 & CHEM 1012, uh-oh")
-        console.log("took EAS 0091 & CHEM 1012, uh-oh")
-        let eas0091 = coursesTaken.find((c: CourseTaken) => c.code() == "EAS 0091")
-        // discard EAS 0091
-        eas0091!.courseUnitsRemaining = 0
-    }
-
-    return coursesTaken
 }
 
 enum RequirementOutcome {
@@ -829,7 +949,7 @@ class RunResult {
 function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, coursesTaken: CourseTaken[]): RunResult {
     let degreeRequirements: DegreeRequirement[] = []
 
-    const ascsNSCourses = ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100",
+    const ascsNSCourses = ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100","PHYS 093","PHYS 094",
         "PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120",
         "EAS 0091","CHEM 1012","BIOL 1101","BIOL 1121"]
     const ascsNSElectives = ["LING 2500", "LING 2300", "LING 5310", "LING 5320",
@@ -847,8 +967,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
                 new RequirementNamedCourses(4, "Math", ["CIS 2610","ESE 3010","ENM 3210","STAT 4300"]),
 
-                new RequirementNamedCourses(7, "Natural Science", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
-                new RequirementNamedCourses(8, "Natural Science", ["PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120"]),
+                new RequirementNamedCourses(7, "Natural Science", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100","PHYS 093"]),
+                new RequirementNamedCourses(8, "Natural Science", ["PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120","PHYS 094"]),
                 new RequirementNaturalScienceLab(9, "Natural Science Lab").withCUs(1.0),
                 // PSYC 121 also listed on PiT, but seems discontinued
                 new RequirementNamedCoursesOrAttributes(10,
@@ -860,28 +980,21 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
                 new RequirementNamedCourses(13, "Major", ["CIS 1210"]),
                 new RequirementNamedCourses(14, "Major", ["CIS 2400"]),
-                new RequirementNamedCourses(15, "Major", ["CIS 2620"]),
-                new RequirementNamedCourses(16, "Major", ["CIS 3200"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 2620","CIS 5110"]),
+                new RequirementNamedCourses(16, "Major", ["CIS 3200","CIS 5020"]),
                 new RequirementNamedCourses(17, "Major", ["CIS 4710","CIS 5710"]),
                 new RequirementNamedCourses(18, "Major", ["CIS 3800"]),
                 new RequirementNamedCourses(19, "Senior Design", SeniorDesign1stSem),
                 new RequirementNamedCourses(20, "Senior Design", SeniorDesign2ndSem),
 
-                new RequirementNamedCourses(21, "Project Elective", CisProjectElectives),
+                new RequirementNamedCourses(21, "Project Elective", CsciProjectElectives),
 
-                new RequirementCisElective(22),
                 new RequirementCisElective(23).withMinLevel(2000),
                 new RequirementCisElective(24).withMinLevel(2000),
+                new RequirementCisElective(22),
 
                 new RequirementAttributes(5, "Math", ["EUMA"]),
                 new RequirementAttributes(6, "Math", ["EUMA"]),
-
-                new RequirementTechElectiveEngineering(25),
-                new RequirementTechElectiveEngineering(26),
-                new RequirementCsci40TechElective(27, csci37techElectiveList),
-                new RequirementCsci40TechElective(28, csci37techElectiveList),
-                new RequirementCsci40TechElective(29, csci37techElectiveList),
-                new RequirementCsci40TechElective(30, csci37techElectiveList),
 
                 new RequirementSsh(31, ["EUSS"]),
                 new RequirementSsh(32, ["EUSS"]),
@@ -891,6 +1004,13 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
                 new RequirementSsh(37, ["EUSS","EUHS","EUTB"]),
                 // NB: Writing, Ethics, SSH Depth are [40,42]
+
+                new RequirementTechElectiveEngineering(25),
+                new RequirementTechElectiveEngineering(26),
+                new RequirementCsci40TechElective(27, csci37techElectiveList),
+                new RequirementCsci40TechElective(28, csci37techElectiveList),
+                new RequirementCsci40TechElective(29, csci37techElectiveList),
+                new RequirementCsci40TechElective(30, csci37techElectiveList),
 
                 new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
@@ -902,7 +1022,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
-                new RequirementNamedCourses(4, "Math", ["CIS 2620"]),
+                new RequirementNamedCourses(4, "Math", ["CIS 2620","CIS 5110"]),
 
                 new RequirementNamedCourses(7, "Natural Science", ascsNSCourses),
                 new RequirementNamedCourses(8, "Natural Science",ascsNSCourses),
@@ -913,13 +1033,13 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
                 new RequirementNamedCourses(13, "Major", ["CIS 1210"]),
                 new RequirementNamedCourses(14, "Major", ["CIS 2400"]),
-                new RequirementNamedCourses(15, "Major", ["CIS 3200"]),
-                new RequirementNamedCourses(18, "Project Elective", CisProjectElectives),
-                new RequirementNamedCourses(19, "Project Elective", CisProjectElectives),
+                new RequirementNamedCourses(15, "Major", ["CIS 3200","CIS 5020"]),
+                new RequirementNamedCourses(18, "Project Elective", AscsProjectElectives),
+                new RequirementNamedCourses(19, "Project Elective", AscsProjectElectives),
                 new RequirementNamedCourses(22, "Senior Capstone", ["EAS 4990","CIS 4980"].concat(SeniorDesign2ndSem)),
 
-                new RequirementCisElective(16),
                 new RequirementCisElective(17).withMinLevel(2000),
+                new RequirementCisElective(16),
 
                 new RequirementAttributes(5, "Math", ["EUMA"]),
                 new RequirementAttributes(6, "Math", ["EUMA"]),
@@ -1011,7 +1131,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(4, "Math", ["CIS 2610","ESE 3010","ENM 3210","STAT 4300"]),
                 new RequirementNamedCourses(5, "Math", ["CIS 1600"]),
 
-                new RequirementNamedCourses(6, "Natural Science", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
+                new RequirementNamedCourses(6, "Natural Science", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100","PHYS 093"]),
                 new RequirementNamedCourses(7, "Natural Science", ["PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
                 new RequirementNamedCourses(8, "Natural Science", ["CHEM 1012","BIOL 1101","BIOL 1121","EAS 0091"]),
                 new RequirementNaturalScienceLab(9, "Natural Science Lab").withCUs(0.5),
@@ -1034,15 +1154,6 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
 
                 new RequirementAttributes(10, "Math/Natural Science", ["EUMA","EUNS"]),
 
-                new RequirementAttributes(26, "Tech Elective", ["EUMS"]),
-                new RequirementAttributes(27, "Tech Elective", ["EUMS"]),
-                new RequirementAttributes(28, "Tech Elective", ["EUMS"]).withMinLevel(2000),
-                new RequirementNamedCoursesOrAttributes(29,
-                    "Tech Elective",
-                    ["ESE 4000","EAS 5450","EAS 5950","MGMT 2370","OIDD 2360"],
-                    ["EUMS"])
-                    .withMinLevel(2000),
-
                 new RequirementSsh(30, ["EUSS"]),
                 new RequirementSsh(31, ["EUSS"]),
                 new RequirementSsh(32, ["EUHS"]),
@@ -1051,6 +1162,15 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementSsh(35, ["EUSS","EUHS","EUTB"]),
                 new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
                 // NB: Writing, Ethics, SSH Depth are always [40,42]
+
+                new RequirementAttributes(28, "Tech Elective", ["EUMS"]).withMinLevel(2000),
+                new RequirementNamedCoursesOrAttributes(29,
+                    "Tech Elective",
+                    ["ESE 4000","EAS 5450","EAS 5950","MGMT 2370","OIDD 2360"],
+                    ["EUMS"])
+                    .withMinLevel(2000),
+                new RequirementAttributes(26, "Tech Elective", ["EUMS"]),
+                new RequirementAttributes(27, "Tech Elective", ["EUMS"]),
 
                 new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
@@ -1099,18 +1219,24 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
         c.consumedBy = null
         c.courseUnitsRemaining = c.courseUnits
     })
-    const ssh40cuRequirements = [
-        new RequirementAttributes(40, "Writing", [WritingAttribute]),
-        new RequirementNamedCourses(41, "Engineering Ethics", CsciEthicsCourses),
-    ]
-    ssh40cuRequirements.forEach(req => {
-        const matched = req.satisfiedBy(sshCourses)
+    { // writing requirement
+        const writingReq = new RequirementAttributes(40, "Writing", [WritingAttribute])
+        const matched = writingReq.satisfiedBy(sshCourses)
         if (matched == undefined) {
-            reqOutcomes.push([req.displayIndex, RequirementOutcome.Unsatisfied, `${req} NOT satisfied`])
+            reqOutcomes.push([writingReq.displayIndex, RequirementOutcome.Unsatisfied, `${writingReq} NOT satisfied`])
         } else {
-            reqOutcomes.push([req.displayIndex, RequirementOutcome.Satisfied, `${req} satisfied by ${matched.code()}`])
+            reqOutcomes.push([writingReq.displayIndex, RequirementOutcome.Satisfied, `${writingReq} satisfied by ${matched.code()}`])
         }
-    })
+    }
+    { // ethics requirement: NB doesn't have to come from SSH block!
+        const ethicsReq = new RequirementNamedCourses(41, "Engineering Ethics", CsciEthicsCourses)
+        const matched = ethicsReq.satisfiedBy(sshCourses)
+        if (matched == undefined) {
+            reqOutcomes.push([ethicsReq.displayIndex, RequirementOutcome.Unsatisfied, `${ethicsReq} NOT satisfied`])
+        } else {
+            reqOutcomes.push([ethicsReq.displayIndex, RequirementOutcome.Satisfied, `${ethicsReq} satisfied by ${matched.code()}`])
+        }
+    }
 
     // SS/H Depth requirement
     const counts: CountMap = countBySubjectSshDepth(sshCourses)

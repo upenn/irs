@@ -20,8 +20,11 @@
             <div>
                 <textarea id="coursesTaken" name="coursesTaken" rows="10" cols="80" placeholder="paste DegreeWorks Diagnostics page here"></textarea>
             </div>
+                <button type="button" class="btn btn-secondary my-2" onclick="$('#coursesTaken').val('')">clear</button>
             <div>
-                <input class="form-check-input" type="radio" id="csci_40" name="degree" value="40cu CSCI" checked>
+                <input class="form-check-input" type="radio" id="auto" name="degree" value="auto" checked>
+                <label class="form-check-label" for="auto">auto</label><br>
+                <input class="form-check-input" type="radio" id="csci_40" name="degree" value="40cu CSCI">
                 <label class="form-check-label" for="csci_40">40cu CSCI</label><br>
                 <input class="form-check-input" type="radio" id="cmpe_40" name="degree" value="40cu CMPE">
                 <label class="form-check-label" for="cmpe_40">40cu CMPE</label><br>
@@ -37,6 +40,7 @@
         </div>
     </div>
     <div class="row align-items-start py-4">
+        <div id="studentInfo"></div>
         <div id="remainingCUs"></div>
         <div id="degreeRequirementsHeader"></div>
         <div class="col">
