@@ -108,6 +108,9 @@ abstract class DegreeRequirement {
     /** The requirement needs courses to be at least this level, e.g., 2000. Use a 4-digit course number */
     public minLevel: number = 0
 
+    /** Set to true for requirements that don't consume a course, e.g., SEAS Writing Requirement */
+    private doesntConsume: boolean = false
+
     /** Used to sort requirements for display */
     readonly displayIndex: number
 
@@ -121,6 +124,9 @@ abstract class DegreeRequirement {
 
     /** internal method for actually applying `c` to this requirement, decrementing CUs for both `c` and `this` */
     protected applyCourse(c: CourseTaken, tag: string): boolean {
+        if (this.doesntConsume) {
+            return true
+        }
         if (c.courseUnitsRemaining > 0 && !(c.courseUnitsRemaining == 1 && this.remainingCUs == 0.5)) {
             if (c.consumedBy == null) {
                 c.consumedBy = tag
@@ -144,6 +150,12 @@ abstract class DegreeRequirement {
     /** Set the min course level (e.g., 2000) for this requirement */
     withMinLevel(n: number): DegreeRequirement {
         this.minLevel = n
+        return this
+    }
+
+    /** This requirement does not consume courses, e.g., the SEAS Writing Requirement */
+    withNoConsume(): DegreeRequirement {
+        this.doesntConsume = true
         return this
     }
 
@@ -637,19 +649,26 @@ class DegreeWorks {
             numHits++
         }
 
-        const minorPattern = new RegExp(String.raw`^Block\s+Hide\s+Minor in (?<minor>[^-]+)(.|\s)*?Applied:\s+(?<courses>.*)`, "gm")
+        //const minorPattern = new RegExp(String.raw`^Block\s+Hide\s+Minor in (?<minor>[^-]+)(.|\s)*?Applied:\s+(?<courses>.*)`, "gm")
+        const minorPattern = new RegExp(String.raw`^Block\s+Hide\s+Minor in (?<minor>[^-]+)(?<details>(.|\s)*?)(Block\s+Hide|Class Information)`, "gm")
         let hits = minorPattern.exec(worksheetText)
         if (hits != null) {
-            // list of courses applied to the minor looks like this on DegreeWorks:
-            // LING 071 (1.0) LING 072 (1.0) LING 106 (1.0) LING 230 (1.0) LING 250 (1.0) LING 3810 (1.0)
-            myLog(`found minor in ${hits.groups!["minor"].trim()}, using for Tech Electives`)
-            hits.groups!["courses"].split(")").forEach(c => {
-                let name = c.split("(")[0].trim()
-                let course = coursesTaken.find((c: CourseTaken): boolean => c.code() == name || c._3dName == name)
-                if (course != undefined) {
-                    course.partOfMinor = true
-                }
-            })
+            console.log(hits.groups!["details"].split("\n"))
+            hits.groups!["details"].split("\n")
+                .filter((line: string): boolean => line.startsWith("Applied:"))
+                .forEach((line: string) => {
+                    console.log(line)
+                    // list of courses applied to the minor looks like this on DegreeWorks:
+                    // Applied: LING 071 (1.0) LING 072 (1.0) LING 106 (1.0) LING 230 (1.0) LING 250 (1.0) LING 3810 (1.0)
+                    myLog(`found courses used for minor in ${line}, using for Tech Electives`)
+                    line.substring("Applied:".length).split(")").forEach(c => {
+                        let name = c.split("(")[0].trim()
+                        let course = coursesTaken.find((c: CourseTaken): boolean => c.code() == name || c._3dName == name)
+                        if (course != undefined) {
+                            course.partOfMinor = true
+                        }
+                    })
+                })
         }
 
         // can't take both EAS 0091 and CHEM 1012
@@ -1211,18 +1230,11 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
         totalRemainingCUs += req.remainingCUs
     })
 
-    // handle special SSH ShareWith requirements: writing, ethics, depth
+    // handle special ShareWith requirements: writing, ethics, depth
     const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy == SsHTbsTag)
 
-    // Ugh, such a hack! We have a shallow copy of coursesTaken. If we don't restore the `consumedBy` and
-    // `courseUnitsRemaining` fields, we end up incorrectly considering some ssh courses as unused.
-    const origCUs: [string|null, number, CourseTaken][] = sshCourses.map(c => [c.consumedBy,c.courseUnitsRemaining,c])
-    sshCourses.forEach(c => {
-        c.consumedBy = null
-        c.courseUnitsRemaining = c.courseUnits
-    })
     { // writing requirement
-        const writingReq = new RequirementAttributes(40, "Writing", [WritingAttribute])
+        const writingReq = new RequirementAttributes(40, "Writing", [WritingAttribute]).withNoConsume()
         const matched = writingReq.satisfiedBy(sshCourses)
         if (matched == undefined) {
             reqOutcomes.push([writingReq.displayIndex, RequirementOutcome.Unsatisfied, `${writingReq} NOT satisfied`])
@@ -1231,8 +1243,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
         }
     }
     { // ethics requirement: NB doesn't have to come from SSH block!
-        const ethicsReq = new RequirementNamedCourses(41, "Engineering Ethics", CsciEthicsCourses)
-        const matched = ethicsReq.satisfiedBy(sshCourses)
+        const ethicsReq = new RequirementNamedCourses(41, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
+        const matched = ethicsReq.satisfiedBy(coursesTaken)
         if (matched == undefined) {
             reqOutcomes.push([ethicsReq.displayIndex, RequirementOutcome.Unsatisfied, `${ethicsReq} NOT satisfied`])
         } else {
@@ -1250,11 +1262,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
         reqOutcomes.push([42, RequirementOutcome.Unsatisfied, `SSH Depth Requirement NOT satisfied`])
     }
 
+    // sort by displayIndex
     reqOutcomes.sort((a,b) => a[0] - b[0])
-    origCUs.forEach((e: [string|null, number, CourseTaken]) => {
-        e[2].consumedBy = e[0]
-        e[2].courseUnitsRemaining = e[1]
-    })
     return new RunResult(
         reqOutcomes.map((o: [number, RequirementOutcome, string]): [RequirementOutcome,string] => [o[1],o[2]]),
         totalRemainingCUs,
