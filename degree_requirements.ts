@@ -570,11 +570,14 @@ class CourseTaken {
         const humSubjects = [
             "ANTH","ANCH","ANEL","ARTH","ASLD","CLST","LATN","GREK","COML","EALC","ENGL","FNAR",
             "FOLK","GRMN","DTCH","SCND","HIST","HSSC","JWST","LALS","MUSC","NELC","RELS","FREN",
-            "ITAL","PRTG","ROML","SPAN","CZCH","REES","PLSH","RUSS","SARS","SAST","THAR","SWAH"]
+            "ITAL","PRTG","ROML","SPAN","CZCH","REES","PLSH","QUEC","RUSS","SARS","SAST","THAR",
+            "SWAH"
+        ]
         const humCourses = [
             "DSGN 1020","DSGN 1030","DSGN 2010","DSGN 1040","DSGN 2030","DSGN 2040","DSGN 5001","DSGN 2510","DSGN 1050",
             "ARCH 1010","ARCH 2010","ARCH 2020","ARCH 3010","ARCH 3020","ARCH 4010","ARCH 4110","ARCH 4120",
-            "CIS 1060","IPD 5090"]
+            "CIS 1060","IPD 5090"
+        ]
         return (this.courseNumberInt < 5000 && humSubjects.includes(this.subject)) ||
             humCourses.includes(this.code()) ||
             (this.subject == "VLST" && this.courseNumberInt != 2090) ||
@@ -607,7 +610,6 @@ class UnofficialTranscript {
 class DegreeWorks {
     public static extractPennID(worksheetText: string): string | undefined {
         const matches = worksheetText.match(/Student\s+(\d{8})/)
-        console.log(matches)
         if (matches != null) {
             return matches![1]
         }
