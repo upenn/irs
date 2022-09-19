@@ -3,7 +3,18 @@
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 
 const SsHTbsTag = "SS/H/TBS"
-const WritingAttribute = "AUWR"
+
+enum CourseAttribute {
+    Writing = "AUWR",
+    Math = "EUMA",
+    NatSci = "EUNS",
+    MathNatSciEngr = "EUMS",
+    SocialScience = "EUSS",
+    Humanities = "EUHS",
+    TBS = "EUTB",
+    NonEngr = "EUNE",
+}
+
 const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060"]
 const CsciProjectElectives = [
     "NETS 2120","CIS 3410","CIS 3500",
@@ -18,69 +29,69 @@ const AscsProjectElectives = CsciProjectElectives.concat(["CIS 4710","CIS 5710",
 const SeniorDesign1stSem = ["CIS 4000","CIS 4100","ESE 4500","MEAM 4450","BE 4950"]
 const SeniorDesign2ndSem = ["CIS 4010","CIS 4110","ESE 4510","MEAM 4460","BE 4960"]
 
-const WritingSeminarSsHTbs: { [index: string]: string} = {
-    "WRIT 0020": "EUHS",
-    "WRIT 009": "EUHS",
-    "WRIT 0100": "EUHS",
-    "WRIT 0110": "EUHS",
-    "WRIT 012": "EUHS",
-    "WRIT 0130": "EUHS",
-    "WRIT 0140": "EUHS",
-    "WRIT 0150": "EUHS",
-    "WRIT 0160": "EUSS",
-    "WRIT 0170": "EUSS",
-    "WRIT 0200": "EUHS",
-    "WRIT 0210": "EUTB",
-    "WRIT 0220": "EUTB",
-    "WRIT 023": "EUHS",
-    "WRIT 024": "EUTB",
-    "WRIT 0250": "EUHS",
-    "WRIT 0260": "EUHS",
-    "WRIT 0270": "EUHS",
-    "WRIT 0280": "EUSS",
-    "WRIT 029": "EUSS",
-    "WRIT 0300": "EUHS",
-    "WRIT 0310": "EUTB",
-    "WRIT 032": "EUHS",
-    "WRIT 0330": "EUHS",
-    "WRIT 0340": "EUSS",
-    "WRIT 035": "EUSS",
-    "WRIT 036": "EUHS",
-    "WRIT 0370": "EUSS",
-    "WRIT 0380": "EUSS",
-    "WRIT 0390": "EUHS",
-    "WRIT 0400": "EUTB",
-    "WRIT 0410": "EUHS",
-    "WRIT 042": "EUHS",
-    "WRIT 047": "EUHS",
-    "WRIT 0480": "EUSS",
-    "WRIT 0490": "EUHS",
-    "WRIT 0500": "EUSS",
-    "WRIT 0550": "EUSS",
-    "WRIT 056": "EUHS",
-    "WRIT 0580": "EUHS",
-    "WRIT 0590": "EUSS",
-    "WRIT 0650": "EUTB",
-    "WRIT 066": "EUHS",
-    "WRIT 0670": "EUHS",
-    "WRIT 0680": "EUHS",
-    "WRIT 0730": "EUHS",
-    "WRIT 0740": "EUTB",
-    "WRIT 075": "EUSS",
-    "WRIT 0760": "EUSS",
-    "WRIT 0770": "EUSS",
-    "WRIT 0820": "EUHS",
-    "WRIT 0830": "EUHS",
-    "WRIT 084": "EUHS",
-    "WRIT 085": "EUSS",
-    "WRIT 086": "EUHS",
-    "WRIT 087": "EUHS",
-    "WRIT 0880": "EUSS",
-    "WRIT 0890": "EUSS",
-    "WRIT 090": "EUTB",
-    "WRIT 0910": "EUHS",
-    "WRIT 0920": "EUSS",
-    "WRIT 125": "EUHS",
+const WritingSeminarSsHTbs: { [index: string]: CourseAttribute} = {
+    "WRIT 0020": CourseAttribute.Humanities,
+    "WRIT 009": CourseAttribute.Humanities,
+    "WRIT 0100": CourseAttribute.Humanities,
+    "WRIT 0110": CourseAttribute.Humanities,
+    "WRIT 012": CourseAttribute.Humanities,
+    "WRIT 0130": CourseAttribute.Humanities,
+    "WRIT 0140": CourseAttribute.Humanities,
+    "WRIT 0150": CourseAttribute.Humanities,
+    "WRIT 0160": CourseAttribute.SocialScience,
+    "WRIT 0170": CourseAttribute.SocialScience,
+    "WRIT 0200": CourseAttribute.Humanities,
+    "WRIT 0210": CourseAttribute.TBS,
+    "WRIT 0220": CourseAttribute.TBS,
+    "WRIT 023": CourseAttribute.Humanities,
+    "WRIT 024": CourseAttribute.TBS,
+    "WRIT 0250": CourseAttribute.Humanities,
+    "WRIT 0260": CourseAttribute.Humanities,
+    "WRIT 0270": CourseAttribute.Humanities,
+    "WRIT 0280": CourseAttribute.SocialScience,
+    "WRIT 029": CourseAttribute.SocialScience,
+    "WRIT 0300": CourseAttribute.Humanities,
+    "WRIT 0310": CourseAttribute.TBS,
+    "WRIT 032": CourseAttribute.Humanities,
+    "WRIT 0330": CourseAttribute.Humanities,
+    "WRIT 0340": CourseAttribute.SocialScience,
+    "WRIT 035": CourseAttribute.SocialScience,
+    "WRIT 036": CourseAttribute.Humanities,
+    "WRIT 0370": CourseAttribute.SocialScience,
+    "WRIT 0380": CourseAttribute.SocialScience,
+    "WRIT 0390": CourseAttribute.Humanities,
+    "WRIT 0400": CourseAttribute.TBS,
+    "WRIT 0410": CourseAttribute.Humanities,
+    "WRIT 042": CourseAttribute.Humanities,
+    "WRIT 047": CourseAttribute.Humanities,
+    "WRIT 0480": CourseAttribute.SocialScience,
+    "WRIT 0490": CourseAttribute.Humanities,
+    "WRIT 0500": CourseAttribute.SocialScience,
+    "WRIT 0550": CourseAttribute.SocialScience,
+    "WRIT 056": CourseAttribute.Humanities,
+    "WRIT 0580": CourseAttribute.Humanities,
+    "WRIT 0590": CourseAttribute.SocialScience,
+    "WRIT 0650": CourseAttribute.TBS,
+    "WRIT 066": CourseAttribute.Humanities,
+    "WRIT 0670": CourseAttribute.Humanities,
+    "WRIT 0680": CourseAttribute.Humanities,
+    "WRIT 0730": CourseAttribute.Humanities,
+    "WRIT 0740": CourseAttribute.TBS,
+    "WRIT 075": CourseAttribute.SocialScience,
+    "WRIT 0760": CourseAttribute.SocialScience,
+    "WRIT 0770": CourseAttribute.SocialScience,
+    "WRIT 0820": CourseAttribute.Humanities,
+    "WRIT 0830": CourseAttribute.Humanities,
+    "WRIT 084": CourseAttribute.Humanities,
+    "WRIT 085": CourseAttribute.SocialScience,
+    "WRIT 086": CourseAttribute.Humanities,
+    "WRIT 087": CourseAttribute.Humanities,
+    "WRIT 0880": CourseAttribute.SocialScience,
+    "WRIT 0890": CourseAttribute.SocialScience,
+    "WRIT 090": CourseAttribute.TBS,
+    "WRIT 0910": CourseAttribute.Humanities,
+    "WRIT 0920": CourseAttribute.SocialScience,
+    "WRIT 125": CourseAttribute.Humanities,
     //WRIT135 & WRIT 138 PEER TUTOR TRAINING, count as FEs
 }
 
@@ -162,7 +173,7 @@ abstract class DegreeRequirement {
     /** return true if `c` is an Engineering course, per the SUH */
     static isEngineering(c: CourseTaken): boolean {
         return ["BE","CBE","CIS","ENGR","ESE","IPD","MEAM","MSE","NETS"].includes(c.subject) &&
-            !c.attributes.includes("EUNE")
+            !c.attributes.includes(CourseAttribute.NonEngr)
     }
 }
 
@@ -191,8 +202,8 @@ class RequirementNamedCourses extends DegreeRequirement {
 
 class RequirementAttributes extends DegreeRequirement {
     readonly tag: string
-    readonly attrs: string[]
-    constructor(displayIndex: number, tag: string, attrs: string[]) {
+    readonly attrs: CourseAttribute[]
+    constructor(displayIndex: number, tag: string, attrs: CourseAttribute[]) {
         super(displayIndex)
         this.tag = tag
         this.attrs = attrs
@@ -216,8 +227,8 @@ class RequirementAttributes extends DegreeRequirement {
 }
 
 class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
-    readonly attrs: string[]
-    constructor(displayIndex: number, tag: string, courses: string[], attrs: string[]) {
+    readonly attrs: CourseAttribute[]
+    constructor(displayIndex: number, tag: string, courses: string[], attrs: CourseAttribute[]) {
         super(displayIndex, tag, courses)
         this.attrs = attrs
     }
@@ -285,7 +296,7 @@ class RequirementCisElective extends DegreeRequirement {
         return courses.slice() // NB: have to use slice since sort() is in-place
             .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
             .find((c: CourseTaken): boolean => {
-            const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes("EUNE")
+            const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes(CourseAttribute.NonEngr)
             return foundMatch &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
@@ -338,7 +349,7 @@ class RequirementCsci40TechElective extends DegreeRequirement {
             .find((c: CourseTaken): boolean => {
             return c.grading == GradeType.ForCredit &&
                 (DegreeRequirement.isEngineering(c) ||
-                    c.attributes.includes("EUMS") ||
+                    c.attributes.includes(CourseAttribute.MathNatSciEngr) ||
                     specialTEList.includes(c.code()) ||
                     this.teHashmap.hasOwnProperty(c.code()) ||
                     c.partOfMinor) &&
@@ -365,7 +376,7 @@ class RequirementAscs40TechElective extends RequirementCsci40TechElective {
 }
 
 class RequirementSsh extends RequirementAttributes {
-    constructor(displayIndex: number, attrs: string[]) {
+    constructor(displayIndex: number, attrs: CourseAttribute[]) {
         super(displayIndex, SsHTbsTag, attrs)
     }
 
@@ -380,13 +391,13 @@ class RequirementSsh extends RequirementAttributes {
         return courses.slice()
             .sort((a,b) => {
             if (
-                (a.attributes.includes(WritingAttribute) || CsciEthicsCourses.includes(a.code())) //&&
+                (a.attributes.includes(CourseAttribute.Writing) || CsciEthicsCourses.includes(a.code())) //&&
             ) {
                 return -1
             }
             if (mostPopularSubjectFirst.includes(a.subject) &&
                 (!mostPopularSubjectFirst.includes(b.subject) &&
-                    !b.attributes.includes(WritingAttribute) &&
+                    !b.attributes.includes(CourseAttribute.Writing) &&
                     !CsciEthicsCourses.includes(b.code()))
             ) {
                 return -1
@@ -450,7 +461,7 @@ function countBySubjectSshDepth(courses: CourseTaken[]): CountMap {
     courses
         .filter((c: CourseTaken): boolean =>
             // SSH Depth courses need to be SS or H, though EAS 5450 + 5460 is (sometimes?) allowed via petition
-            c.attributes.includes("EUHS") || c.attributes.includes("EUSS") ||
+            c.attributes.includes(CourseAttribute.Humanities) || c.attributes.includes(CourseAttribute.SocialScience) ||
             c.code() == "EAS 5450" || c.code() == "EAS 5460")
         .forEach(c =>
             counts[c.subject] = counts[c.subject] ? counts[c.subject] + 1 : 1
@@ -473,7 +484,8 @@ class CourseTaken {
     readonly courseUnits: number
     readonly grading: GradeType
     readonly term: number
-    readonly attributes: string[]
+    readonly attributes: CourseAttribute[]
+    readonly allAttributes: string[]
     readonly completed: boolean
     /** true iff this course is used as part of an official minor */
     partOfMinor: boolean = false
@@ -504,51 +516,59 @@ class CourseTaken {
         this.term = term
         this.completed = completed
 
-        this.attributes = rawAttributes
+        this.allAttributes = rawAttributes
             .split(";")
             .filter((s) => s.includes("ATTRIBUTE="))
             .map((s) => s.trim().split("=")[1])
+        this.attributes = []
+        this.allAttributes.forEach((attr: string) => {
+            Object.values(CourseAttribute).forEach((seasAttr: CourseAttribute) => {
+                if (seasAttr == attr) {
+                    this.attributes.push(seasAttr)
+                }
+            })
+        })
 
         // MANUAL HACKS DUE TO ATTRIBUTES MISSING IN CURRICULUM MANAGER
 
         // EAS 0091 is, practically speaking, EUNS (conflicts with CHEM 1012, though)
         if (this.code() == "EAS 0091" || this.code() == "PHYS 0050") {
-            this.attributes.push("EUNS")
+            this.attributes.push(CourseAttribute.NatSci)
         }
         if (this.code() == "CIS 4230" || this.code() == "CIS 5230") {
-            delete this.attributes[this.attributes.indexOf("EUMS")]
-            this.attributes.push("EUNE")
+            delete this.attributes[this.attributes.indexOf(CourseAttribute.MathNatSciEngr)]
+            this.attributes.push(CourseAttribute.NonEngr)
         }
         if (["ESE 2920","CIS 1890","CIS 1900","CIS 2330"].includes(this.code())) {
-            this.attributes.push("EUMS")
+            this.attributes.push(CourseAttribute.MathNatSciEngr)
         }
         if (this.code() == "ESE 1120") {
-            this.attributes.push("EUNE")
-            this.attributes.push("EUNS")
+            this.attributes.push(CourseAttribute.NonEngr)
+            this.attributes.push(CourseAttribute.NatSci)
         }
-        if (this.suhSaysSS() && !this.attributes.includes("EUSS")) {
-            this.attributes.push("EUSS")
-            IncorrectCMAttributes.set(`${this.code()} missing EUSS`, null)
+        if (this.suhSaysSS() && !this.attributes.includes(CourseAttribute.SocialScience)) {
+            this.attributes.push(CourseAttribute.SocialScience)
+            IncorrectCMAttributes.set(`${this.code()} missing ${CourseAttribute.SocialScience}`, null)
         }
-        if (this.suhSaysHum() && !this.attributes.includes("EUHS")) {
-            this.attributes.push("EUHS")
-            IncorrectCMAttributes.set(`${this.code()} missing EUHS`, null)
+        if (this.suhSaysHum() && !this.attributes.includes(CourseAttribute.Humanities)) {
+            this.attributes.push(CourseAttribute.Humanities)
+            IncorrectCMAttributes.set(`${this.code()} missing ${CourseAttribute.Humanities}`, null)
         }
-        if (this.suhSaysTbs() && !this.attributes.includes("EUTB")) {
-            this.attributes.push("EUTB")
-            IncorrectCMAttributes.set(`${this.code()} missing EUTB`, null)
+        if (this.suhSaysTbs() && !this.attributes.includes(CourseAttribute.TBS)) {
+            this.attributes.push(CourseAttribute.TBS)
+            IncorrectCMAttributes.set(`${this.code()} missing ${CourseAttribute.TBS}`, null)
         }
-        if (this.attributes.includes("EUTB") && !this.suhSaysTbs()) {
-            this.attributes = this.attributes.filter(a => a != "EUTB")
-            IncorrectCMAttributes.set(`${this.code()} incorrectly has EUTB`, null)
+        if (this.attributes.includes(CourseAttribute.TBS) && !this.suhSaysTbs()) {
+            this.attributes = this.attributes.filter(a => a != CourseAttribute.TBS)
+            IncorrectCMAttributes.set(`${this.code()} incorrectly has ${CourseAttribute.TBS}`, null)
         }
-        if (this.suhSaysMath() && !this.attributes.includes("EUMA")) {
-            this.attributes.push("EUMA")
-            IncorrectCMAttributes.set(`${this.code()} missing EUMA`, null)
+        if (this.suhSaysMath() && !this.attributes.includes(CourseAttribute.Math)) {
+            this.attributes.push(CourseAttribute.Math)
+            IncorrectCMAttributes.set(`${this.code()} missing ${CourseAttribute.Math}`, null)
         }
-        if (this.attributes.includes("EUMA") && !this.suhSaysMath()) {
-            this.attributes = this.attributes.filter(a => a != "EUMA")
-            IncorrectCMAttributes.set(`${this.code()} incorrectly has EUMA`, null)
+        if (this.attributes.includes(CourseAttribute.Math) && !this.suhSaysMath()) {
+            this.attributes = this.attributes.filter(a => a != CourseAttribute.Math)
+            IncorrectCMAttributes.set(`${this.code()} incorrectly has ${CourseAttribute.Math}`, null)
         }
     }
 
@@ -578,7 +598,7 @@ class CourseTaken {
             "NURS 3130","NURS 3150","NURS 3160","NURS 3300","NURS 5250"]
         return (this.courseNumberInt < 5000 && ssSubjects.includes(this.subject)) ||
             ssCourses.includes(this.code()) ||
-            WritingSeminarSsHTbs[this.code()] == "EUSS"
+            WritingSeminarSsHTbs[this.code()] == CourseAttribute.SocialScience
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Humanities. NB: this is not an
@@ -601,7 +621,7 @@ class CourseTaken {
         return (this.courseNumberInt < 5000 && humSubjects.includes(this.subject)) ||
             humCourses.includes(this.code()) ||
             (this.subject == "VLST" && this.courseNumberInt != 2090) ||
-            WritingSeminarSsHTbs[this.code()] == "EUHS"
+            WritingSeminarSsHTbs[this.code()] == CourseAttribute.Humanities
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as TBS. NB: this IS an
@@ -617,7 +637,7 @@ class CourseTaken {
         ]
         return tbsCourses.includes(this.code()) ||
             (this.code() == "TFXR 000" && this.title == "PFP FREE") ||
-            WritingSeminarSsHTbs[this.code()] == "EUTB"
+            WritingSeminarSsHTbs[this.code()] == CourseAttribute.TBS
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Math. NB: this IS an exhaustive list */
@@ -675,15 +695,14 @@ class DegreeWorks {
             numHits++
         }
 
-        //const minorPattern = new RegExp(String.raw`^Block\s+Hide\s+Minor in (?<minor>[^-]+)(.|\s)*?Applied:\s+(?<courses>.*)`, "gm")
         const minorPattern = new RegExp(String.raw`^Block\s+Hide\s+Minor in (?<minor>[^-]+)(?<details>(.|\s)*?)(Block\s+Hide|Class Information)`, "gm")
         let hits = minorPattern.exec(worksheetText)
         if (hits != null) {
-            console.log(hits.groups!["details"].split("\n"))
+            // console.log(hits.groups!["details"].split("\n"))
             hits.groups!["details"].split("\n")
                 .filter((line: string): boolean => line.startsWith("Applied:"))
                 .forEach((line: string) => {
-                    console.log(line)
+                    // console.log(line)
                     // list of courses applied to the minor looks like this on DegreeWorks:
                     // Applied: LING 071 (1.0) LING 072 (1.0) LING 106 (1.0) LING 230 (1.0) LING 250 (1.0) LING 3810 (1.0)
                     myLog(`found courses used for minor in ${line}, using for Tech Electives`)
@@ -980,7 +999,7 @@ ${unconsumed}
 
 function myLog(msg: string): void {
     if (typeof window === 'undefined') {
-        // console.log(msg)
+        console.log(msg)
     } else {
         $(NodeMessages).append(`<div>${msg}</div>`)
     }
@@ -1031,7 +1050,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCoursesOrAttributes(10,
                     "Natural Science",
                     ["LING 2500","PSYC 1340","PSYC 121"],
-                    ["EUNS"]),
+                    [CourseAttribute.NatSci]),
 
                 new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
@@ -1050,16 +1069,16 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementCisElective(24).withMinLevel(2000),
                 new RequirementCisElective(22),
 
-                new RequirementAttributes(5, "Math", ["EUMA"]),
-                new RequirementAttributes(6, "Math", ["EUMA"]),
+                new RequirementAttributes(5, "Math", [CourseAttribute.Math]),
+                new RequirementAttributes(6, "Math", [CourseAttribute.Math]),
 
-                new RequirementSsh(31, ["EUSS"]),
-                new RequirementSsh(32, ["EUSS"]),
-                new RequirementSsh(33, ["EUHS"]),
-                new RequirementSsh(34, ["EUHS"]),
-                new RequirementSsh(35, ["EUSS","EUHS"]),
-                new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
-                new RequirementSsh(37, ["EUSS","EUHS","EUTB"]),
+                new RequirementSsh(31, [CourseAttribute.SocialScience]),
+                new RequirementSsh(32, [CourseAttribute.SocialScience]),
+                new RequirementSsh(33, [CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.Humanities]),
+                new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                new RequirementSsh(37, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
                 // NB: Writing, Ethics, SSH Depth are [40,42]
 
                 new RequirementTechElectiveEngineering(25),
@@ -1083,8 +1102,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
 
                 new RequirementNamedCourses(7, "Natural Science", ascsNSCourses),
                 new RequirementNamedCourses(8, "Natural Science",ascsNSCourses),
-                new RequirementNamedCoursesOrAttributes(9, "Natural Science", ascsNSElectives, ["EUNS"]),
-                new RequirementNamedCoursesOrAttributes(10, "Natural Science", ascsNSElectives, ["EUNS"]),
+                new RequirementNamedCoursesOrAttributes(9, "Natural Science", ascsNSElectives, [CourseAttribute.NatSci]),
+                new RequirementNamedCoursesOrAttributes(10, "Natural Science", ascsNSElectives, [CourseAttribute.NatSci]),
 
                 new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
@@ -1098,8 +1117,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementCisElective(17).withMinLevel(2000),
                 new RequirementCisElective(16),
 
-                new RequirementAttributes(5, "Math", ["EUMA"]),
-                new RequirementAttributes(6, "Math", ["EUMA"]),
+                new RequirementAttributes(5, "Math", [CourseAttribute.Math]),
+                new RequirementAttributes(6, "Math", [CourseAttribute.Math]),
 
                 new RequirementTechElectiveEngineering(20),
                 new RequirementTechElectiveEngineering(21),
@@ -1113,13 +1132,13 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementAscs40TechElective(29, csci37techElectiveList),
                 new RequirementAscs40TechElective(30, csci37techElectiveList),
 
-                new RequirementSsh(31, ["EUSS"]),
-                new RequirementSsh(32, ["EUSS"]),
-                new RequirementSsh(33, ["EUHS"]),
-                new RequirementSsh(34, ["EUHS"]),
-                new RequirementSsh(35, ["EUSS","EUHS"]),
-                new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
-                new RequirementSsh(37, ["EUSS","EUHS","EUTB"]),
+                new RequirementSsh(31, [CourseAttribute.SocialScience]),
+                new RequirementSsh(32, [CourseAttribute.SocialScience]),
+                new RequirementSsh(33, [CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.Humanities]),
+                new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                new RequirementSsh(37, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
                 // NB: Writing, Ethics, SSH Depth are [40,42]
 
                 new RequirementFreeElective(43),
@@ -1136,8 +1155,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
 
                 new RequirementNamedCourses(7, "Natural Science", ascsNSCourses),
                 new RequirementNamedCourses(8, "Natural Science",ascsNSCourses),
-                new RequirementNamedCoursesOrAttributes(9, "Natural Science", ascsNSElectives, ["EUNS"]),
-                new RequirementNamedCoursesOrAttributes(10, "Natural Science", ascsNSElectives, ["EUNS"]),
+                new RequirementNamedCoursesOrAttributes(9, "Natural Science", ascsNSElectives, [CourseAttribute.NatSci]),
+                new RequirementNamedCoursesOrAttributes(10, "Natural Science", ascsNSElectives, [CourseAttribute.NatSci]),
 
                 new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
@@ -1151,8 +1170,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementCisElective(16),
                 new RequirementCisElective(17),
 
-                new RequirementAttributes(5, "Math", ["EUMA"]),
-                new RequirementAttributes(6, "Math", ["EUMA"]),
+                new RequirementAttributes(5, "Math", [CourseAttribute.Math]),
+                new RequirementAttributes(6, "Math", [CourseAttribute.Math]),
 
                 new RequirementTechElectiveEngineering(20),
                 new RequirementTechElectiveEngineering(21),
@@ -1166,13 +1185,13 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementAscs40TechElective(29, csci37techElectiveList),
                 new RequirementAscs40TechElective(30, csci37techElectiveList),
 
-                new RequirementSsh(31, ["EUSS"]),
-                new RequirementSsh(32, ["EUSS"]),
-                new RequirementSsh(33, ["EUHS"]),
-                new RequirementSsh(34, ["EUHS"]),
-                new RequirementSsh(35, ["EUSS","EUHS"]),
-                new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
-                new RequirementSsh(37, ["EUSS","EUHS","EUTB"]),
+                new RequirementSsh(31, [CourseAttribute.SocialScience]),
+                new RequirementSsh(32, [CourseAttribute.SocialScience]),
+                new RequirementSsh(33, [CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.Humanities]),
+                new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                new RequirementSsh(37, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
                 // NB: Writing, Ethics, SSH Depth are [40,42]
 
                 new RequirementFreeElective(43),
@@ -1209,25 +1228,25 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(24, "Senior Design", SeniorDesign1stSem),
                 new RequirementNamedCourses(25, "Senior Design", SeniorDesign2ndSem),
 
-                new RequirementAttributes(10, "Math/Natural Science", ["EUMA","EUNS"]),
+                new RequirementAttributes(10, "Math/Natural Science", [CourseAttribute.Math,CourseAttribute.NatSci]),
 
-                new RequirementSsh(30, ["EUSS"]),
-                new RequirementSsh(31, ["EUSS"]),
-                new RequirementSsh(32, ["EUHS"]),
-                new RequirementSsh(33, ["EUHS"]),
-                new RequirementSsh(34, ["EUSS","EUHS"]),
-                new RequirementSsh(35, ["EUSS","EUHS","EUTB"]),
-                new RequirementSsh(36, ["EUSS","EUHS","EUTB"]),
+                new RequirementSsh(30, [CourseAttribute.SocialScience]),
+                new RequirementSsh(31, [CourseAttribute.SocialScience]),
+                new RequirementSsh(32, [CourseAttribute.Humanities]),
+                new RequirementSsh(33, [CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
                 // NB: Writing, Ethics, SSH Depth are always [40,42]
 
-                new RequirementAttributes(28, "Tech Elective", ["EUMS"]).withMinLevel(2000),
+                new RequirementAttributes(28, "Tech Elective", [CourseAttribute.MathNatSciEngr]).withMinLevel(2000),
                 new RequirementNamedCoursesOrAttributes(29,
                     "Tech Elective",
                     ["ESE 4000","EAS 5450","EAS 5950","MGMT 2370","OIDD 2360"],
-                    ["EUMS"])
+                    [CourseAttribute.MathNatSciEngr])
                     .withMinLevel(2000),
-                new RequirementAttributes(26, "Tech Elective", ["EUMS"]),
-                new RequirementAttributes(27, "Tech Elective", ["EUMS"]),
+                new RequirementAttributes(26, "Tech Elective", [CourseAttribute.MathNatSciEngr]),
+                new RequirementAttributes(27, "Tech Elective", [CourseAttribute.MathNatSciEngr]),
 
                 new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
@@ -1270,7 +1289,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
     const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy == SsHTbsTag)
 
     { // writing requirement
-        const writingReq = new RequirementAttributes(40, "Writing", [WritingAttribute]).withNoConsume()
+        const writingReq = new RequirementAttributes(40, "Writing", [CourseAttribute.Writing]).withNoConsume()
         const matched = writingReq.satisfiedBy(sshCourses)
         if (matched == undefined) {
             reqOutcomes.push([writingReq.displayIndex, RequirementOutcome.Unsatisfied, `${writingReq} NOT satisfied`])
