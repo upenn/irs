@@ -745,7 +745,7 @@ class DegreeWorks {
                 // !coursesTaken.some(c => c.code() == "CIS 3800") &&
                 !coursesTaken.some(c => c.code() == "CIS 4100")
             ) {
-                myLog("CSCI declared, but coursework is closer to ASCS")
+                myLog("CSCI declared, but coursework is closer to ASCS so using ASCS requirements instead")
                 return "40cu ASCS"
             }
             return "40cu CSCI"
