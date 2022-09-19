@@ -697,15 +697,25 @@ class DegreeWorks {
                 })
         }
 
-        // can't take both EAS 0091 and CHEM 1012
-        if (coursesTaken.some((c: CourseTaken) => c.code() == "EAS 0091") &&
-            coursesTaken.some((c: CourseTaken) => c.code() == "CHEM 1012")) {
-            myLog("took EAS 0091 & CHEM 1012, uh-oh")
-            console.log("took EAS 0091 & CHEM 1012, uh-oh")
-            let eas0091 = coursesTaken.find((c: CourseTaken) => c.code() == "EAS 0091")
-            // discard EAS 0091
-            eas0091!.courseUnitsRemaining = 0
-        }
+        // check for equivalent courses
+        const equivalentCourses: [string,string][] = [
+            ["EAS 0091", "CHEM 1012"],
+            ["ESE 3010", "STAT 4300"],
+            // NB: only STAT 4310 will be retained out of STAT 4310, ESE 4020, ENM 3750
+            ["ESE 4020", "STAT 4310"], ["ENM 3750", "STAT 4310"],
+            ["ENM 2510", "MATH 2410"],
+        ]
+        equivalentCourses.forEach((forbidden: [string,string]) => {
+            if (coursesTaken.some((c: CourseTaken) => c.code() == forbidden[0]) &&
+                coursesTaken.some((c: CourseTaken) => c.code() == forbidden[1])) {
+                const msg = `took ${forbidden[0]} & ${forbidden[1]}, uh-oh: disabling ${forbidden[0]}`
+                myLog(msg)
+                console.log(msg)
+                let c0 = coursesTaken.find((c: CourseTaken) => c.code() == forbidden[0])
+                // disable one of the equivalent courses
+                c0!.courseUnitsRemaining = 0
+            }
+        })
 
         return coursesTaken
     }
