@@ -542,6 +542,14 @@ class CourseTaken {
             this.attributes = this.attributes.filter(a => a != "EUTB")
             IncorrectCMAttributes.set(`${this.code()} incorrectly has EUTB`, null)
         }
+        if (this.suhSaysMath() && !this.attributes.includes("EUMA")) {
+            this.attributes.push("EUMA")
+            IncorrectCMAttributes.set(`${this.code()} missing EUMA`, null)
+        }
+        if (this.attributes.includes("EUMA") && !this.suhSaysMath()) {
+            this.attributes = this.attributes.filter(a => a != "EUMA")
+            IncorrectCMAttributes.set(`${this.code()} incorrectly has EUMA`, null)
+        }
     }
 
     public toString(): string {
@@ -597,7 +605,7 @@ class CourseTaken {
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as TBS. NB: this IS an
-     * exhaustive list, except for WRIT courses that are EUTB */
+     * exhaustive list, including WRIT courses that are EUTB */
     private suhSaysTbs(): boolean {
         const tbsCourses = [
             "CIS 1070","CIS 1250","CIS 4230","CIS 5230","DSGN 0020",
@@ -610,6 +618,24 @@ class CourseTaken {
         return tbsCourses.includes(this.code()) ||
             (this.code() == "TFXR 000" && this.title == "PFP FREE") ||
             WritingSeminarSsHTbs[this.code()] == "EUTB"
+    }
+
+    /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Math. NB: this IS an exhaustive list */
+    private suhSaysMath(): boolean {
+        const mathCourses = [
+            "CIS 1600", "CIS 2610",
+            "ESE 3010", "ESE 4020",
+            "PHIL 1710", "PHIL 4723",
+            "STAT 4300", "STAT 4310", "STAT 4320", "STAT 4330"
+        ]
+        const prohibitedMathCourseNumbers = [
+            // 3-digit MATH courses that don't have translations
+            150, 151, 172, 174, 180, 212, 220,
+            // 4-digit MATH courses
+            1100, 1510, 1234, 1248, 1300, 1700, 2100, 2800
+        ]
+        return mathCourses.includes(this.code()) ||
+            (this.subject == "MATH" && !prohibitedMathCourseNumbers.includes(this.courseNumberInt))
     }
 }
 
