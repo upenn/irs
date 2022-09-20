@@ -369,9 +369,9 @@ class RequirementAscs40TechElective extends RequirementCsci40TechElective {
             .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
                 return c.grading == GradeType.ForCredit &&
-                    ["ACCT","BEPP","FNCE","MGMT","MKTG","OIDD"].includes(c.subject) &&
+                    ["ACCT","BEPP","FNCE","LGST","MGMT","MKTG","OIDD"].includes(c.subject) &&
                     c.courseNumberInt >= this.minLevel &&
-                    new RequirementFreeElective(-1).satisfiedBy([c]) == c &&
+                    !c.suhSaysNoCredit() &&
                     this.applyCourse(c, "Concentration")
             })
     }
@@ -429,24 +429,8 @@ class RequirementFreeElective extends DegreeRequirement {
         return courses.slice()
             .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
-            const noCreditNsci = c.subject == "NSCI" && ![1020,2010,2020,3010,4010,4020].includes(c.courseNumberInt)
-            const noCreditStat = c.subject == "STAT" && c.courseNumberInt < 4300 && !["STAT 4050", "STAT 4220"].includes(c.code())
-            const noCreditPhys = c.subject == "PHYS" && c.courseNumberInt < 140 && !["PHYS 0050", "PHYS 0051"].includes(c.code())
-
-            const noCreditList = ["ASTRO 0001", "EAS 5030", "EAS 5050", "MATH 1510", "MATH 1700",
-                "FNCE 0001", "FNCE 0002", "HCMG 0001", "MGMT 0004", "MKTG 0001", "OIDD 0001"]
-
-            // no-credit subject areas
-            const nocredit = (["CIT", "MSCI", "DYNM", "MED"].includes(c.subject)) ||
-                noCreditList.includes(c.code()) ||
-                noCreditPhys ||
-                noCreditNsci ||
-                noCreditStat
-
-            // if we made it here, the course counts as a Free Elective
-            const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
-            return !nocredit &&
-                gradeOk &&
+            return !c.suhSaysNoCredit() &&
+                (c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail) &&
                 c.courseNumberInt >= this.minLevel &&
                 this.applyCourse(c, "FreeElective")
         })
@@ -726,6 +710,25 @@ class CourseTaken {
         return (engrSubjects.includes(this.subject) && this.courseNumberInt < 6000) &&
             !notEngrCourses.includes(this.code()) &&
             this.courseNumberInt != 2960 && this.courseNumberInt != 2970
+    }
+
+    /** Returns true if this course is on the SUH No-Credit List */
+    public suhSaysNoCredit(): boolean {
+        const noCreditNsci = this.subject == "NSCI" && ![1020,2010,2020,3010,4010,4020].includes(this.courseNumberInt)
+        const noCreditStat = this.subject == "STAT" && this.courseNumberInt < 4300 && !["STAT 4050", "STAT 4220"].includes(this.code())
+        const noCreditPhys = this.subject == "PHYS" && this.courseNumberInt < 140 && !["PHYS 0050", "PHYS 0051"].includes(this.code())
+
+        const noCreditList = ["ASTRO 0001", "EAS 5030", "EAS 5050", "MATH 1510", "MATH 1700",
+            "FNCE 0001", "FNCE 0002", "HCMG 0001", "MGMT 0004", "MKTG 0001", "OIDD 0001"]
+
+        // no-credit subject areas
+        const nocredit = (["CIT", "MSCI", "DYNM", "MED"].includes(this.subject)) ||
+            noCreditList.includes(this.code()) ||
+            noCreditPhys ||
+            noCreditNsci ||
+            noCreditStat
+
+        return nocredit
     }
 }
 
