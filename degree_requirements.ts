@@ -402,7 +402,7 @@ class RequirementSsh extends RequirementAttributes {
             ) {
                 return -1
             }
-            return 1
+            return b.courseUnitsRemaining - a.courseUnitsRemaining
         }).find((c: CourseTaken): boolean => {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
@@ -1043,6 +1043,7 @@ function runOneWorksheet(worksheetText: string, analysisOutput: string): void {
                     .map(r => "  " + r[1])
                     .join("\n")
                 const unconsumed = result.unconsumedCourses
+                    .sort()
                     .map(r => "  " + r.toString())
                     .join("\n")
                     const summary = `
@@ -1055,7 +1056,7 @@ unused courses:
 ${unconsumed}
 
 `
-                console.log(summary)
+                // console.log(summary)
                 if (!fs.existsSync(AnalysisOutputDir)) {
                     fs.mkdirSync(AnalysisOutputDir)
                 }
