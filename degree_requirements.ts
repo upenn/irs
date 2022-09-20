@@ -371,6 +371,7 @@ class RequirementAscs40TechElective extends RequirementCsci40TechElective {
                 return c.grading == GradeType.ForCredit &&
                     ["ACCT","BEPP","FNCE","MGMT","MKTG","OIDD"].includes(c.subject) &&
                     c.courseNumberInt >= this.minLevel &&
+                    new RequirementFreeElective(-1).satisfiedBy([c]) == c &&
                     this.applyCourse(c, "Concentration")
             })
     }
