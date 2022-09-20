@@ -553,6 +553,11 @@ class CourseTaken {
             this.attributes.push(CourseAttribute.NonEngr)
             this.attributes.push(CourseAttribute.NatSci)
         }
+        if (this.code() == "CIS 5710" || this.code() == "CIS 4710") {
+            if (this.attributes.includes(CourseAttribute.Humanities)) {
+                this.attributes.splice(this.attributes.indexOf(CourseAttribute.Humanities), 1)
+            }
+        }
 
         if (this.suhSaysSS() && !this.attributes.includes(CourseAttribute.SocialScience)) {
             this.attributes.push(CourseAttribute.SocialScience)
