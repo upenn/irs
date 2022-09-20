@@ -588,7 +588,7 @@ class CourseTaken {
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Social Science.
      * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
     private suhSaysSS(): boolean {
-        // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SARS
+        // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SAST
         // TODO: ECON except statistics, probability, and math courses, [ECON 104 is not allowed]
         // TODO: LING except language courses which can be used as Humanities electives and LING 0700 which can be used as a free elective
         // TODO: PSYC, SOCI except statistics, probability, and math courses
@@ -686,7 +686,7 @@ class CourseTaken {
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Engineering.
      * NB: this IS intended to be a definitive classification */
     private suhSaysEngr(): boolean {
-        if (["VIPR 1200", "VIPR 1210"].includes(this.code())) {
+        if (["VIPR 1200","VIPR 1210","NSCI 3010"].includes(this.code())) {
             return true
         }
 
@@ -694,7 +694,9 @@ class CourseTaken {
         const notEngrCourses = [
             "CIS 1050", "CIS 1070", "CIS 1250", "CIS 1600", "CIS 2610", "CIS 4230", "CIS 5230", "CIS 7980",
             "ESE 3010", "ESE 4020",
-            "IPD 5090",
+            // IPD courses cross listed with ARCH, EAS or FNAR do not count as Engineering
+            // TODO: look up IPD cross-lists automatically instead
+            "IPD 5090", "IPD 5210", "IPD 5270", "IPD 5280", "IPD 5440", "IPD 5450", "IPD 5720",
             "MEAM 1100", "MEAM 1470",
             "MSE 2210",
         ]
