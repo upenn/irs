@@ -169,12 +169,6 @@ abstract class DegreeRequirement {
         this.doesntConsume = true
         return this
     }
-
-    /** return true if `c` is an Engineering course, per the SUH */
-    static isEngineering(c: CourseTaken): boolean {
-        return ["BE","CBE","CIS","ENGR","ESE","IPD","MEAM","MSE","NETS"].includes(c.subject) &&
-            !c.attributes.includes(CourseAttribute.NonEngr)
-    }
 }
 
 class RequirementNamedCourses extends DegreeRequirement {
@@ -315,7 +309,7 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
         return courses.slice()
             .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
-            return RequirementTechElectiveEngineering.isEngineering(c) &&
+            return c.suhSaysEngr() &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
                 this.applyCourse(c, "TechElective")
@@ -348,7 +342,7 @@ class RequirementCsci40TechElective extends DegreeRequirement {
             .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
             return c.grading == GradeType.ForCredit &&
-                (DegreeRequirement.isEngineering(c) ||
+                (c.suhSaysEngr() ||
                     c.attributes.includes(CourseAttribute.MathNatSciEngr) ||
                     specialTEList.includes(c.code()) ||
                     this.teHashmap.hasOwnProperty(c.code()) ||
@@ -365,9 +359,20 @@ class RequirementCsci40TechElective extends DegreeRequirement {
 
 class RequirementAscs40TechElective extends RequirementCsci40TechElective {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        // PHIL 411 & PSYC 413 also listed on 40cu ASCS in PiT as valid TEs, but I think they got cancelled. So our TE
-        // list is actually the same as 40cu CSCI atm.
-        return super.satisfiedBy(courses)
+        // PHIL 411 & PSYC 413 also listed on 40cu ASCS in PiT as valid TEs, but I think they got cancelled.
+        const csciTE = super.satisfiedBy(courses)
+        if (csciTE != undefined) {
+            return csciTE
+        }
+        // allow Wharton courses in ASCS Concentration
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
+                return c.grading == GradeType.ForCredit &&
+                    ["ACCT","BEPP","FNCE","MGMT","MKTG","OIDD"].includes(c.subject) &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c, "Concentration")
+            })
     }
 
     public toString(): string {
@@ -562,11 +567,23 @@ class CourseTaken {
         this.validateAttribute(this.suhSaysMath(), CourseAttribute.Math)
         this.validateAttribute(this.suhSaysNatSci(), CourseAttribute.NatSci)
         this.validateAttribute(this.suhSaysEngr(), CourseAttribute.MathNatSciEngr)
+        if (this.suhSaysEngr() && this.attributes.includes(CourseAttribute.NonEngr)) {
+            IncorrectCMAttributes.set(`${this.code()} incorrectly has ${CourseAttribute.NonEngr}`, null)
+        }
     }
     private validateAttribute(suhSays: boolean, attr: CourseAttribute): void {
         if (suhSays && !this.attributes.includes(attr)) {
             this.attributes.push(attr)
             IncorrectCMAttributes.set(`${this.code()} missing ${attr}`, null)
+        }
+        if (attr == CourseAttribute.MathNatSciEngr) {
+            // Math and NS courses should have EUMS attribute, too
+            if (this.attributes.includes(CourseAttribute.Math) || this.attributes.includes(CourseAttribute.NatSci)) {
+                if (!this.attributes.includes(CourseAttribute.MathNatSciEngr)) {
+                    this.attributes.push(CourseAttribute.MathNatSciEngr)
+                }
+                return
+            }
         }
         if (this.attributes.includes(attr) && !suhSays) {
             this.attributes.splice(this.attributes.indexOf(attr), 1)
@@ -685,7 +702,7 @@ class CourseTaken {
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Engineering.
      * NB: this IS intended to be a definitive classification */
-    private suhSaysEngr(): boolean {
+    suhSaysEngr(): boolean {
         if (["VIPR 1200","VIPR 1210","NSCI 3010"].includes(this.code())) {
             return true
         }
@@ -1070,7 +1087,7 @@ ${unconsumed}
 
 function myLog(msg: string): void {
     if (typeof window === 'undefined') {
-        console.log(msg)
+        // console.log(msg)
     } else {
         $(NodeMessages).append(`<div>${msg}</div>`)
     }
