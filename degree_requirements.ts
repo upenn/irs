@@ -508,7 +508,7 @@ class CourseTaken {
         this.subject = subject
         this.courseNumber = courseNumber
         this.title = title
-        this.courseNumberInt = parseInt(courseNumber)
+        this.courseNumberInt = parseInt(courseNumber, 10)
         this._3dName = _3dName
         this.courseUnits = cus
         this.courseUnitsRemaining = cus
@@ -516,10 +516,11 @@ class CourseTaken {
         this.term = term
         this.completed = completed
 
-        this.allAttributes = rawAttributes
+        const attrs = new Set(rawAttributes
             .split(";")
             .filter((s) => s.includes("ATTRIBUTE="))
-            .map((s) => s.trim().split("=")[1])
+            .map((s) => s.trim().split("=")[1]))
+        this.allAttributes = [...attrs]
         this.attributes = []
         this.allAttributes.forEach((attr: string) => {
             Object.values(CourseAttribute).forEach((seasAttr: CourseAttribute) => {
@@ -546,6 +547,7 @@ class CourseTaken {
             this.attributes.push(CourseAttribute.NonEngr)
             this.attributes.push(CourseAttribute.NatSci)
         }
+
         if (this.suhSaysSS() && !this.attributes.includes(CourseAttribute.SocialScience)) {
             this.attributes.push(CourseAttribute.SocialScience)
             IncorrectCMAttributes.set(`${this.code()} missing ${CourseAttribute.SocialScience}`, null)
@@ -554,21 +556,21 @@ class CourseTaken {
             this.attributes.push(CourseAttribute.Humanities)
             IncorrectCMAttributes.set(`${this.code()} missing ${CourseAttribute.Humanities}`, null)
         }
-        if (this.suhSaysTbs() && !this.attributes.includes(CourseAttribute.TBS)) {
-            this.attributes.push(CourseAttribute.TBS)
-            IncorrectCMAttributes.set(`${this.code()} missing ${CourseAttribute.TBS}`, null)
+
+        // we have definitive categorization for TBS, Math, NS courses
+        this.validateAttribute(this.suhSaysTbs(), CourseAttribute.TBS)
+        this.validateAttribute(this.suhSaysMath(), CourseAttribute.Math)
+        this.validateAttribute(this.suhSaysNatSci(), CourseAttribute.NatSci)
+        this.validateAttribute(this.suhSaysEngr(), CourseAttribute.MathNatSciEngr)
+    }
+    private validateAttribute(suhSays: boolean, attr: CourseAttribute): void {
+        if (suhSays && !this.attributes.includes(attr)) {
+            this.attributes.push(attr)
+            IncorrectCMAttributes.set(`${this.code()} missing ${attr}`, null)
         }
-        if (this.attributes.includes(CourseAttribute.TBS) && !this.suhSaysTbs()) {
-            this.attributes = this.attributes.filter(a => a != CourseAttribute.TBS)
-            IncorrectCMAttributes.set(`${this.code()} incorrectly has ${CourseAttribute.TBS}`, null)
-        }
-        if (this.suhSaysMath() && !this.attributes.includes(CourseAttribute.Math)) {
-            this.attributes.push(CourseAttribute.Math)
-            IncorrectCMAttributes.set(`${this.code()} missing ${CourseAttribute.Math}`, null)
-        }
-        if (this.attributes.includes(CourseAttribute.Math) && !this.suhSaysMath()) {
-            this.attributes = this.attributes.filter(a => a != CourseAttribute.Math)
-            IncorrectCMAttributes.set(`${this.code()} incorrectly has ${CourseAttribute.Math}`, null)
+        if (this.attributes.includes(attr) && !suhSays) {
+            this.attributes.splice(this.attributes.indexOf(attr), 1)
+            IncorrectCMAttributes.set(`${this.code()} incorrectly has ${attr}`, null)
         }
     }
 
@@ -583,8 +585,8 @@ class CourseTaken {
         return `${this.subject} ${this.courseNumber}`
     }
 
-    /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Social Science. NB: this is not
-     * an exhaustive list, and should be used in addition to course attributes. */
+    /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Social Science.
+     * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
     private suhSaysSS(): boolean {
         // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SARS
         // TODO: ECON except statistics, probability, and math courses, [ECON 104 is not allowed]
@@ -601,8 +603,8 @@ class CourseTaken {
             WritingSeminarSsHTbs[this.code()] == CourseAttribute.SocialScience
     }
 
-    /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Humanities. NB: this is not an
-     * exhaustive list, and should be used in addition to course attributes. */
+    /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Humanities.
+     * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
     private suhSaysHum(): boolean {
         // TODO: ASAM cross-listed with AMES, ENGL, FNAR, HIST, and SARS only
         // TODO: PHIL except 005, 006, and all other logic courses
@@ -624,8 +626,8 @@ class CourseTaken {
             WritingSeminarSsHTbs[this.code()] == CourseAttribute.Humanities
     }
 
-    /** If this returns true, the SEAS Undergraduate Handbook classifies this course as TBS. NB: this IS an
-     * exhaustive list, including WRIT courses that are EUTB */
+    /** If this returns true, the SEAS Undergraduate Handbook classifies this course as TBS.
+     * NB: this IS intended to be a definitive classification */
     private suhSaysTbs(): boolean {
         const tbsCourses = [
             "CIS 1070","CIS 1250","CIS 4230","CIS 5230","DSGN 0020",
@@ -640,7 +642,8 @@ class CourseTaken {
             WritingSeminarSsHTbs[this.code()] == CourseAttribute.TBS
     }
 
-    /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Math. NB: this IS an exhaustive list */
+    /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Math.
+     * NB: this IS intended to be a definitive classification */
     private suhSaysMath(): boolean {
         const mathCourses = [
             "CIS 1600", "CIS 2610",
@@ -656,6 +659,48 @@ class CourseTaken {
         ]
         return mathCourses.includes(this.code()) ||
             (this.subject == "MATH" && !prohibitedMathCourseNumbers.includes(this.courseNumberInt))
+    }
+
+    /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Natural Science.
+     * NB: this IS intended to be a definitive classification */
+    private suhSaysNatSci(): boolean {
+        const nsCourses = [
+            "ASTR 1211", "ASTR 1212","ASTR 1250","ASTR 3392",
+            "BE 3050", "CIS 3980", "ESE 1120", "MSE 2210",
+            "MEAM 1100", "MEAM 1470",
+            "PHYS 0050", "PHYS 0051", "PHYS 0140", "PHYS 0141",
+        ]
+        // all courses with these subjects are ook
+        const nsSubjects = ["BCHE", "BMB", "CAMB", "GCB"]
+
+        return nsCourses.includes(this.code()) ||
+            nsSubjects.includes(this.subject) ||
+            // BIBB 010, 160, 227 also excluded
+            (this.subject == "NRSC" && !["0050", "0060"].includes(this.courseNumber)) ||
+            (this.subject == "BIOL" && this.courseNumberInt > 1000 && this.courseNumberInt != 2510) ||
+            (this.subject == "CHEM" && ![1000, 1200, 250, 1011].includes(this.courseNumberInt)) ||
+            (this.subject == "EESC" && ([1030,1090].includes(this.courseNumberInt) || this.courseNumberInt > 2000)) ||
+            (this.subject == "PHYS" && this.courseNumberInt > 150 && ![3314,5500].includes(this.courseNumberInt))
+    }
+
+    /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Engineering.
+     * NB: this IS intended to be a definitive classification */
+    private suhSaysEngr(): boolean {
+        if (["VIPR 1200", "VIPR 1210"].includes(this.code())) {
+            return true
+        }
+
+        const engrSubjects = ["ENGR", "TCOM", "NETS", "BE", "CBE", "CIS", "ESE", "MEAM", "MSE"]
+        const notEngrCourses = [
+            "CIS 1050", "CIS 1070", "CIS 1250", "CIS 1600", "CIS 2610", "CIS 4230", "CIS 5230", "CIS 7980",
+            "ESE 3010", "ESE 4020",
+            "IPD 5090",
+            "MEAM 1100", "MEAM 1470",
+            "MSE 2210",
+        ]
+        return (engrSubjects.includes(this.subject) && this.courseNumberInt < 6000) &&
+            !notEngrCourses.includes(this.code()) &&
+            this.courseNumberInt != 2960 && this.courseNumberInt != 2970
     }
 }
 
@@ -723,6 +768,9 @@ class DegreeWorks {
             // NB: only STAT 4310 will be retained out of STAT 4310, ESE 4020, ENM 3750
             ["ESE 4020", "STAT 4310"], ["ENM 3750", "STAT 4310"],
             ["ENM 2510", "MATH 2410"],
+            ["ESE 1120", "PHYS 0151"],
+            ["MEAM 1100", "PHYS 0150"],
+            ["MEAM 1470", "PHYS 0150"],
         ]
         equivalentCourses.forEach((forbidden: [string,string]) => {
             if (coursesTaken.some((c: CourseTaken) => c.code() == forbidden[0]) &&
