@@ -680,7 +680,7 @@ class CourseTaken {
             (this.subject == "BIOL" && this.courseNumberInt > 1000 && this.courseNumberInt != 2510) ||
             (this.subject == "CHEM" && ![1000, 1200, 250, 1011].includes(this.courseNumberInt)) ||
             (this.subject == "EESC" && ([1030,1090].includes(this.courseNumberInt) || this.courseNumberInt > 2000)) ||
-            (this.subject == "PHYS" && this.courseNumberInt > 150 && ![3314,5500].includes(this.courseNumberInt))
+            (this.subject == "PHYS" && this.courseNumberInt >= 150 && ![3314,5500].includes(this.courseNumberInt))
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Engineering.
@@ -984,28 +984,48 @@ function cliMain(): void {
         return
     }
     const path = require('path');
-    process.argv.slice(2).forEach((worksheetFile: string) => {
-        runOneWorksheet(worksheetFile, path.basename(worksheetFile))
-    })
+    const fs = require('fs');
+
+    let worksheets = process.argv.slice(2)
+    for (let i = 0; i < worksheets.length;) {
+        const worksheetFile = worksheets[i]
+        const pennid: string = path.basename(worksheetFile).split("-")[0]
+        const myWorksheetFiles = worksheets.filter((f: string): boolean => f.includes(pennid))
+        if (myWorksheetFiles.length == 1) {
+            const worksheetText: string = fs.readFileSync(worksheetFile, 'utf8');
+            runOneWorksheet(worksheetText, path.basename(worksheetFile))
+
+        } else {
+            // aggregate multiple worksheets for the same student
+            const allMyWorksheets: string = myWorksheetFiles
+                .map((f: string): string => fs.readFileSync(f, 'utf8'))
+                .filter((ws: string): boolean =>
+                    ws.includes("Degree in Bachelor of Science in Engineering") ||
+                    ws.includes("Degree in Bachelor of Applied Science") ||
+                    ws.includes("Degree in Master of Science in Engineering"))
+                .join("\n")
+            runOneWorksheet(allMyWorksheets, path.basename(worksheetFile))
+        }
+        i += myWorksheetFiles.length
+    }
     if (IncorrectCMAttributes.size > 0) {
         console.log(`found ${IncorrectCMAttributes.size} incorrect/missing attributes in CM`)
         console.log(IncorrectCMAttributes.keys())
     }
 }
 
-function runOneWorksheet(worksheetFile: string, analysisOutput: string): void {
+function runOneWorksheet(worksheetText: string, analysisOutput: string): void {
     const fs = require('fs');
     try {
-        const coursesText: string = fs.readFileSync(worksheetFile, 'utf8');
         let coursesTaken: CourseTaken[] = []
-        if (coursesText.includes("Degree Works Release")) {
-            coursesTaken = DegreeWorks.extractCourses(coursesText)
+        if (worksheetText.includes("Degree Works Release")) {
+            coursesTaken = DegreeWorks.extractCourses(worksheetText)
         } else {
-            coursesTaken = UnofficialTranscript.extractCourses(coursesText)
+            coursesTaken = UnofficialTranscript.extractCourses(worksheetText)
         }
 
         // infer degree
-        let deg: Degree | undefined = DegreeWorks.inferDegree(coursesText, coursesTaken)
+        let deg: Degree | undefined = DegreeWorks.inferDegree(worksheetText, coursesTaken)
         if (deg == undefined) {
             // can't infer degree, just skip it
             return
@@ -1035,12 +1055,12 @@ unused courses:
 ${unconsumed}
 
 `
-                // console.log(summary)
+                console.log(summary)
                 if (!fs.existsSync(AnalysisOutputDir)) {
                     fs.mkdirSync(AnalysisOutputDir)
                 }
                 const outputFile = `${AnalysisOutputDir}${result.cusRemaining}left-${analysisOutput}.analysis.txt`
-                fs.writeFileSync(outputFile, summary + JSON.stringify(result, null, 2) + coursesText)
+                fs.writeFileSync(outputFile, summary + JSON.stringify(result, null, 2) + worksheetText)
             })
     } catch (err) {
         console.error(err + " when processing " + process.argv[2]);
