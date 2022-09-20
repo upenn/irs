@@ -754,7 +754,7 @@ class DegreeWorks {
                 hits.groups!["number"],
                 hits.groups!["restOfLine"],
                 hits.groups!["attributes"])
-            if (c != null) {
+            if (c != null && !coursesTaken.some(e => e.code() == c!.code())) {
                 coursesTaken.push(c)
             }
             numHits++
