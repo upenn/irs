@@ -909,7 +909,7 @@ class DegreeWorks {
                 })
         }
 
-        // check for equivalent courses
+        // Check for equivalent courses. If two are found, the first element of the pair is disabled
         const equivalentCourses: [string,string][] = [
             ["EAS 0091", "CHEM 1012"],
             ["ESE 3010", "STAT 4300"],
@@ -927,7 +927,7 @@ class DegreeWorks {
                 myLog(msg)
                 console.log(msg)
                 let c0 = coursesTaken.find((c: CourseTaken) => c.code() == forbidden[0])
-                // disable one of the equivalent courses
+                // disable the first of the equivalent courses
                 c0!.courseUnitsRemaining = 0
             }
         })
@@ -963,6 +963,8 @@ class DegreeWorks {
             }
         }
         // TODO: Math 2410 retro credit for students entering in Fall 2021 or earlier?
+        // "For the Class of 2025 and earlier, if you pass Math 2410 at Penn with at least a grade of B, you may come to
+        // the math office and receive retroactive credit for (and only one) Math 1400, Math 1410, or Math 2400"
 
         return coursesTaken
     }
