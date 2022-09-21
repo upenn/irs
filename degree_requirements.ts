@@ -433,11 +433,11 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
 
 class RequirementCsci40TechElective extends DegreeRequirement {
 
-    static teHashmap = new Set<string>()
+    static techElectives = new Set<string>()
 
     constructor(displayIndex: number) {
         super(displayIndex)
-        if (RequirementCsci40TechElective.teHashmap.size == 0) {
+        if (RequirementCsci40TechElective.techElectives.size == 0) {
             throw new Error("CSCI 40cu TE list is empty(!)")
         }
     }
@@ -449,10 +449,9 @@ class RequirementCsci40TechElective extends DegreeRequirement {
             .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
             return c.grading == GradeType.ForCredit &&
-                (c.suhSaysEngr() ||
-                    c.attributes.includes(CourseAttribute.MathNatSciEngr) ||
+                (c.attributes.includes(CourseAttribute.MathNatSciEngr) ||
                     specialTEList.includes(c.code()) ||
-                    RequirementCsci40TechElective.teHashmap.has(c.code()) ||
+                    RequirementCsci40TechElective.techElectives.has(c.code()) ||
                     c.partOfMinor) &&
                 c.courseNumberInt >= this.minLevel &&
                 this.applyCourse(c, "TechElective")
@@ -1274,7 +1273,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
     csci37techElectiveList
         .filter((te: TechElectiveDecision): boolean => te.status == "yes")
         .forEach((te: TechElectiveDecision) => {
-            RequirementCsci40TechElective.teHashmap.add(te.course4d)
+            RequirementCsci40TechElective.techElectives.add(te.course4d)
         })
     const bothLightAndFull = [...NetsFullTechElectives].filter(full => NetsLightTechElectives.has(full))
     if (bothLightAndFull.length > 0) {
