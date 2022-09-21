@@ -633,20 +633,12 @@ class CourseTaken {
 
         // MANUAL HACKS DUE TO ATTRIBUTES MISSING IN CURRICULUM MANAGER
 
-        // EAS 0091 is, practically speaking, EUNS (conflicts with CHEM 1012, though)
-        if (this.code() == "EAS 0091" || this.code() == "PHYS 0050") {
-            this.attributes.push(CourseAttribute.NatSci)
-        }
         if (this.code() == "CIS 4230" || this.code() == "CIS 5230") {
             delete this.attributes[this.attributes.indexOf(CourseAttribute.MathNatSciEngr)]
             this.attributes.push(CourseAttribute.NonEngr)
         }
-        if (["ESE 2920","CIS 1890","CIS 1900","CIS 2330"].includes(this.code())) {
-            this.attributes.push(CourseAttribute.MathNatSciEngr)
-        }
         if (this.code() == "ESE 1120") {
             this.attributes.push(CourseAttribute.NonEngr)
-            this.attributes.push(CourseAttribute.NatSci)
         }
         if (this.code() == "CIS 5710" || this.code() == "CIS 4710") {
             if (this.attributes.includes(CourseAttribute.Humanities)) {
@@ -670,7 +662,7 @@ class CourseTaken {
             IncorrectCMAttributes.add(`${this.code()} missing ${CourseAttribute.Humanities}`)
         }
 
-        // we have definitive categorization for TBS, Math, NS courses
+        // we have definitive categorization for TBS, Math, Natural Science and Engineering courses
         this.validateAttribute(this.suhSaysTbs(), CourseAttribute.TBS)
         this.validateAttribute(this.suhSaysMath(), CourseAttribute.Math)
         this.validateAttribute(this.suhSaysNatSci(), CourseAttribute.NatSci)
@@ -794,7 +786,10 @@ class CourseTaken {
             "BE 3050", "CIS 3980", "ESE 1120", "MSE 2210",
             "MEAM 1100", "MEAM 1470",
             "PHYS 0050", "PHYS 0051", "PHYS 0140", "PHYS 0141",
-        ]
+
+            // jld: EAS 0091 is, practically speaking, EUNS. We check for the conflict with CHEM 1012 elsewhere
+            "EAS 0091"
+    ]
         // all courses with these subjects are ook
         const nsSubjects = ["BCHE", "BMB", "CAMB", "GCB"]
 
