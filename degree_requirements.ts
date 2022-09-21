@@ -209,7 +209,7 @@ interface TechElectiveDecision {
     status: "yes" | "no" | "ask"
 }
 
-type Degree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS"
+type Degree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD"
 
 let IncorrectCMAttributes = new Set<string>()
 
@@ -1040,6 +1040,8 @@ class DegreeWorks {
             return "40cu CMPE"
         } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+NETS\s+`)) != -1) {
             return "40cu NETS"
+        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+DMD\s+`)) != -1) {
+            return "40cu DMD"
         }
         return undefined
     }
@@ -1566,11 +1568,57 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementFreeElective(45),
             ]
             break
+        case "40cu DMD":
+            degreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
+                new RequirementNamedCourses(4, "Math", ["CIS 2620"]),
+                new RequirementNamedCourses(5, "Math", ["EAS 205","MATH 3120","MATH 3130","MATH 3140"]),
+
+                new RequirementNamedCourses(7, "Physics", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100","PHYS 093"]),
+                new RequirementNamedCourses(8, "Physics", ["PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120","PHYS 094"]),
+
+                new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(13, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(14, "Major", ["CIS 2400"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 3200","CIS 5020"]),
+                new RequirementNamedCourses(16, "Major", ["CIS 4600","CIS 5600"]),
+                new RequirementNamedCourses(17, "Major", ["CIS 4610","CIS 5610","CIS 4620","CIS 5620","CIS 4550","CIS 5550"]),
+                new RequirementNamedCourses(18, "Major", ["CIS 4610","CIS 5610","CIS 4620","CIS 5620","CIS 4550","CIS 5550"]),
+                new RequirementNamedCourses(19, "Major", ["CIS 4970"]),
+
+                new RequirementCisElective(20).withMinLevel(2000),
+                new RequirementCisElective(21).withMinLevel(2000),
+                new RequirementCisElective(22).withMinLevel(2000),
+                new RequirementCisElective(23).withMinLevel(2000),
+                new RequirementCisElective(24),
+
+                new RequirementAttributes(6, "Math", [CourseAttribute.Math]),
+                new RequirementAttributes(9, "Natural Science", [CourseAttribute.NatSci]),
+                new RequirementAttributes(10, "Natural Science", [CourseAttribute.NatSci]),
+
+                // TODO: DMD Electives 7 CUs
+
+                new RequirementSsh(32, [CourseAttribute.SocialScience]),
+                new RequirementSsh(33, [CourseAttribute.SocialScience]),
+                new RequirementSsh(34, [CourseAttribute.Humanities]),
+                new RequirementSsh(35, [CourseAttribute.Humanities]),
+                new RequirementSsh(37, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(38, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing, Ethics, SSH Depth are [40,42]
+
+                new RequirementFreeElective(43),
+                new RequirementFreeElective(44),
+            ]
+            break
         default:
             throw new Error(`unsupported degree: ${degree}`)
     }
     const degreeCUs = degreeRequirements.map(r => r.remainingCUs).reduce((sum, e) => sum + e, 0)
-    if (40 != degreeCUs) throw new Error(`degree should be 40 CUs but was ${degreeCUs}`)
+    if (40 != degreeCUs) throw new Error(`${degree} degree should be 40 CUs but was ${degreeCUs}`)
 
     // APPLY COURSES TO DEGREE REQUIREMENTS
 
