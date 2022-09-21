@@ -95,6 +95,106 @@ const WritingSeminarSsHTbs: { [index: string]: CourseAttribute} = {
     //WRIT135 & WRIT 138 PEER TUTOR TRAINING, count as FEs
 }
 
+const NetsFullTechElectives: { [index: string]: null} = {
+    "BEPP 2800": null,
+    "BIOL 4536": null,
+    "CIS 2400": null,
+    "CIS 2620": null,
+    "CIS 3310": null,
+    "CIS 3410": null,
+    "CIS 3500": null,
+    "CIS 3800": null,
+    "CIS 4190": null,
+    "CIS 4210": null,
+    "CIS 4500": null,
+    "CIS 4600": null,
+    "CIS 5110": null,
+    "CIS 5150": null,
+    "CIS 5190": null,
+    "CIS 5210": null,
+    "CIS 5300": null,
+    "CIS 5450": null,
+    "CIS 5500": null,
+    "CIS 5520": null,
+    "CIS 5530": null,
+    "CIS 5600": null,
+    "CIS 5800": null,
+    "CIS 6250": null,
+    "CIS 6770": null,
+    "COMM 4590": null,
+    "EAS 5070": null,
+    "EAS 5460": null,
+    "ECON 103": null,
+    "ECON 2200": null,
+    "ECON 2310": null,
+    "ECON 4130": null,
+    "ECON 4240": null,
+    "ECON 4430": null,
+    "ECON 4450": null,
+    "ECON 4480": null,
+    "ECON 4490": null,
+    "ECON 4510": null,
+    "ESE 2150": null,
+    "ESE 2240": null,
+    "ESE 302": null,
+    "ESE 3050": null,
+    "ESE 3250": null,
+    "ESE 3600": null,
+    "ESE 4000": null,
+    "ESE 4210": null,
+    "ESE 5390": null,
+    "ESE 5400": null,
+    "ESE 5430": null,
+    "FNCE 206": null,
+    "FNCE 2070": null,
+    "FNCE 2370": null,
+    "MATH 2410": null,
+    "MATH 3600": null,
+    "MKTG 2120": null,
+    "MKTG 2710": null,
+    "MKTG 3520": null,
+    "MKTG 4760": null,
+    "MKTG 7710": null,
+    "MKTG 8520": null,
+    "NETS 2130": null,
+    "OIDD 2450": null,
+    "OIDD 3190": null,
+    "OIDD 352": null,
+    "OIDD 3530": null,
+    "OIDD 6130": null,
+    "OIDD 9000": null,
+    "OIDD 9040": null,
+    "OIDD 9150": null,
+    "SOCI 5351": null,
+    "STAT 4310": null,
+    "STAT 4320": null,
+    "STAT 4330": null,
+    "STAT 4420": null,
+    "STAT 4710": null,
+    "STAT 4760": null,
+    "STAT 5110": null,
+    "STAT 5200": null,
+    "STAT 5420": null,
+}
+const NetsLightTechElectives: { [index: string]: null} = {
+    "EAS 3060": null,
+    "EAS 4030": null,
+    "EAS 5060": null,
+    "EAS 5450": null,
+    "ECON 4460": null,
+    "ESE 5670": null,
+    "LGST 2220": null,
+    "MKTG 2700": null,
+    "MKTG 7120": null,
+    "OIDD 2240": null,
+    "OIDD 2610": null,
+    "OIDD 316": null,
+    "OIDD 3210": null,
+    "OIDD 4690": null,
+    "SOCI 5350": null,
+    "STAT 4350": null,
+}
+
 enum GradeType {
     PassFail = "PassFail",
     ForCredit = "ForCredit",
@@ -107,7 +207,7 @@ interface TechElectiveDecision {
     status: "yes" | "no" | "ask"
 }
 
-type Degree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC"
+type Degree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS"
 
 let IncorrectCMAttributes = new Map<string,null>()
 
@@ -323,16 +423,17 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
 
 class RequirementCsci40TechElective extends DegreeRequirement {
 
-    readonly teHashmap: { [key: string]: null }
+    static teHashmap: { [key: string]: null } = {}
 
     constructor(displayIndex: number, teList: TechElectiveDecision[]) {
         super(displayIndex)
-        this.teHashmap = {}
-        teList
-            .filter((te: TechElectiveDecision): boolean => te.status == "yes")
-            .forEach((te: TechElectiveDecision) => {
-                this.teHashmap[te.course4d] = null
-            })
+        if (RequirementCsci40TechElective.teHashmap == {}) {
+            teList
+                .filter((te: TechElectiveDecision): boolean => te.status == "yes")
+                .forEach((te: TechElectiveDecision) => {
+                    RequirementCsci40TechElective.teHashmap[te.course4d] = null
+                })
+        }
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
@@ -345,7 +446,7 @@ class RequirementCsci40TechElective extends DegreeRequirement {
                 (c.suhSaysEngr() ||
                     c.attributes.includes(CourseAttribute.MathNatSciEngr) ||
                     specialTEList.includes(c.code()) ||
-                    this.teHashmap.hasOwnProperty(c.code()) ||
+                    RequirementCsci40TechElective.teHashmap.hasOwnProperty(c.code()) ||
                     c.partOfMinor) &&
                 c.courseNumberInt >= this.minLevel &&
                 this.applyCourse(c, "TechElective")
@@ -378,6 +479,44 @@ class RequirementAscs40TechElective extends RequirementCsci40TechElective {
 
     public toString(): string {
         return "Concentration"
+    }
+}
+
+class RequirementNets40FullTechElective extends DegreeRequirement {
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
+                return c.grading == GradeType.ForCredit &&
+                    NetsFullTechElectives.hasOwnProperty(c.code()) &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c, "Tech Elective")
+            })
+    }
+
+    public toString(): string {
+        return "Tech Elective"
+    }
+}
+class RequirementNets40LightTechElective extends RequirementNets40FullTechElective {
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        const sat = super.satisfiedBy(courses)
+        if (sat != undefined) {
+            return sat
+        }
+
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
+                return c.grading == GradeType.ForCredit &&
+                    NetsLightTechElectives.hasOwnProperty(c.code()) &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c, "Tech Elective (Light)")
+            })
+    }
+
+    public toString(): string {
+        return "Tech Elective (Light)"
     }
 }
 
@@ -451,7 +590,8 @@ function countBySubjectSshDepth(courses: CourseTaken[]): CountMap {
     courses
         .filter((c: CourseTaken): boolean =>
             // SSH Depth courses need to be SS or H, though EAS 5450 + 5460 is (sometimes?) allowed via petition
-            c.attributes.includes(CourseAttribute.Humanities) || c.attributes.includes(CourseAttribute.SocialScience) ||
+            c.attributes.includes(CourseAttribute.Humanities) ||
+            (c.attributes.includes(CourseAttribute.SocialScience) && c.code() != "EAS 2030") ||
             c.code() == "EAS 5450" || c.code() == "EAS 5460")
         .forEach(c =>
             counts[c.subject] = counts[c.subject] ? counts[c.subject] + 1 : 1
@@ -473,6 +613,7 @@ class CourseTaken {
     readonly _3dName: string | null
     readonly courseUnits: number
     readonly grading: GradeType
+    readonly letterGrade: string
     readonly term: number
     readonly attributes: CourseAttribute[]
     readonly allAttributes: string[]
@@ -491,6 +632,7 @@ class CourseTaken {
                 _3dName: string | null,
                 cus: number,
                 grading: GradeType,
+                letterGrade: string,
                 term: number,
                 rawAttributes: string,
                 completed: boolean,
@@ -503,6 +645,7 @@ class CourseTaken {
         this.courseUnits = cus
         this.courseUnitsRemaining = cus
         this.grading = grading
+        this.letterGrade = letterGrade
         this.term = term
         this.completed = completed
 
@@ -584,7 +727,7 @@ class CourseTaken {
     public toString(): string {
         let complete = this.completed ? "completed" : "in progress"
         let minor = this.partOfMinor ? "in minor" : ""
-        return `${this.subject} ${this.courseNumber} ${this.title}, ${this.courseUnits} CUs, ${this.grading}, taken in ${this.term}, ${complete}, ${this.attributes} ${minor}`
+        return `${this.subject} ${this.courseNumber} ${this.title}, ${this.courseUnits} CUs, ${this.grading} ${this.letterGrade}, taken in ${this.term}, ${complete}, ${this.attributes} ${minor}`
     }
 
     /** Return a course code like "ENGL 1234" */
@@ -722,13 +865,11 @@ class CourseTaken {
             "FNCE 0001", "FNCE 0002", "HCMG 0001", "MGMT 0004", "MKTG 0001", "OIDD 0001"]
 
         // no-credit subject areas
-        const nocredit = (["CIT", "MSCI", "DYNM", "MED"].includes(this.subject)) ||
+        return (["CIT", "MSCI", "DYNM", "MED"].includes(this.subject)) ||
             noCreditList.includes(this.code()) ||
             noCreditPhys ||
             noCreditNsci ||
             noCreditStat
-
-        return nocredit
     }
 }
 
@@ -778,7 +919,7 @@ class DegreeWorks {
                     // console.log(line)
                     // list of courses applied to the minor looks like this on DegreeWorks:
                     // Applied: LING 071 (1.0) LING 072 (1.0) LING 106 (1.0) LING 230 (1.0) LING 250 (1.0) LING 3810 (1.0)
-                    myLog(`found courses used for minor in ${line}, using for Tech Electives`)
+                    myLog(`found courses used for minor in ${line}`)
                     line.substring("Applied:".length).split(")").forEach(c => {
                         let name = c.split("(")[0].trim()
                         let course = coursesTaken.find((c: CourseTaken): boolean => c.code() == name || c._3dName == name)
@@ -812,13 +953,43 @@ class DegreeWorks {
             }
         })
 
+        // Math retroactive credit
+        // https://www.math.upenn.edu/undergraduate/advice-new-students/advanced-placement-transfer-retroactive-credit
+        const math1400Retro = coursesTaken.find((c: CourseTaken): boolean => {
+            const calc = ["MATH 1410", "MATH 1610", "MATH 2400", "MATH 2600"].includes(c.code())
+            const bOrBetter = ["A+","A","A-","B+","B"]
+            let gradeOk
+            if ([202010,202020,202030,202110].includes(c.term)) { // Covid terms
+                gradeOk = bOrBetter.concat("P").includes(c.letterGrade)
+            } else {
+                gradeOk = bOrBetter.includes(c.letterGrade)
+            }
+            return calc && gradeOk
+        })
+        if (math1400Retro != undefined) {
+            const math1400 = new CourseTaken(
+                "MATH",
+                "1400",
+                "Calculus 1 retro credit",
+                "MATH 104",
+                1.0,
+                GradeType.ForCredit,
+                "TR",
+                math1400Retro.term,
+                "ATTRIBUTE=EUMA; ATTRIBUTE=EUMS;",
+                true)
+            coursesTaken.push(math1400)
+            coursesTaken.sort((a,b) => a.code().localeCompare(b.code()))
+        }
+        // TODO: Math 2410 retro credit for students entering in Fall 2021 or earlier?
+
         return coursesTaken
     }
 
     private static parseOneCourse(subject: string, courseNumber: string, courseInfo: string, rawAttrs: string): CourseTaken | null {
         const code = `${subject} ${courseNumber}`
         const parts = courseInfo.split("\t")
-        const grade = parts[1].trim()
+        const letterGrade = parts[1].trim()
         const creditUnits = parseFloat(parts[2])
         const term = parseInt(parts[4])
         const inProgress = parts[7] == "YIP"
@@ -835,8 +1006,8 @@ class DegreeWorks {
             gradingType = GradeType.ForCredit
         }
 
-        if (!inProgress && !["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","P","TR"].includes(grade)) {
-            myLog(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${grade}`)
+        if (!inProgress && !["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","P","TR"].includes(letterGrade)) {
+            myLog(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${letterGrade}`)
             return null
         }
 
@@ -850,6 +1021,7 @@ class DegreeWorks {
                 code,
                 creditUnits,
                 gradingType,
+                letterGrade,
                 term,
                 rawAttrs,
                 !inProgress)
@@ -862,6 +1034,7 @@ class DegreeWorks {
             null,
             creditUnits,
             gradingType,
+            letterGrade,
             term,
             rawAttrs,
             !inProgress)
@@ -886,6 +1059,8 @@ class DegreeWorks {
 
         } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CMPE\s+`)) != -1) {
             return "40cu CMPE"
+        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+NETS\s+`)) != -1) {
+            return "40cu NETS"
         }
         return undefined
     }
@@ -1061,7 +1236,7 @@ function runOneWorksheet(worksheetText: string, analysisOutput: string): void {
         fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
             .then(response => response.text())
             .then(json => {
-                const telist = JSON.parse(json);
+                const telist = JSON.parse(json)
                 const result = run(telist, degree, coursesTaken)
 
                 const unsat = result.requirementOutcomes
@@ -1344,6 +1519,57 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                     .withMinLevel(2000),
                 new RequirementAttributes(26, "Tech Elective", [CourseAttribute.MathNatSciEngr]),
                 new RequirementAttributes(27, "Tech Elective", [CourseAttribute.MathNatSciEngr]),
+
+                new RequirementFreeElective(43),
+                new RequirementFreeElective(44),
+                new RequirementFreeElective(45),
+            ]
+            break
+        case "40cu NETS":
+            degreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["MATH 2400","MATH 2600"]),
+                new RequirementNamedCourses(4, "Math", ["CIS 1600"]),
+                new RequirementNamedCourses(5, "Math", ["EAS 205","MATH 3120","MATH 3130","MATH 3140"]),
+                new RequirementNamedCourses(6, "Math", ["ESE 3010","STAT 4300"]),
+
+                new RequirementNamedCourses(7, "Physics", ["PHYS 0150","PHYS 0170"]).withCUs(1.5),
+                new RequirementNamedCourses(8, "Physics", ["PHYS 0151","PHYS 0171"]).withCUs(1.5),
+
+                new RequirementNamedCourses(10, "Major", ["CIS 1100"]),
+                new RequirementNamedCourses(11, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(13, "Major", ["CIS 3200","CIS 5020"]),
+                new RequirementNamedCourses(14, "Major", ["ESE 2100"]),
+                new RequirementNamedCourses(15, "Major", ["ESE 3030"]),
+                new RequirementNamedCourses(16, "Major", ["ESE 304","ESE 2040"]),
+                new RequirementNamedCourses(17, "Major", ["NETS 1120"]),
+                new RequirementNamedCourses(18, "Major", ["NETS 1500"]),
+                new RequirementNamedCourses(19, "Major", ["NETS 2120"]),
+                new RequirementNamedCourses(20, "Major", ["NETS 3120"]),
+                new RequirementNamedCourses(21, "Major", ["NETS 4120"]),
+                new RequirementNamedCourses(22, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(23, "Senior Design", SeniorDesign2ndSem),
+
+                new RequirementNamedCourses(30, SsHTbsTag, ["ECON 2100"]),
+                new RequirementNamedCourses(31, SsHTbsTag, ["ECON 4100","ECON 4101","ECON 6110"]),
+
+                new RequirementAttributes(9, "Natural Science", [CourseAttribute.NatSci]),
+
+                new RequirementSsh(32, [CourseAttribute.Humanities]),
+                new RequirementSsh(33, [CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                // NB: Writing, Ethics, SSH Depth are [40,42]
+
+                new RequirementNets40LightTechElective(24),
+                new RequirementNets40FullTechElective(25),
+                new RequirementNets40FullTechElective(26),
+                new RequirementNets40FullTechElective(27),
+                new RequirementNets40FullTechElective(28),
+                new RequirementNets40FullTechElective(29),
 
                 new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
