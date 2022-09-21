@@ -31,72 +31,71 @@ const AscsProjectElectives = CsciProjectElectives.concat(["CIS 4710","CIS 5710",
 const SeniorDesign1stSem = ["CIS 4000","CIS 4100","ESE 4500","MEAM 4450","BE 4950"]
 const SeniorDesign2ndSem = ["CIS 4010","CIS 4110","ESE 4510","MEAM 4460","BE 4960"]
 
-// TODO: convert to Map
-const WritingSeminarSsHTbs: { [index: string]: CourseAttribute} = {
-    "WRIT 0020": CourseAttribute.Humanities,
-    "WRIT 009": CourseAttribute.Humanities,
-    "WRIT 0100": CourseAttribute.Humanities,
-    "WRIT 0110": CourseAttribute.Humanities,
-    "WRIT 012": CourseAttribute.Humanities,
-    "WRIT 0130": CourseAttribute.Humanities,
-    "WRIT 0140": CourseAttribute.Humanities,
-    "WRIT 0150": CourseAttribute.Humanities,
-    "WRIT 0160": CourseAttribute.SocialScience,
-    "WRIT 0170": CourseAttribute.SocialScience,
-    "WRIT 0200": CourseAttribute.Humanities,
-    "WRIT 0210": CourseAttribute.TBS,
-    "WRIT 0220": CourseAttribute.TBS,
-    "WRIT 023": CourseAttribute.Humanities,
-    "WRIT 024": CourseAttribute.TBS,
-    "WRIT 0250": CourseAttribute.Humanities,
-    "WRIT 0260": CourseAttribute.Humanities,
-    "WRIT 0270": CourseAttribute.Humanities,
-    "WRIT 0280": CourseAttribute.SocialScience,
-    "WRIT 029": CourseAttribute.SocialScience,
-    "WRIT 0300": CourseAttribute.Humanities,
-    "WRIT 0310": CourseAttribute.TBS,
-    "WRIT 032": CourseAttribute.Humanities,
-    "WRIT 0330": CourseAttribute.Humanities,
-    "WRIT 0340": CourseAttribute.SocialScience,
-    "WRIT 035": CourseAttribute.SocialScience,
-    "WRIT 036": CourseAttribute.Humanities,
-    "WRIT 0370": CourseAttribute.SocialScience,
-    "WRIT 0380": CourseAttribute.SocialScience,
-    "WRIT 0390": CourseAttribute.Humanities,
-    "WRIT 0400": CourseAttribute.TBS,
-    "WRIT 0410": CourseAttribute.Humanities,
-    "WRIT 042": CourseAttribute.Humanities,
-    "WRIT 047": CourseAttribute.Humanities,
-    "WRIT 0480": CourseAttribute.SocialScience,
-    "WRIT 0490": CourseAttribute.Humanities,
-    "WRIT 0500": CourseAttribute.SocialScience,
-    "WRIT 0550": CourseAttribute.SocialScience,
-    "WRIT 056": CourseAttribute.Humanities,
-    "WRIT 0580": CourseAttribute.Humanities,
-    "WRIT 0590": CourseAttribute.SocialScience,
-    "WRIT 0650": CourseAttribute.TBS,
-    "WRIT 066": CourseAttribute.Humanities,
-    "WRIT 0670": CourseAttribute.Humanities,
-    "WRIT 0680": CourseAttribute.Humanities,
-    "WRIT 0730": CourseAttribute.Humanities,
-    "WRIT 0740": CourseAttribute.TBS,
-    "WRIT 075": CourseAttribute.SocialScience,
-    "WRIT 0760": CourseAttribute.SocialScience,
-    "WRIT 0770": CourseAttribute.SocialScience,
-    "WRIT 0820": CourseAttribute.Humanities,
-    "WRIT 0830": CourseAttribute.Humanities,
-    "WRIT 084": CourseAttribute.Humanities,
-    "WRIT 085": CourseAttribute.SocialScience,
-    "WRIT 086": CourseAttribute.Humanities,
-    "WRIT 087": CourseAttribute.Humanities,
-    "WRIT 0880": CourseAttribute.SocialScience,
-    "WRIT 0890": CourseAttribute.SocialScience,
-    "WRIT 090": CourseAttribute.TBS,
-    "WRIT 0910": CourseAttribute.Humanities,
-    "WRIT 0920": CourseAttribute.SocialScience,
-    "WRIT 125": CourseAttribute.Humanities,
-    //WRIT135 & WRIT 138 PEER TUTOR TRAINING, count as FEs
-}
+const WritingSeminarSsHTbs = new Map<string,CourseAttribute>([
+    ["WRIT 0020", CourseAttribute.Humanities],
+    ["WRIT 009", CourseAttribute.Humanities],
+    ["WRIT 0100", CourseAttribute.Humanities],
+    ["WRIT 0110", CourseAttribute.Humanities],
+    ["WRIT 012", CourseAttribute.Humanities],
+    ["WRIT 0130", CourseAttribute.Humanities],
+    ["WRIT 0140", CourseAttribute.Humanities],
+    ["WRIT 0150", CourseAttribute.Humanities],
+    ["WRIT 0160", CourseAttribute.SocialScience],
+    ["WRIT 0170", CourseAttribute.SocialScience],
+    ["WRIT 0200", CourseAttribute.Humanities],
+    ["WRIT 0210", CourseAttribute.TBS],
+    ["WRIT 0220", CourseAttribute.TBS],
+    ["WRIT 023", CourseAttribute.Humanities],
+    ["WRIT 024", CourseAttribute.TBS],
+    ["WRIT 0250", CourseAttribute.Humanities],
+    ["WRIT 0260", CourseAttribute.Humanities],
+    ["WRIT 0270", CourseAttribute.Humanities],
+    ["WRIT 0280", CourseAttribute.SocialScience],
+    ["WRIT 029", CourseAttribute.SocialScience],
+    ["WRIT 0300", CourseAttribute.Humanities],
+    ["WRIT 0310", CourseAttribute.TBS],
+    ["WRIT 032", CourseAttribute.Humanities],
+    ["WRIT 0330", CourseAttribute.Humanities],
+    ["WRIT 0340", CourseAttribute.SocialScience],
+    ["WRIT 035", CourseAttribute.SocialScience],
+    ["WRIT 036", CourseAttribute.Humanities],
+    ["WRIT 0370", CourseAttribute.SocialScience],
+    ["WRIT 0380", CourseAttribute.SocialScience],
+    ["WRIT 0390", CourseAttribute.Humanities],
+    ["WRIT 0400", CourseAttribute.TBS],
+    ["WRIT 0410", CourseAttribute.Humanities],
+    ["WRIT 042", CourseAttribute.Humanities],
+    ["WRIT 047", CourseAttribute.Humanities],
+    ["WRIT 0480", CourseAttribute.SocialScience],
+    ["WRIT 0490", CourseAttribute.Humanities],
+    ["WRIT 0500", CourseAttribute.SocialScience],
+    ["WRIT 0550", CourseAttribute.SocialScience],
+    ["WRIT 056", CourseAttribute.Humanities],
+    ["WRIT 0580", CourseAttribute.Humanities],
+    ["WRIT 0590", CourseAttribute.SocialScience],
+    ["WRIT 0650", CourseAttribute.TBS],
+    ["WRIT 066", CourseAttribute.Humanities],
+    ["WRIT 0670", CourseAttribute.Humanities],
+    ["WRIT 0680", CourseAttribute.Humanities],
+    ["WRIT 0730", CourseAttribute.Humanities],
+    ["WRIT 0740", CourseAttribute.TBS],
+    ["WRIT 075", CourseAttribute.SocialScience],
+    ["WRIT 0760", CourseAttribute.SocialScience],
+    ["WRIT 0770", CourseAttribute.SocialScience],
+    ["WRIT 0820", CourseAttribute.Humanities],
+    ["WRIT 0830", CourseAttribute.Humanities],
+    ["WRIT 084", CourseAttribute.Humanities],
+    ["WRIT 085", CourseAttribute.SocialScience],
+    ["WRIT 086", CourseAttribute.Humanities],
+    ["WRIT 087", CourseAttribute.Humanities],
+    ["WRIT 0880", CourseAttribute.SocialScience],
+    ["WRIT 0890", CourseAttribute.SocialScience],
+    ["WRIT 090", CourseAttribute.TBS],
+    ["WRIT 0910", CourseAttribute.Humanities],
+    ["WRIT 0920", CourseAttribute.SocialScience],
+    ["WRIT 125", CourseAttribute.Humanities],
+    //WRIT 135 & WRIT 138 PEER TUTOR TRAINING, count as FEs
+])
 
 const NetsFullTechElectives = new Set<string>([
     "BEPP 2800",
@@ -726,7 +725,7 @@ class CourseTaken {
             "NURS 3130","NURS 3150","NURS 3160","NURS 3300","NURS 5250"]
         return (this.courseNumberInt < 5000 && ssSubjects.includes(this.subject)) ||
             ssCourses.includes(this.code()) ||
-            WritingSeminarSsHTbs[this.code()] == CourseAttribute.SocialScience
+            WritingSeminarSsHTbs.get(this.code()) == CourseAttribute.SocialScience
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Humanities.
@@ -749,7 +748,7 @@ class CourseTaken {
         return (this.courseNumberInt < 5000 && humSubjects.includes(this.subject)) ||
             humCourses.includes(this.code()) ||
             (this.subject == "VLST" && this.courseNumberInt != 2090) ||
-            WritingSeminarSsHTbs[this.code()] == CourseAttribute.Humanities
+            WritingSeminarSsHTbs.get(this.code()) == CourseAttribute.Humanities
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as TBS.
@@ -765,7 +764,7 @@ class CourseTaken {
         ]
         return tbsCourses.includes(this.code()) ||
             (this.code() == "TFXR 000" && this.title == "PFP FREE") ||
-            WritingSeminarSsHTbs[this.code()] == CourseAttribute.TBS
+            WritingSeminarSsHTbs.get(this.code()) == CourseAttribute.TBS
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Math.
