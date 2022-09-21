@@ -433,16 +433,12 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
 
 class RequirementCsci40TechElective extends DegreeRequirement {
 
-    static teHashmap: { [key: string]: null } = {}
+    static teHashmap = new Set<string>()
 
-    constructor(displayIndex: number, teList: TechElectiveDecision[]) {
+    constructor(displayIndex: number) {
         super(displayIndex)
-        if (RequirementCsci40TechElective.teHashmap == {}) {
-            teList
-                .filter((te: TechElectiveDecision): boolean => te.status == "yes")
-                .forEach((te: TechElectiveDecision) => {
-                    RequirementCsci40TechElective.teHashmap[te.course4d] = null
-                })
+        if (RequirementCsci40TechElective.teHashmap.size == 0) {
+            throw new Error("CSCI 40cu TE list is empty(!)")
         }
     }
 
@@ -456,7 +452,7 @@ class RequirementCsci40TechElective extends DegreeRequirement {
                 (c.suhSaysEngr() ||
                     c.attributes.includes(CourseAttribute.MathNatSciEngr) ||
                     specialTEList.includes(c.code()) ||
-                    RequirementCsci40TechElective.teHashmap.hasOwnProperty(c.code()) ||
+                    RequirementCsci40TechElective.teHashmap.has(c.code()) ||
                     c.partOfMinor) &&
                 c.courseNumberInt >= this.minLevel &&
                 this.applyCourse(c, "TechElective")
@@ -962,7 +958,7 @@ class DegreeWorks {
                 coursesTaken.sort((a, b) => a.code().localeCompare(b.code()))
             }
         }
-        // TODO: Math 2410 retro credit for students entering in Fall 2021 or earlier?
+        // TODO: Math 2410 retro credit for students entering in Fall 2021 and earlier?
         // "For the Class of 2025 and earlier, if you pass Math 2410 at Penn with at least a grade of B, you may come to
         // the math office and receive retroactive credit for (and only one) Math 1400, Math 1410, or Math 2400"
 
@@ -1278,6 +1274,12 @@ class RunResult {
 }
 
 function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, coursesTaken: CourseTaken[]): RunResult {
+    csci37techElectiveList
+        .filter((te: TechElectiveDecision): boolean => te.status == "yes")
+        .forEach((te: TechElectiveDecision) => {
+            RequirementCsci40TechElective.teHashmap.add(te.course4d)
+        })
+
     let degreeRequirements: DegreeRequirement[] = []
 
     const ascsNSCourses = ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100","PHYS 093","PHYS 094",
@@ -1327,6 +1329,13 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementAttributes(5, "Math", [CourseAttribute.Math]),
                 new RequirementAttributes(6, "Math", [CourseAttribute.Math]),
 
+                new RequirementTechElectiveEngineering(25),
+                new RequirementTechElectiveEngineering(26),
+                new RequirementCsci40TechElective(27),
+                new RequirementCsci40TechElective(28),
+                new RequirementCsci40TechElective(29),
+                new RequirementCsci40TechElective(30),
+
                 new RequirementSsh(31, [CourseAttribute.SocialScience]),
                 new RequirementSsh(32, [CourseAttribute.SocialScience]),
                 new RequirementSsh(33, [CourseAttribute.Humanities]),
@@ -1335,13 +1344,6 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 // NB: Writing, Ethics, SSH Depth are [40,42]
-
-                new RequirementTechElectiveEngineering(25),
-                new RequirementTechElectiveEngineering(26),
-                new RequirementCsci40TechElective(27, csci37techElectiveList),
-                new RequirementCsci40TechElective(28, csci37techElectiveList),
-                new RequirementCsci40TechElective(29, csci37techElectiveList),
-                new RequirementCsci40TechElective(30, csci37techElectiveList),
 
                 new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
@@ -1378,14 +1380,14 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementTechElectiveEngineering(20),
                 new RequirementTechElectiveEngineering(21),
 
-                new RequirementAscs40TechElective(23, csci37techElectiveList),
-                new RequirementAscs40TechElective(24, csci37techElectiveList),
-                new RequirementAscs40TechElective(25, csci37techElectiveList),
-                new RequirementAscs40TechElective(26, csci37techElectiveList),
-                new RequirementAscs40TechElective(27, csci37techElectiveList),
-                new RequirementAscs40TechElective(28, csci37techElectiveList),
-                new RequirementAscs40TechElective(29, csci37techElectiveList),
-                new RequirementAscs40TechElective(30, csci37techElectiveList),
+                new RequirementAscs40TechElective(23),
+                new RequirementAscs40TechElective(24),
+                new RequirementAscs40TechElective(25),
+                new RequirementAscs40TechElective(26),
+                new RequirementAscs40TechElective(27),
+                new RequirementAscs40TechElective(28),
+                new RequirementAscs40TechElective(29),
+                new RequirementAscs40TechElective(30),
 
                 new RequirementSsh(31, [CourseAttribute.SocialScience]),
                 new RequirementSsh(32, [CourseAttribute.SocialScience]),
@@ -1431,14 +1433,14 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementTechElectiveEngineering(20),
                 new RequirementTechElectiveEngineering(21),
 
-                new RequirementAscs40TechElective(23, csci37techElectiveList),
-                new RequirementAscs40TechElective(24, csci37techElectiveList),
-                new RequirementAscs40TechElective(25, csci37techElectiveList),
-                new RequirementAscs40TechElective(26, csci37techElectiveList),
-                new RequirementAscs40TechElective(27, csci37techElectiveList),
-                new RequirementAscs40TechElective(28, csci37techElectiveList),
-                new RequirementAscs40TechElective(29, csci37techElectiveList),
-                new RequirementAscs40TechElective(30, csci37techElectiveList),
+                new RequirementAscs40TechElective(23),
+                new RequirementAscs40TechElective(24),
+                new RequirementAscs40TechElective(25),
+                new RequirementAscs40TechElective(26),
+                new RequirementAscs40TechElective(27),
+                new RequirementAscs40TechElective(28),
+                new RequirementAscs40TechElective(29),
+                new RequirementAscs40TechElective(30),
 
                 new RequirementSsh(31, [CourseAttribute.SocialScience]),
                 new RequirementSsh(32, [CourseAttribute.SocialScience]),
