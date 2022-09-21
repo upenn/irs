@@ -211,7 +211,7 @@ interface TechElectiveDecision {
 
 type Degree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS"
 
-let IncorrectCMAttributes = new Map<string,null>()
+let IncorrectCMAttributes = new Set<string>()
 
 abstract class DegreeRequirement {
     /** How many CUs are needed to fulfill this requirement. Decremented as courses are applied to this requirement,
@@ -663,11 +663,11 @@ class CourseTaken {
 
         if (this.suhSaysSS() && !this.attributes.includes(CourseAttribute.SocialScience)) {
             this.attributes.push(CourseAttribute.SocialScience)
-            IncorrectCMAttributes.set(`${this.code()} missing ${CourseAttribute.SocialScience}`, null)
+            IncorrectCMAttributes.add(`${this.code()} missing ${CourseAttribute.SocialScience}`)
         }
         if (this.suhSaysHum() && !this.attributes.includes(CourseAttribute.Humanities)) {
             this.attributes.push(CourseAttribute.Humanities)
-            IncorrectCMAttributes.set(`${this.code()} missing ${CourseAttribute.Humanities}`, null)
+            IncorrectCMAttributes.add(`${this.code()} missing ${CourseAttribute.Humanities}`)
         }
 
         // we have definitive categorization for TBS, Math, NS courses
@@ -676,13 +676,13 @@ class CourseTaken {
         this.validateAttribute(this.suhSaysNatSci(), CourseAttribute.NatSci)
         this.validateAttribute(this.suhSaysEngr(), CourseAttribute.MathNatSciEngr)
         if (this.suhSaysEngr() && this.attributes.includes(CourseAttribute.NonEngr)) {
-            IncorrectCMAttributes.set(`${this.code()} incorrectly has ${CourseAttribute.NonEngr}`, null)
+            IncorrectCMAttributes.add(`${this.code()} incorrectly has ${CourseAttribute.NonEngr}`)
         }
     }
     private validateAttribute(suhSays: boolean, attr: CourseAttribute): void {
         if (suhSays && !this.attributes.includes(attr)) {
             this.attributes.push(attr)
-            IncorrectCMAttributes.set(`${this.code()} missing ${attr}`, null)
+            IncorrectCMAttributes.add(`${this.code()} missing ${attr}`)
         }
         if (attr == CourseAttribute.MathNatSciEngr) {
             // Math and NS courses should have EUMS attribute, too
@@ -695,7 +695,7 @@ class CourseTaken {
         }
         if (this.attributes.includes(attr) && !suhSays) {
             this.attributes.splice(this.attributes.indexOf(attr), 1)
-            IncorrectCMAttributes.set(`${this.code()} incorrectly has ${attr}`, null)
+            IncorrectCMAttributes.add(`${this.code()} incorrectly has ${attr}`)
         }
     }
 
