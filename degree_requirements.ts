@@ -934,31 +934,33 @@ class DegreeWorks {
 
         // Math retroactive credit
         // https://www.math.upenn.edu/undergraduate/advice-new-students/advanced-placement-transfer-retroactive-credit
-        const math1400Retro = coursesTaken.find((c: CourseTaken): boolean => {
-            const calc = ["MATH 1410", "MATH 1610", "MATH 2400", "MATH 2600"].includes(c.code())
-            const bOrBetter = ["A+","A","A-","B+","B"]
-            let gradeOk
-            if ([202010,202020,202030,202110].includes(c.term)) { // Covid terms
-                gradeOk = bOrBetter.concat("P").includes(c.letterGrade)
-            } else {
-                gradeOk = bOrBetter.includes(c.letterGrade)
+        if (!coursesTaken.some((c: CourseTaken): boolean => c.code() == "MATH 1400") ) {
+            const math1400Retro = coursesTaken.find((c: CourseTaken): boolean => {
+                const calc = ["MATH 1410", "MATH 1610", "MATH 2400", "MATH 2600"].includes(c.code())
+                const bOrBetter = ["A+", "A", "A-", "B+", "B"]
+                let gradeOk
+                if ([202010, 202020, 202030, 202110].includes(c.term)) { // Covid terms
+                    gradeOk = bOrBetter.concat("P").includes(c.letterGrade)
+                } else {
+                    gradeOk = bOrBetter.includes(c.letterGrade)
+                }
+                return calc && gradeOk
+            })
+            if (math1400Retro != undefined) {
+                const math1400 = new CourseTaken(
+                    "MATH",
+                    "1400",
+                    "Calculus 1 retro credit",
+                    "MATH 104",
+                    1.0,
+                    GradeType.ForCredit,
+                    "TR",
+                    math1400Retro.term,
+                    "ATTRIBUTE=EUMA; ATTRIBUTE=EUMS;",
+                    true)
+                coursesTaken.push(math1400)
+                coursesTaken.sort((a, b) => a.code().localeCompare(b.code()))
             }
-            return calc && gradeOk
-        })
-        if (math1400Retro != undefined) {
-            const math1400 = new CourseTaken(
-                "MATH",
-                "1400",
-                "Calculus 1 retro credit",
-                "MATH 104",
-                1.0,
-                GradeType.ForCredit,
-                "TR",
-                math1400Retro.term,
-                "ATTRIBUTE=EUMA; ATTRIBUTE=EUMS;",
-                true)
-            coursesTaken.push(math1400)
-            coursesTaken.sort((a,b) => a.code().localeCompare(b.code()))
         }
         // TODO: Math 2410 retro credit for students entering in Fall 2021 or earlier?
 
