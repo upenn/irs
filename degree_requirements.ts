@@ -13,6 +13,8 @@ enum CourseAttribute {
     Humanities = "EUHS",
     TBS = "EUTB",
     NonEngr = "EUNE",
+    NetsLightTechElective = "NetsLightTE",
+    NetsFullTechElective = "NetsFullTE",
 }
 
 const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060"]
@@ -304,15 +306,23 @@ class RequirementAttributes extends DegreeRequirement {
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        return courses.slice()
-            .sort(byHighestCUsFirst)
-            .find((c: CourseTaken): boolean => {
-            const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
-            return foundMatch &&
-                c.grading == GradeType.ForCredit &&
-                c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, this.tag)
-        })
+        // try to match something with the first attribute first
+        for (let i = 0; i < this.attrs.length; i++) {
+            const attr = this.attrs[i]
+            const match = courses.slice()
+                .sort(byHighestCUsFirst)
+                .find((c: CourseTaken): boolean => {
+                    const foundMatch = c.attributes.includes(attr)
+                    return foundMatch &&
+                        c.grading == GradeType.ForCredit &&
+                        c.courseNumberInt >= this.minLevel &&
+                        this.applyCourse(c, this.tag)
+                })
+            if (match != undefined) {
+                return match
+            }
+        }
+        return undefined
     }
 
     public toString(): string {
@@ -482,44 +492,6 @@ class RequirementAscs40TechElective extends RequirementCsci40TechElective {
     }
 }
 
-class RequirementNets40FullTechElective extends DegreeRequirement {
-    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        return courses.slice()
-            .sort(byHighestCUsFirst)
-            .find((c: CourseTaken): boolean => {
-                return c.grading == GradeType.ForCredit &&
-                    NetsFullTechElectives.hasOwnProperty(c.code()) &&
-                    c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, "Tech Elective")
-            })
-    }
-
-    public toString(): string {
-        return "Tech Elective"
-    }
-}
-class RequirementNets40LightTechElective extends RequirementNets40FullTechElective {
-    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        const sat = super.satisfiedBy(courses)
-        if (sat != undefined) {
-            return sat
-        }
-
-        return courses.slice()
-            .sort(byHighestCUsFirst)
-            .find((c: CourseTaken): boolean => {
-                return c.grading == GradeType.ForCredit &&
-                    NetsLightTechElectives.hasOwnProperty(c.code()) &&
-                    c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, "Tech Elective (Light)")
-            })
-    }
-
-    public toString(): string {
-        return "Tech Elective (Light)"
-    }
-}
-
 class RequirementSsh extends RequirementAttributes {
     constructor(displayIndex: number, attrs: CourseAttribute[]) {
         super(displayIndex, SsHTbsTag, attrs)
@@ -684,6 +656,13 @@ class CourseTaken {
             if (this.attributes.includes(CourseAttribute.Humanities)) {
                 this.attributes.splice(this.attributes.indexOf(CourseAttribute.Humanities), 1)
             }
+        }
+
+        if (NetsLightTechElectives.hasOwnProperty(this.code())) {
+            this.attributes.push(CourseAttribute.NetsLightTechElective)
+        }
+        if (NetsFullTechElectives.hasOwnProperty(this.code())) {
+            this.attributes.push(CourseAttribute.NetsFullTechElective)
         }
 
         if (this.suhSaysSS() && !this.attributes.includes(CourseAttribute.SocialScience)) {
@@ -1349,8 +1328,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementSsh(33, [CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
-                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
-                new RequirementSsh(37, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 // NB: Writing, Ethics, SSH Depth are [40,42]
 
                 new RequirementTechElectiveEngineering(25),
@@ -1409,8 +1388,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementSsh(33, [CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
-                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
-                new RequirementSsh(37, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 // NB: Writing, Ethics, SSH Depth are [40,42]
 
                 new RequirementFreeElective(43),
@@ -1462,8 +1441,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementSsh(33, [CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
-                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
-                new RequirementSsh(37, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 // NB: Writing, Ethics, SSH Depth are [40,42]
 
                 new RequirementFreeElective(43),
@@ -1507,8 +1486,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementSsh(32, [CourseAttribute.Humanities]),
                 new RequirementSsh(33, [CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
-                new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
-                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 // NB: Writing, Ethics, SSH Depth are always [40,42]
 
                 new RequirementAttributes(28, "Tech Elective", [CourseAttribute.MathNatSciEngr]).withMinLevel(2000),
@@ -1560,16 +1539,17 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementSsh(32, [CourseAttribute.Humanities]),
                 new RequirementSsh(33, [CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
-                new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
-                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]),
+                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 // NB: Writing, Ethics, SSH Depth are [40,42]
 
-                new RequirementNets40LightTechElective(24),
-                new RequirementNets40FullTechElective(25),
-                new RequirementNets40FullTechElective(26),
-                new RequirementNets40FullTechElective(27),
-                new RequirementNets40FullTechElective(28),
-                new RequirementNets40FullTechElective(29),
+                new RequirementAttributes(24, "Tech Elective (Light)",
+                    [CourseAttribute.NetsLightTechElective, CourseAttribute.NetsFullTechElective]),
+                new RequirementAttributes(25, "Tech Elective", [CourseAttribute.NetsFullTechElective]),
+                new RequirementAttributes(26, "Tech Elective", [CourseAttribute.NetsFullTechElective]),
+                new RequirementAttributes(27, "Tech Elective", [CourseAttribute.NetsFullTechElective]),
+                new RequirementAttributes(28, "Tech Elective", [CourseAttribute.NetsFullTechElective]),
+                new RequirementAttributes(29, "Tech Elective", [CourseAttribute.NetsFullTechElective]),
 
                 new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
