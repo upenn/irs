@@ -209,7 +209,7 @@ interface TechElectiveDecision {
     status: "yes" | "no" | "ask"
 }
 
-type Degree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD"
+type Degree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE"
 
 let IncorrectCMAttributes = new Set<string>()
 
@@ -398,7 +398,8 @@ class RequirementCisElective extends DegreeRequirement {
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         return courses.slice() // NB: have to use slice since sort() is in-place
-            .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
+            .sort(byHighestCUsFirst)
+            //.sort((a,b) => a.courseNumberInt - b.courseNumberInt)
             .find((c: CourseTaken): boolean => {
             const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes(CourseAttribute.NonEngr)
             return foundMatch &&
@@ -487,6 +488,134 @@ class RequirementAscs40TechElective extends RequirementCsci40TechElective {
     }
 }
 
+class RequirementDmdElective extends DegreeRequirement {
+
+    constructor(displayIndex: number) {
+        super(displayIndex)
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        const dmdSubjects = ["FNAR", "DSGN", "THAR", "MUSC"]
+
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
+                return dmdSubjects.includes(c.subject) &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c, "DMD Elective")
+            })
+    }
+
+    public toString(): string {
+        return "DMD Elective"
+    }
+}
+
+class RequirementEseEngineeringElective extends DegreeRequirement {
+
+    constructor(displayIndex: number) {
+        super(displayIndex)
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        return courses.slice()
+            .sort(byLowestLevelFirst)
+            .find((c: CourseTaken): boolean => {
+                return c.subject == "ESE" &&
+                    c.suhSaysEngr() &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c, "ESE Elective")
+            })
+    }
+
+    public toString(): string {
+        return "ESE Elective"
+    }
+}
+
+class RequirementAdvancedEseElective extends DegreeRequirement {
+    readonly eseOnly: boolean
+
+    constructor(displayIndex: number, eseOnly: boolean) {
+        super(displayIndex)
+        this.eseOnly = eseOnly
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        const cmpe = [
+            "ESE 3190", "ESE 3500", "ESE 3700", "ESE 4190",
+            "ESE 5160", "ESE 5320", "ESE 5680", "ESE 5700",
+            "ESE 5780", "ESE 6720", "CIS 3710", "CIS 4710",
+            "CIS 5710"]
+        const nano = [
+            "ESE 3100", "ESE 3210", "ESE 3300",
+            "ESE 3360", "ESE 4600", "ESE 5100",
+            "ESE 5210", "ESE 5230", "ESE 5250",
+            "ESE 5260", "ESE 5290", "ESE 6110",
+            "ESE 6210", "ESE 6730"]
+        const isd = [
+            "ESE 3030", "ESE 3050", "ESE 3250",
+            "ESE 4070", "ESE 5000", "ESE 5010",
+            "ESE 5040", "ESE 5050", "ESE 5120",
+            "ESE 5200", "ESE 5270", "ESE 5280",
+            "ESE 5310", "ESE 5450", "ESE 5460",
+            "ESE 5480", "ESE 5500", "ESE 5670",
+            "ESE 5900", "ESE 6050", "ESE 6500",
+            "ESE 6740", "BE 5210", "NETS 3120",
+            "CIS 5200", "MEAM 5200", "MEAM 6200"]
+
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
+                return (cmpe.includes(c.code()) || nano.includes(c.code()) || isd.includes(c.code())) &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c, "EE Advanced Elective")
+            })
+    }
+
+    public toString(): string {
+        return "EE Advanced Elective"
+    }
+}
+
+class RequirementEseProfessionalElective extends DegreeRequirement {
+    readonly froshLevelEngr: boolean
+    readonly allowedCourses: string[]
+    static readonly myTag: string = "Professional Elective"
+
+    constructor(displayIndex: number, froshLevelEngr: boolean, courses: string[] = []) {
+        super(displayIndex)
+        this.froshLevelEngr = froshLevelEngr
+        this.allowedCourses = courses
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        return courses.slice()
+            .sort(byLowestLevelFirst)
+            .find((c: CourseTaken): boolean => {
+                if (this.froshLevelEngr) {
+                    return c.suhSaysEngr() &&
+                        c.grading == GradeType.ForCredit &&
+                        c.courseNumberInt >= this.minLevel &&
+                        this.applyCourse(c, RequirementEseProfessionalElective.myTag)
+                }
+
+                return (c.attributes.includes(CourseAttribute.MathNatSciEngr) || this.allowedCourses.includes(c.code())) &&
+                    (!c.suhSaysEngr() || c.courseNumberInt >= 2000) &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c, RequirementEseProfessionalElective.myTag)
+            })
+    }
+
+    public toString(): string {
+        return RequirementEseProfessionalElective.myTag
+    }
+}
+
 class RequirementSsh extends RequirementAttributes {
     constructor(displayIndex: number, attrs: CourseAttribute[]) {
         super(displayIndex, SsHTbsTag, attrs)
@@ -569,6 +698,11 @@ function countBySubjectSshDepth(courses: CourseTaken[]): CountMap {
 /** used when sorting CourseTaken[] */
 function byHighestCUsFirst(a: CourseTaken, b: CourseTaken): number {
     return b.courseUnitsRemaining - a.courseUnitsRemaining
+}
+
+/** used when sorting CourseTaken[] */
+function byLowestLevelFirst(a: CourseTaken, b: CourseTaken): number {
+    return a.courseNumberInt - b.courseNumberInt
 }
 
 /** Records a course that was taken and passed, so it can conceivably count towards some requirement */
@@ -763,6 +897,7 @@ class CourseTaken {
     private suhSaysMath(): boolean {
         const mathCourses = [
             "CIS 1600", "CIS 2610",
+            "EAS 205",
             "ESE 3010", "ESE 4020",
             "PHIL 1710", "PHIL 4723",
             "STAT 4300", "STAT 4310", "STAT 4320", "STAT 4330"
@@ -1036,6 +1171,10 @@ class DegreeWorks {
             return "40cu NETS"
         } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+DMD\s+`)) != -1) {
             return "40cu DMD"
+        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+EE\s+`)) != -1) {
+            return "40cu EE"
+        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+SSE\s+`)) != -1) {
+            return "40cu SSE"
         }
         return undefined
     }
@@ -1329,13 +1468,6 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementAttributes(5, "Math", [CourseAttribute.Math]),
                 new RequirementAttributes(6, "Math", [CourseAttribute.Math]),
 
-                new RequirementTechElectiveEngineering(25),
-                new RequirementTechElectiveEngineering(26),
-                new RequirementCsci40TechElective(27),
-                new RequirementCsci40TechElective(28),
-                new RequirementCsci40TechElective(29),
-                new RequirementCsci40TechElective(30),
-
                 new RequirementSsh(31, [CourseAttribute.SocialScience]),
                 new RequirementSsh(32, [CourseAttribute.SocialScience]),
                 new RequirementSsh(33, [CourseAttribute.Humanities]),
@@ -1343,6 +1475,14 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+
+                new RequirementTechElectiveEngineering(25),
+                new RequirementTechElectiveEngineering(26),
+                new RequirementCsci40TechElective(27),
+                new RequirementCsci40TechElective(28),
+                new RequirementCsci40TechElective(29),
+                new RequirementCsci40TechElective(30),
+
                 // NB: Writing, Ethics, SSH Depth are [40,42]
 
                 new RequirementFreeElective(43),
@@ -1593,7 +1733,13 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementAttributes(9, "Natural Science", [CourseAttribute.NatSci]),
                 new RequirementAttributes(10, "Natural Science", [CourseAttribute.NatSci]),
 
-                // TODO: DMD Electives 7 CUs
+                new RequirementDmdElective(25),
+                new RequirementDmdElective(26),
+                new RequirementDmdElective(27),
+                new RequirementDmdElective(28),
+                new RequirementDmdElective(29),
+                new RequirementDmdElective(30),
+                new RequirementDmdElective(31),
 
                 new RequirementSsh(32, [CourseAttribute.SocialScience]),
                 new RequirementSsh(33, [CourseAttribute.SocialScience]),
@@ -1606,6 +1752,61 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
 
                 new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
+            ]
+            break
+        case "40cu EE":
+            degreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["MATH 2400","MATH 2600"]),
+                new RequirementNamedCourses(4, "Math", ["ESE 3010"]),
+                new RequirementNamedCourses(6, "Physics",
+                    ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
+                new RequirementNamedCourses(7, "Physics", ["PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
+                new RequirementNamedCourses(8, "Math", ["CHEM 1012","BIOL 1101","BIOL 1121"]),
+                new RequirementNaturalScienceLab(10, "Natural Science Lab").withCUs(0.5),
+
+                new RequirementNamedCourses(11, "Major", ["CIS 1100","ENGR 1050"]),
+                new RequirementNamedCourses(12, "Major", ["ESE 1110"]),
+                new RequirementNamedCourses(13, "Major", ["ESE 2150"]).withCUs(1.5),
+                new RequirementNamedCourses(14, "Major", ["ESE 2180"]).withCUs(1.5),
+                new RequirementNamedCourses(15, "Major", ["ESE 2240"]).withCUs(1.5),
+                new RequirementNamedCourses(16, "Major", ["CIS 1200","CIS 2400"]),
+
+                new RequirementEseEngineeringElective(17).withMinLevel(2000),
+                new RequirementAdvancedEseElective(19, true),
+                new RequirementAdvancedEseElective(20, true),
+                new RequirementAdvancedEseElective(21, true),
+                new RequirementAdvancedEseElective(18, false),
+
+                new RequirementAttributes(5, "Math", [CourseAttribute.Math]),
+                new RequirementAttributes(9, "Math", [CourseAttribute.Math,CourseAttribute.NatSci]),
+
+                new RequirementNamedCourses(22, "ESE Lab",
+                    ["ESE 2900", "ESE 2910", "ESE 3190", "ESE 3360",
+                        "ESE 3500", "ESE 4210", "BE 4700"]).withCUs(1.5),
+
+                new RequirementNamedCourses(23, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(24, "Senior Design", SeniorDesign2ndSem),
+
+                new RequirementEseProfessionalElective(25, true),
+                new RequirementEseProfessionalElective(26, false),
+                new RequirementEseProfessionalElective(27, false),
+                new RequirementEseProfessionalElective(28, false,
+                    ["ESE 4000", "EAS 5450", "EAS 5950", "MGMT 2370", "OIDD 2360"]),
+
+                new RequirementNamedCourses(30, SsHTbsTag, ["EAS 2030"]),
+                new RequirementSsh(34, [CourseAttribute.SocialScience]),
+                new RequirementSsh(32, [CourseAttribute.Humanities]),
+                new RequirementSsh(33, [CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing, Ethics, SSH Depth are [40,42]
+
+                new RequirementFreeElective(43),
+                new RequirementFreeElective(44),
+                new RequirementFreeElective(45),
             ]
             break
         default:
