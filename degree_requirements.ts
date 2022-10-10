@@ -1,5 +1,7 @@
 
 // DW analysis files go here
+import {makeArray} from "jquery";
+
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 
 const SsHTbsTag = "SS/H/TBS"
@@ -292,7 +294,7 @@ class RequirementNamedCourses extends DegreeRequirement {
     }
 
     public toString(): string {
-        return `${this.tag} ${this.courses}`
+        return `${this.tag}: ${this.courses}`
     }
 }
 
@@ -326,7 +328,7 @@ class RequirementAttributes extends DegreeRequirement {
     }
 
     public toString(): string {
-        return `${this.tag} ${this.attrs}`
+        return `${this.tag}: ${this.attrs}`
     }
 }
 
@@ -348,7 +350,7 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
     }
 
     public toString(): string {
-        return `${this.tag} ${this.courses} ${this.attrs}`
+        return `${this.tag}: ${this.courses} ${this.attrs}`
     }
 }
 
@@ -577,7 +579,7 @@ class RequirementAdvancedEseElective extends DegreeRequirement {
     }
 
     public toString(): string {
-        return "EE Advanced Elective"
+        return "ESE Advanced Elective"
     }
 }
 
@@ -595,6 +597,7 @@ class RequirementEseProfessionalElective extends DegreeRequirement {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         return courses.slice()
             .sort(byLowestLevelFirst)
+            .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
                 if (this.froshLevelEngr) {
                     return c.suhSaysEngr() &&
@@ -654,7 +657,7 @@ class RequirementSsh extends RequirementAttributes {
     }
 
     public toString(): string {
-        return `SS/H/TBS ${this.attrs}`
+        return `SS/H/TBS: ${this.attrs}`
     }
 }
 
@@ -1225,7 +1228,7 @@ function webMain(): void {
     }
     const degree = <Degree>degreeChoice
 
-    $(NodeMessages).append(`${coursesTaken.length} courses taken`)
+    $(NodeMessages).append(`<div>${coursesTaken.length} courses taken</div>`)
     const allCourses = coursesTaken.map((c: CourseTaken): string => `<div><small>${c.toString()}</small></div>`).join("")
     $(NodeAllCourses).append(`
 <div class="accordion" id="accordionExample">
@@ -1250,6 +1253,14 @@ function webMain(): void {
             const telist = JSON.parse(json);
             const result = run(telist, degree, coursesTaken)
             $(NodeRemainingCUs).append(`<div class="alert alert-primary" role="alert">${result.cusRemaining} CUs needed to graduate</div>`)
+
+            if (IncorrectCMAttributes.size > 0) {
+                let wrongAttrsMsg = `<div>found ${IncorrectCMAttributes.size} incorrect/missing attributes in CM:<ul>`
+                wrongAttrsMsg += [...IncorrectCMAttributes.keys()]
+                    .map((i: string): string => { return `<li>${i}</li>`})
+                    .join("")
+                $(NodeMessages).append(wrongAttrsMsg + "</ul></div>")
+            }
 
             if (result.unconsumedCourses.length > 0) {
                 $(NodeUnusedCoursesHeader).append(`<h3>Unused Courses</h3>`)
