@@ -30,6 +30,101 @@ const CsciProjectElectives = [
     "ESE 3500"
 ]
 const AscsProjectElectives = CsciProjectElectives.concat(["CIS 4710","CIS 5710","CIS 3800"])
+const SseIseElectives = [
+    "CIS 2400", "CIS 4500", "CIS 5500",
+    "ESE 3050", "ESE 3250", "ESE 4070", "ESE 4200", "ESE 5000", "ESE 5040", "ESE 5050", "ESE 5120",
+    "ESE 520", // NB: doesn't have a 4-digit equivalent, seems retired
+    "ESE 5280", "ESE 5310", "ESE 5450", "ESE 6050", "ESE 6190",
+    "NETS 2120", "NETS 3120", "NETS 4120",
+]
+const SseSpaOnlyOne = [
+    "CIS 3310",
+    "ECON 4320",
+    "ECON 4480",
+    "ECON 4210",
+    "ENGR 566",
+    "FNCE 2030",
+    "FNCE 2070",
+    "FNCE 2090",
+    "FNCE 2370",
+    "FNCE 2390",
+    "FNCE 2500",
+    "FNCE 2250",
+    "FNCE 2800",
+    "FNCE 394",
+    "FNCE 894",
+    "FNCE 7210",
+    "FNCE 9110",
+    "MGMT 3000",
+    "MGMT 3005",
+    "MGMT 3500",
+    "MGMT 246",
+    "OIDD 1050",
+    "OIDD 2450",
+    "OPIM 2630",
+    "BEPP 2630",
+    "STAT 4710",
+    "STAT 4700",
+]
+const SseSpaList = [
+    "PHYS 2280",
+    "BE 5400",
+    "BE 5550",
+    "BE 5410",
+    "BE 3090",
+    "BE 5660",
+    "ESE 5660",
+    "BE 5840",
+    "BIOL 437",
+    "ESE 5430",
+    "EAS 3010",
+    "CBE 3750",
+    "CBE 543",
+    "OIDD 2610",
+    "ENVS 3550",
+    "BEPP 2610",
+    "BEPP 3050",
+    "EAS 4010",
+    "EAS 4020",
+    "EAS 4030",
+    "ENMG 5020",
+    "MEAM 5030",
+    "OIDD 2200",
+    "OIDD 2240",
+    "OIDD 3190",
+    "OIDD 3530",
+    "FNCE 2370",
+    "FNCE 3920",
+    "ECON 4130",
+    "STAT 5200",
+    "CPLN 5010",
+    "CPLN 5050",
+    "CPLN 5200",
+    "CPLN 5500",
+    "CPLN 6210",
+    "CPLN 5500",
+    "CPLN 6500",
+    "CPLN 654",
+    "CPLN 7500",
+    "ESE 5500",
+    "ESE 5500",
+    "CBE 520",
+    "ESE 4070",
+    "ESE 5070",
+    "ESE 408",
+    "MEAM 410",
+    "MEAM 5100",
+    "MEAM 5200",
+    "MEAM 6200",
+    "ESE 6500",
+    "CIS 5190",
+    "CIS 5200",
+    "CIS 5210",
+    "CIS 5810",
+    "ESE 5460",
+    "ESE 6500",
+    "STAT 4760",
+]
 const SeniorDesign1stSem = ["CIS 4000","CIS 4100","ESE 4500","MEAM 4450","BE 4950"]
 const SeniorDesign2ndSem = ["CIS 4010","CIS 4110","ESE 4510","MEAM 4460","BE 4960"]
 
@@ -514,6 +609,28 @@ class RequirementDmdElective extends DegreeRequirement {
     }
 }
 
+class RequirementEngineeringElective extends DegreeRequirement {
+
+    constructor(displayIndex: number) {
+        super(displayIndex)
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        return courses.slice()
+            .sort(byLowestLevelFirst)
+            .find((c: CourseTaken): boolean => {
+                return c.suhSaysEngr() &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c, "Engineering Elective")
+            })
+    }
+
+    public toString(): string {
+        return "Engineering Elective"
+    }
+}
+
 class RequirementEseEngineeringElective extends DegreeRequirement {
 
     constructor(displayIndex: number) {
@@ -616,6 +733,30 @@ class RequirementEseProfessionalElective extends DegreeRequirement {
 
     public toString(): string {
         return RequirementEseProfessionalElective.myTag
+    }
+}
+
+class RequirementSpa extends DegreeRequirement {
+    readonly light: boolean
+
+    constructor(displayIndex: number, light: boolean) {
+        super(displayIndex)
+        this.light = light
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
+                return (SseSpaList.includes(c.code()) || (this.light && SseSpaOnlyOne.includes(c.code()))) &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c, "Societal Problem Application")
+            })
+    }
+
+    public toString(): string {
+        return "Societal Problem Application"
     }
 }
 
@@ -1774,7 +1915,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(6, "Physics",
                     ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
                 new RequirementNamedCourses(7, "Physics", ["PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
-                new RequirementNamedCourses(8, "Math", ["CHEM 1012","BIOL 1101","BIOL 1121"]),
+                new RequirementNamedCourses(8, "Natural Science", ["CHEM 1012","BIOL 1101","BIOL 1121"]),
                 new RequirementNaturalScienceLab(10, "Natural Science Lab").withCUs(0.5),
 
                 new RequirementNamedCourses(11, "Major", ["CIS 1100","ENGR 1050"]),
@@ -1805,6 +1946,61 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementEseProfessionalElective(27, false),
                 new RequirementEseProfessionalElective(28, false,
                     ["ESE 4000", "EAS 5450", "EAS 5950", "MGMT 2370", "OIDD 2360"]),
+
+                new RequirementNamedCourses(30, SsHTbsTag, ["EAS 2030"]),
+                new RequirementSsh(34, [CourseAttribute.SocialScience]),
+                new RequirementSsh(32, [CourseAttribute.Humanities]),
+                new RequirementSsh(33, [CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing, Ethics, SSH Depth are [40,42]
+
+                new RequirementFreeElective(43),
+                new RequirementFreeElective(44),
+                new RequirementFreeElective(45),
+            ]
+            break
+        case "40cu SSE":
+            degreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["MATH 2400","MATH 2600"]),
+                new RequirementNamedCourses(4, "Math", ["ESE 3010"]),
+                new RequirementNamedCourses(5, "Math", ["ESE 302","ESE 4020","ESE 5420"]),
+                new RequirementNamedCourses(6, "Physics",
+                    ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
+                new RequirementNamedCourses(7, "Physics", ["PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120"]),
+                new RequirementNamedCourses(8, "Natural Science", ["CHEM 1012","BIOL 1101","BIOL 1121"]),
+                new RequirementNamedCourses(9, "Math", ["MATH 3120","MATH 3130","MATH 3140","EAS 205",]),
+                new RequirementNaturalScienceLab(10, "Natural Science Lab").withCUs(1.0),
+
+                new RequirementNamedCourses(11, "Major", ["CIS 1100","ENGR 1050"]),
+                new RequirementNamedCourses(12, "Major", ["ESE 1110"]),
+                new RequirementNamedCourses(13, "Major", ["CIS 1200"]),
+
+                new RequirementNamedCourses(14, "Major", ["ESE 2040"]),
+                new RequirementNamedCourses(15, "Major", ["ESE 2100"]),
+                new RequirementNamedCourses(16, "Major", ["ESE 2240"]).withCUs(1.5),
+                new RequirementNamedCourses(17, "Major", ["ESE 3030"]),
+
+                new RequirementNamedCourses(18, "ISE Electives", SseIseElectives),
+                new RequirementNamedCourses(19, "ISE Electives", SseIseElectives),
+                new RequirementNamedCourses(20, "ISE Electives", SseIseElectives),
+
+                new RequirementNamedCourses(23, "System Project Lab",
+                    ["ESE 2900", "ESE 2910", "ESE 3500", "ESE 4210", "ESE 5050", "BE 4700"]).withCUs(1.5),
+                new RequirementNamedCourses(24, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(25, "Senior Design", SeniorDesign2ndSem),
+
+                new RequirementNamedCourses(26, "Tech Management Elective",
+                    ["ESE 4000", "EAS 5450", "EAS 5950", "MGMT 2370", "OIDD 2360"]),
+                new RequirementSpa(27, true),
+                new RequirementSpa(28, false),
+                new RequirementSpa(29, false),
+
+                new RequirementEngineeringElective(22).withMinLevel(2000),
+                new RequirementEngineeringElective(21),
 
                 new RequirementNamedCourses(30, SsHTbsTag, ["EAS 2030"]),
                 new RequirementSsh(34, [CourseAttribute.SocialScience]),
