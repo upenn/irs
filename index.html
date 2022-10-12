@@ -6,9 +6,31 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
 </head>
 <!--    <link href="node_modules/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">-->
-    <script src="node_modules/jquery/dist/jquery.min.js" type="application/javascript"></script>
+<!--    <script src="node_modules/jquery/dist/jquery.min.js" type="application/javascript"></script>-->
 <!--    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.min.js" type="application/javascript"></script>-->
-    <script>var exports = {};</script>
+    <link href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css" rel="stylesheet">
+    <link href="irs.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js" type="application/javascript"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" type="application/javascript"></script>
+    <script>
+        var exports = {};
+        // $(function() {
+        //     $(".draggable").draggable({
+        //         cursor: "move",
+        //         //snap: ".droppable",
+        //         //snapMode: "inner",
+        //     });
+        //     $(".droppable").droppable({
+        //         accept: ".draggable",
+        //         drop: function(event,ui) {
+        //             $(this).addClass("dropped")
+        //         },
+        //         out: function(event,ui) {
+        //             $(this).removeClass("dropped")
+        //         },
+        //     });
+        // })
+    </script>
     <script src="degree_requirements.js" type="application/javascript"></script>
 </head>
 
@@ -35,7 +57,8 @@
                             page.<br/>
                             <img src="degreeworks.png">
                         </li>
-                        <li>Copy and paste the entire contents of the <b>Diagnostics Report</b> page into the textbox below.</li>
+                        <li>On the <b>Diagnostics Report</b> page, select all then copy (Ctrl-A, Ctrl-C) the contents
+                            into the textbox below.</li>
                         <li>For Accelerated Masters students, you should copy+paste their Master's Diagnostics Report
                             <i>as well as</i> their undergrad Diagnostics Report (the order doesn't matter).
                             <ul>

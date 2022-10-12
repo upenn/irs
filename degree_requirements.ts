@@ -1407,7 +1407,8 @@ function webMain(): void {
                 $(NodeUnusedCoursesHeader).append(`<h3>Unused Courses</h3>`)
                 result.unconsumedCourses.forEach(c => {
                     if (c.courseUnitsRemaining == c.courseUnits) {
-                        $(NodeUnusedCoursesList).append(`<li class="list-group-item disabled">totally unused: ${c}</li>`)
+                        //$(NodeUnusedCoursesList).append(`<li class="list-group-item disabled">totally unused: <div class="draggable">${c}</div></li>`)
+                        $(NodeUnusedCoursesHeader).append(`<div class="draggable">${c}</div>`)
                     } else {
                         $(NodeUnusedCoursesList).append(`<li class="list-group-item disabled">${c.courseUnitsRemaining} CUs unused from ${c}</li>`)
                     }
@@ -1427,18 +1428,37 @@ function webMain(): void {
                 }
                 switch (o[0]) {
                     case RequirementOutcome.Satisfied:
-                        $(column).append(`<li class="list-group-item disabled">` + o[1] + "</li>")
+                        $(column).append(`<li class="droppable list-group-item disabled">` + o[1] + "</li>")
                         break;
                     case RequirementOutcome.PartiallySatisfied:
-                        $(column).append(`<li class="list-group-item list-group-item-warning">` + o[1] + "</li>")
+                        $(column).append(`<li class="droppable list-group-item list-group-item-warning">` + o[1] + "</li>")
                         break;
                     case RequirementOutcome.Unsatisfied:
-                        $(column).append(`<li class="list-group-item list-group-item-danger">` + o[1] + "</li>")
+                        $(column).append(`<li class="droppable list-group-item list-group-item-danger">` + o[1] + "</li>")
                         break;
                     default:
                         throw new Error("invalid requirement outcome: " + o)
                 }
             })
+
+            console.log("settting up draggables and droppables")
+            $(".draggable").delay(100).draggable({
+                cursor: "move",
+                scroll: true,
+                //snap: ".droppable",
+                //snapMode: "inner",
+            });
+            $(".droppable").delay(100).droppable({
+                accept: ".course",
+                over: function(event,ui) {
+                    $(this).addClass("dropped")
+                    console.log("dropped onto " + $(this).text())
+                },
+                out: function(event, ui) {
+                    $(this).removeClass("dropped")
+                    console.log("removed from " + $(this).text())
+                }
+            });
         })
 }
 
