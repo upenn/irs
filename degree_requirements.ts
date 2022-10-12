@@ -3,6 +3,8 @@
 import {makeArray} from "jquery";
 
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
+const DraggableDataProperty = "CourseTaken"
+const DroppableDataProperty = "DegreeRequirement"
 
 const SsHTbsTag = "SS/H/TBS"
 
@@ -368,6 +370,10 @@ abstract class DegreeRequirement {
         this.doesntConsume = true
         return this
     }
+
+    public uuid(): string {
+        return `degreeReq_${this.displayIndex}`
+    }
 }
 
 class RequirementNamedCourses extends DegreeRequirement {
@@ -445,7 +451,7 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
     }
 
     public toString(): string {
-        return `${this.tag}: ${this.courses} ${this.attrs}`
+        return `${this.tag}: ${this.courses} -OR- ${this.attrs}`
     }
 }
 
@@ -851,6 +857,8 @@ function byLowestLevelFirst(a: CourseTaken, b: CourseTaken): number {
 
 /** Records a course that was taken and passed, so it can conceivably count towards some requirement */
 class CourseTaken {
+    static NextUuid: number = 0
+    readonly uuid: string
     readonly subject: string
     readonly courseNumber: string
     readonly courseNumberInt: number
@@ -893,6 +901,8 @@ class CourseTaken {
         this.letterGrade = letterGrade
         this.term = term
         this.completed = completed
+        this.uuid = "course" + CourseTaken.NextUuid + "_" + this.code().replace(" ", "")
+        CourseTaken.NextUuid += 1
 
         const attrs = new Set(rawAttributes
             .split(";")
@@ -1376,7 +1386,7 @@ function webMain(): void {
   <div class="accordion-item">
     <h2 class="accordion-header" id="headingTwo">
       <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-      All Courses
+      All Course Details
       </button>
     </h2>
     <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
@@ -1408,7 +1418,7 @@ function webMain(): void {
                 result.unconsumedCourses.forEach(c => {
                     if (c.courseUnitsRemaining == c.courseUnits) {
                         //$(NodeUnusedCoursesList).append(`<li class="list-group-item disabled">totally unused: <div class="draggable">${c}</div></li>`)
-                        $(NodeUnusedCoursesHeader).append(`<div class="draggable">${c}</div>`)
+                        $(NodeUnusedCoursesHeader).append(`<span class="course" id="${c.uuid}">${c.code()}</span>`)
                     } else {
                         $(NodeUnusedCoursesList).append(`<li class="list-group-item disabled">${c.courseUnitsRemaining} CUs unused from ${c}</li>`)
                     }
@@ -1420,43 +1430,58 @@ function webMain(): void {
             // display requirement outcomes, in two columns
             $(NodeDegreeRequirementsHeader).append(`<h3>${degree} Degree Requirements</h3>`)
 
+            const allDegreeReqs = result.requirementOutcomes.map(ro => ro.degreeReq)
             result.requirementOutcomes.forEach(
-                (o: [RequirementOutcome,string], i: number, allReqs: ([RequirementOutcome,string])[]) => {
+                (ro: RequirementOutcome, i: number, allReqs: RequirementOutcome[]) => {
                 let column = NodeDegreeRequirementsColumn1
                 if (i > allReqs.length/2) {
                     column = NodeDegreeRequirementsColumn2
                 }
-                switch (o[0]) {
-                    case RequirementOutcome.Satisfied:
-                        $(column).append(`<li class="droppable list-group-item disabled">` + o[1] + "</li>")
+                const courses = ro.coursesApplied.map(c => `<span class="course" id="${c.uuid}">${c.code()}</span>`).join(" ")
+                switch (ro.applyResult) {
+                    case RequirementApplyResult.Satisfied:
+                        $(column).append(`<div class="droppable requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
+${ro.outcomeString()} by ${courses}</div>`)
                         break;
-                    case RequirementOutcome.PartiallySatisfied:
-                        $(column).append(`<li class="droppable list-group-item list-group-item-warning">` + o[1] + "</li>")
+                    case RequirementApplyResult.PartiallySatisfied:
+                        $(column).append(`<div class="droppable requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
+${ro.outcomeString()} by ${courses} </div>`)
                         break;
-                    case RequirementOutcome.Unsatisfied:
-                        $(column).append(`<li class="droppable list-group-item list-group-item-danger">` + o[1] + "</li>")
+                    case RequirementApplyResult.Unsatisfied:
+                        console.assert(ro.coursesApplied.length == 0)
+                        $(column).append(`<div class="droppable requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}"> ${ro.outcomeString()}</div>`)
                         break;
                     default:
-                        throw new Error("invalid requirement outcome: " + o)
+                        throw new Error("invalid requirement outcome: " + ro)
                 }
             })
 
             console.log("settting up draggables and droppables")
-            $(".draggable").delay(100).draggable({
+            $(".course").delay(100).draggable({
                 cursor: "move",
                 scroll: true,
+                stack: ".course", // make the currently-selected course appear above all others
+                start: function(e, ui) {
+                    const ct = coursesTaken.find(c => c.uuid == e.currentTarget.id)!
+                    $(this).data(DraggableDataProperty, ct)
+                },
                 //snap: ".droppable",
                 //snapMode: "inner",
             });
             $(".droppable").delay(100).droppable({
                 accept: ".course",
+                create: function(event, _) {
+                    // console.log("creating droppable: " + $(this).attr("id"))
+                    const myReq = allDegreeReqs.find(req => req.uuid() == $(this).attr("id"))!
+                    $(this).data(DroppableDataProperty, myReq)
+                },
                 over: function(event,ui) {
                     $(this).addClass("dropped")
-                    console.log("dropped onto " + $(this).text())
+                    console.log(ui.draggable.data(DraggableDataProperty).code() + " hover on " + $(this).data(DroppableDataProperty))
                 },
                 out: function(event, ui) {
                     $(this).removeClass("dropped")
-                    console.log("removed from " + $(this).text())
+                    // console.log("removed from " + $(this).text())
                 }
             });
         })
@@ -1526,12 +1551,12 @@ function runOneWorksheet(worksheetText: string, analysisOutput: string): void {
                 const result = run(telist, degree, coursesTaken)
 
                 const unsat = result.requirementOutcomes
-                    .filter(r => r[0] != RequirementOutcome.Satisfied)
-                    .map(r => "  " + r[1])
+                    .filter(ro => ro.applyResult != RequirementApplyResult.Satisfied)
+                    .map(ro => "  " + ro.outcomeString())
                     .join("\n")
                 const unconsumed = result.unconsumedCourses
                     .sort()
-                    .map(r => "  " + r.toString())
+                    .map(c => "  " + c.toString())
                     .join("\n")
                     const summary = `
 ${result.cusRemaining} CUs remaining in ${degree}
@@ -1563,17 +1588,38 @@ function myLog(msg: string): void {
     }
 }
 
-enum RequirementOutcome {
+enum RequirementApplyResult {
     Unsatisfied, PartiallySatisfied, Satisfied
 }
-type RequirementOutcomeArray = [RequirementOutcome,string][]
+class RequirementOutcome {
+    readonly degreeReq: DegreeRequirement
+    readonly applyResult: RequirementApplyResult
+    readonly coursesApplied: CourseTaken[]
+    constructor(req: DegreeRequirement, outcome: RequirementApplyResult, courses: CourseTaken[]) {
+        this.degreeReq = req
+        this.applyResult = outcome
+        this.coursesApplied = courses
+    }
+    public outcomeString(): string {
+        switch (this.applyResult) {
+            case RequirementApplyResult.Satisfied:
+                return `${this.degreeReq} satisfied`
+            case RequirementApplyResult.PartiallySatisfied:
+                return `${this.degreeReq} PARTIALLY satisfied`
+            case RequirementApplyResult.Unsatisfied:
+                return `${this.degreeReq} NOT satisfied`
+            default:
+                throw new Error("invalid applyResult " + this.applyResult)
+        }
+    }
+}
 
 class RunResult {
-    readonly requirementOutcomes: RequirementOutcomeArray
+    readonly requirementOutcomes: RequirementOutcome[]
     readonly cusRemaining: number
     readonly unconsumedCourses: CourseTaken[]
 
-    constructor(requirementOutcomes: RequirementOutcomeArray, cusRemaining: number, unconsumedCourses: CourseTaken[]) {
+    constructor(requirementOutcomes: RequirementOutcome[], cusRemaining: number, unconsumedCourses: CourseTaken[]) {
         this.requirementOutcomes = requirementOutcomes
         this.cusRemaining = cusRemaining
         this.unconsumedCourses = unconsumedCourses
@@ -2048,22 +2094,23 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
     coursesTaken.sort((a,b): number => a.courseNumberInt - b.courseNumberInt)
 
     let totalRemainingCUs = 0.0
-    let reqOutcomes: [number,RequirementOutcome,string][] = []
+    // displayIndex, DegreeRequirement, RequirementOutcome, course(s) applied
+    let reqOutcomes: [number,DegreeRequirement,RequirementApplyResult,CourseTaken[]][] = []
     degreeRequirements.forEach(req => {
         const matched1 = req.satisfiedBy(coursesTaken)
         if (matched1 == undefined) {
-            reqOutcomes.push([req.displayIndex, RequirementOutcome.Unsatisfied, `${req} NOT satisfied`])
+            reqOutcomes.push([req.displayIndex, req, RequirementApplyResult.Unsatisfied, []])
         } else if (req.remainingCUs > 0) {
             const matched2 = req.satisfiedBy(coursesTaken)
-            if (matched2 == undefined) {
-                reqOutcomes.push([req.displayIndex, RequirementOutcome.PartiallySatisfied, `${req} PARTIALLY satisfied by ${matched1.code()}`])
+            if (matched2 == undefined) { // partially satisfied by 1 course
+                reqOutcomes.push([req.displayIndex, req, RequirementApplyResult.PartiallySatisfied, [matched1]])
             } else {
                 // fully satisfied by 2 courses
-                reqOutcomes.push([req.displayIndex, RequirementOutcome.Satisfied, `${req} satisfied by ${matched1.code()} and ${matched2.code()}`])
+                reqOutcomes.push([req.displayIndex, req, RequirementApplyResult.Satisfied, [matched1,matched2]])
             }
         } else {
-            // fully satisfied
-            reqOutcomes.push([req.displayIndex, RequirementOutcome.Satisfied, `${req} satisfied by ${matched1.code()}`])
+            // fully satisfied by 1 course
+            reqOutcomes.push([req.displayIndex, req, RequirementApplyResult.Satisfied, [matched1]])
         }
         totalRemainingCUs += req.remainingCUs
     })
@@ -2075,35 +2122,44 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
         const writingReq = new RequirementAttributes(40, "Writing", [CourseAttribute.Writing]).withNoConsume()
         const matched = writingReq.satisfiedBy(sshCourses)
         if (matched == undefined) {
-            reqOutcomes.push([writingReq.displayIndex, RequirementOutcome.Unsatisfied, `${writingReq} NOT satisfied`])
+            reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Unsatisfied, []])
         } else {
-            reqOutcomes.push([writingReq.displayIndex, RequirementOutcome.Satisfied, `${writingReq} satisfied by ${matched.code()}`])
+            reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Satisfied, [matched]])
         }
     }
     { // ethics requirement: NB doesn't have to come from SSH block!
         const ethicsReq = new RequirementNamedCourses(41, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
         const matched = ethicsReq.satisfiedBy(coursesTaken)
         if (matched == undefined) {
-            reqOutcomes.push([ethicsReq.displayIndex, RequirementOutcome.Unsatisfied, `${ethicsReq} NOT satisfied`])
+            reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Unsatisfied, []])
         } else {
-            reqOutcomes.push([ethicsReq.displayIndex, RequirementOutcome.Satisfied, `${ethicsReq} satisfied by ${matched.code()}`])
+            reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Satisfied, [matched]])
         }
     }
 
     // SS/H Depth requirement
     const counts: CountMap = countBySubjectSshDepth(sshCourses)
     const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
-    if (depthKeys.length > 0 ||
-        (sshCourses.some(c => c.code() == "EAS 5450") && sshCourses.some(c => c.code() == "EAS 5460"))) {
-        reqOutcomes.push([42, RequirementOutcome.Satisfied, `SSH Depth Requirement satisfied by ${depthKeys[0]}`])
+    const depthReq = new RequirementNamedCourses(42, "SSH Depth Requirement", [])
+    if (depthKeys.length > 0) {
+        const depthCourses = sshCourses.filter(c => c.subject == depthKeys[0])
+        reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, depthCourses])
     } else {
-        reqOutcomes.push([42, RequirementOutcome.Unsatisfied, `SSH Depth Requirement NOT satisfied`])
+        const eentCourses = [sshCourses.find(c => c.code() == "EAS 5450"), sshCourses.find(c => c.code() == "EAS 5460")]
+        if (eentCourses.every(c => c != undefined)) {
+            const ec: CourseTaken[] = eentCourses.map(c => c!)
+            reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, ec])
+        } else {
+            reqOutcomes.push([42, depthReq, RequirementApplyResult.Unsatisfied, []])
+        }
     }
 
     // sort by displayIndex
     reqOutcomes.sort((a,b) => a[0] - b[0])
     return new RunResult(
-        reqOutcomes.map((o: [number, RequirementOutcome, string]): [RequirementOutcome,string] => [o[1],o[2]]),
+        reqOutcomes.map((o: [number, DegreeRequirement, RequirementApplyResult, CourseTaken[]]): RequirementOutcome => {
+            return new RequirementOutcome(o[1], o[2], o[3])
+        }),
         totalRemainingCUs,
         coursesTaken.filter(c => c.courseUnitsRemaining > 0)
     )
