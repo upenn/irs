@@ -1,5 +1,8 @@
-.dropped {
+.canApply {
     color: green !important;
+}
+.cannotApply {
+    color: red !important;
 }
 .course {
     z-index: 10;

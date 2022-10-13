@@ -317,6 +317,9 @@ abstract class DegreeRequirement {
      * e.g., with 0.5 CU courses */
     public remainingCUs: number = 1.0
 
+    /** How many CUs are needed to fulfill this requirement. Never changed after initialization. */
+    public cus: number = 1.0
+
     /** The requirement needs courses to be at least this level, e.g., 2000. Use a 4-digit course number */
     public minLevel: number = 0
 
@@ -356,6 +359,7 @@ abstract class DegreeRequirement {
     /** Set the required CUs for this requirement to be `n` */
     withCUs(n: number): DegreeRequirement {
         this.remainingCUs = n
+        this.cus = n
         return this
     }
 
@@ -876,7 +880,7 @@ class CourseTaken {
 
     /** tracks which (if any) requirement has been satisfied by this course */
     consumedBy: string | null = null
-    /** the number of CUs of this course consumed so far. Used mainly for NS lab courses */
+    /** the number of CUs of this course not yet consumed by any requirements */
     courseUnitsRemaining: number
 
     constructor(subject: string,
@@ -1441,15 +1445,16 @@ function webMain(): void {
                 switch (ro.applyResult) {
                     case RequirementApplyResult.Satisfied:
                         $(column).append(`<div class="droppable requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
-${ro.outcomeString()} by ${courses}</div>`)
+<span class="outcome">${ro.outcomeString()} by</span> ${courses}</div>`)
                         break;
                     case RequirementApplyResult.PartiallySatisfied:
                         $(column).append(`<div class="droppable requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
-${ro.outcomeString()} by ${courses} </div>`)
+<span class="outcome">${ro.outcomeString()} by</span> ${courses} </div>`)
                         break;
                     case RequirementApplyResult.Unsatisfied:
                         console.assert(ro.coursesApplied.length == 0)
-                        $(column).append(`<div class="droppable requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}"> ${ro.outcomeString()}</div>`)
+                        $(column).append(`<div class="droppable requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}">
+<span class="outcome">${ro.outcomeString()}</span></div>`)
                         break;
                     default:
                         throw new Error("invalid requirement outcome: " + ro)
@@ -1476,11 +1481,57 @@ ${ro.outcomeString()} by ${courses} </div>`)
                     $(this).data(DroppableDataProperty, myReq)
                 },
                 over: function(event,ui) {
-                    $(this).addClass("dropped")
-                    console.log(ui.draggable.data(DraggableDataProperty).code() + " hover on " + $(this).data(DroppableDataProperty))
+                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
+                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
+
+                    console.log(course.courseUnitsRemaining + " hover on " + req.remainingCUs)
+                    const result = req.satisfiedBy([course])
+                    $(this).removeClass("canApply")
+                    $(this).removeClass("cannotApply")
+                    if (result == undefined) {
+                        $(this).addClass("cannotApply")
+                    } else {
+                        $(this).addClass("canApply")
+                    }
+                    course.courseUnitsRemaining = course.courseUnits
+                    req.remainingCUs = req.cus
+                },
+                drop: function(event, ui) {
+                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
+                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
+                    const result = req.satisfiedBy([course])
+                    $(this).removeClass("requirementSatisfied")
+                    $(this).removeClass("requirementUnsatisfied")
+                    $(this).removeClass("requirementPartiallySatisfied")
+                    if (result == undefined) {
+                        $(this).addClass("requirementUnsatisfied")
+                        const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
+                        // console.log($(this).text())
+                        $(this).find("span.outcome").text(ro.outcomeString())
+                    } else {
+                        $(this).addClass("requirementSatisfied")
+                        const ro = new RequirementOutcome(req, RequirementApplyResult.Satisfied, [course])
+                        console.log($(this).text())
+                        $(this).find("span.outcome").text(ro.outcomeString())
+                    }
                 },
                 out: function(event, ui) {
-                    $(this).removeClass("dropped")
+                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
+                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
+                    course.courseUnitsRemaining = course.courseUnits
+                    req.remainingCUs = req.cus
+
+                    $(this).removeClass("canApply")
+                    $(this).removeClass("cannotApply")
+                    $(this).removeClass("requirementSatisfied")
+                    $(this).removeClass("requirementUnsatisfied")
+                    $(this).removeClass("requirementPartiallySatisfied")
+
+                    $(this).addClass("requirementUnsatisfied")
+                    const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
+                    $(this).find("span.outcome").text(ro.outcomeString())
+
+                    // $(this).removeClass("dropped")
                     // console.log("removed from " + $(this).text())
                 }
             });
