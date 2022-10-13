@@ -1,6 +1,7 @@
 
 // DW analysis files go here
 import {makeArray} from "jquery";
+import DroppableEventUIParam = JQueryUI.DroppableEventUIParam;
 
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 const DraggableDataProperty = "CourseTaken"
@@ -1478,6 +1479,7 @@ function webMain(): void {
             })
 
             console.log("settting up draggables and droppables")
+
             $(".course").delay(100).draggable({
                 cursor: "move",
                 scroll: true,
@@ -1489,6 +1491,26 @@ function webMain(): void {
                 //snap: ".droppable",
                 //snapMode: "inner",
             });
+
+            const dropHandler = function(t: JQueryUI.DroppableOptions, event: JQueryEventObject, ui: DroppableEventUIParam) {
+                const req: DegreeRequirement = $(t).data(DroppableDataProperty)
+                const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
+                const result = req.satisfiedBy([course])
+                $(t).removeClass("requirementSatisfied")
+                $(t).removeClass("requirementUnsatisfied")
+                $(t).removeClass("requirementPartiallySatisfied")
+                if (result == undefined) {
+                    $(t).addClass("requirementUnsatisfied")
+                    const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
+                    $(t).find("span.outcome").text(ro.outcomeString())
+                } else {
+                    $(t).addClass("requirementSatisfied")
+                    const ro = new RequirementOutcome(req, RequirementApplyResult.Satisfied, [course])
+                    console.log($(t).text())
+                    $(t).find("span.outcome").text(ro.outcomeString())
+                }
+            }
+
             $(".droppable").delay(100).droppable({
                 accept: ".course",
                 create: function(event, _) {
@@ -1499,37 +1521,13 @@ function webMain(): void {
                 over: function(event,ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
-
-                    console.log(course.courseUnitsRemaining + " hover on " + req.remainingCUs)
-                    const result = req.satisfiedBy([course])
-                    $(this).removeClass("canApply")
-                    $(this).removeClass("cannotApply")
-                    if (result == undefined) {
-                        $(this).addClass("cannotApply")
-                    } else {
-                        $(this).addClass("canApply")
-                    }
+                    dropHandler(this, event, ui)
+                    // HACK: reset state so that drop() will work
                     course.courseUnitsRemaining = course.courseUnits
                     req.remainingCUs = req.cus
                 },
                 drop: function(event, ui) {
-                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
-                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
-                    const result = req.satisfiedBy([course])
-                    $(this).removeClass("requirementSatisfied")
-                    $(this).removeClass("requirementUnsatisfied")
-                    $(this).removeClass("requirementPartiallySatisfied")
-                    if (result == undefined) {
-                        $(this).addClass("requirementUnsatisfied")
-                        const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
-                        // console.log($(this).text())
-                        $(this).find("span.outcome").text(ro.outcomeString())
-                    } else {
-                        $(this).addClass("requirementSatisfied")
-                        const ro = new RequirementOutcome(req, RequirementApplyResult.Satisfied, [course])
-                        console.log($(this).text())
-                        $(this).find("span.outcome").text(ro.outcomeString())
-                    }
+                    dropHandler(this, event, ui)
                 },
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
@@ -1537,8 +1535,6 @@ function webMain(): void {
                     course.courseUnitsRemaining = course.courseUnits
                     req.remainingCUs = req.cus
 
-                    $(this).removeClass("canApply")
-                    $(this).removeClass("cannotApply")
                     $(this).removeClass("requirementSatisfied")
                     $(this).removeClass("requirementUnsatisfied")
                     $(this).removeClass("requirementPartiallySatisfied")
@@ -1546,9 +1542,6 @@ function webMain(): void {
                     $(this).addClass("requirementUnsatisfied")
                     const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
                     $(this).find("span.outcome").text(ro.outcomeString())
-
-                    // $(this).removeClass("dropped")
-                    // console.log("removed from " + $(this).text())
                 }
             });
         })
