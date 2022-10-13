@@ -329,6 +329,9 @@ abstract class DegreeRequirement {
     /** Used to sort requirements for display */
     readonly displayIndex: number
 
+    /** toString() returns a detailed version of this requirement, e.g., listing all courses/attrs that will satisfy it */
+    protected verbose: boolean = true
+
     constructor(displayIndex: number) {
         this.displayIndex = displayIndex
     }
@@ -375,6 +378,11 @@ abstract class DegreeRequirement {
         return this
     }
 
+    withConcise(): DegreeRequirement {
+        this.verbose = false
+        return this
+    }
+
     public uuid(): string {
         return `degreeReq_${this.displayIndex}`
     }
@@ -399,7 +407,11 @@ class RequirementNamedCourses extends DegreeRequirement {
     }
 
     public toString(): string {
-        return `${this.tag}: ${this.courses}`
+        if (this.verbose) {
+            return `${this.tag}: ${this.courses}`
+        } else {
+            return this.tag
+        }
     }
 }
 
@@ -455,7 +467,11 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
     }
 
     public toString(): string {
-        return `${this.tag}: ${this.courses} -OR- ${this.attrs}`
+        if (this.verbose) {
+            return `${this.tag}: ${this.courses} -OR- ${this.attrs}`
+        } else {
+            return this.tag
+        }
     }
 }
 
@@ -1767,9 +1783,10 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(4, "Math", ["CIS 2620","CIS 5110"]),
 
                 new RequirementNamedCourses(7, "Natural Science", ascsNSCourses),
-                new RequirementNamedCourses(8, "Natural Science",ascsNSCourses),
-                new RequirementNamedCoursesOrAttributes(9, "Natural Science", ascsNSElectives, [CourseAttribute.NatSci]),
-                new RequirementNamedCoursesOrAttributes(10, "Natural Science", ascsNSElectives, [CourseAttribute.NatSci]),
+                new RequirementNamedCourses(8, "Natural Science",ascsNSCourses).withConcise(),
+                new RequirementNamedCoursesOrAttributes(9, "Natural Science Elective", ascsNSElectives, [CourseAttribute.NatSci]),
+                new RequirementNamedCoursesOrAttributes(10, "Natural Science Elective", ascsNSElectives, [CourseAttribute.NatSci])
+                    .withConcise(),
 
                 new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
@@ -1777,7 +1794,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(14, "Major", ["CIS 2400"]),
                 new RequirementNamedCourses(15, "Major", ["CIS 3200","CIS 5020"]),
                 new RequirementNamedCourses(18, "Project Elective", AscsProjectElectives),
-                new RequirementNamedCourses(19, "Project Elective", AscsProjectElectives),
+                new RequirementNamedCourses(19, "Project Elective", AscsProjectElectives).withConcise(),
                 new RequirementNamedCourses(22, "Senior Capstone", ["EAS 4990","CIS 4980"].concat(SeniorDesign2ndSem)),
 
                 new RequirementCisElective(17).withMinLevel(2000),
@@ -1820,9 +1837,10 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(4, "Math", ["CIS 2620"]),
 
                 new RequirementNamedCourses(7, "Natural Science", ascsNSCourses),
-                new RequirementNamedCourses(8, "Natural Science",ascsNSCourses),
-                new RequirementNamedCoursesOrAttributes(9, "Natural Science", ascsNSElectives, [CourseAttribute.NatSci]),
-                new RequirementNamedCoursesOrAttributes(10, "Natural Science", ascsNSElectives, [CourseAttribute.NatSci]),
+                new RequirementNamedCourses(8, "Natural Science",ascsNSCourses).withConcise(),
+                new RequirementNamedCoursesOrAttributes(9, "Natural Science Elective", ascsNSElectives, [CourseAttribute.NatSci]),
+                new RequirementNamedCoursesOrAttributes(10, "Natural Science Elective", ascsNSElectives, [CourseAttribute.NatSci])
+                    .withConcise(),
 
                 new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
@@ -2101,9 +2119,9 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementNamedCourses(16, "Major", ["ESE 2240"]).withCUs(1.5),
                 new RequirementNamedCourses(17, "Major", ["ESE 3030"]),
 
-                new RequirementNamedCourses(18, "ISE Electives", SseIseElectives),
-                new RequirementNamedCourses(19, "ISE Electives", SseIseElectives),
-                new RequirementNamedCourses(20, "ISE Electives", SseIseElectives),
+                new RequirementNamedCourses(18, "ISE Elective", SseIseElectives),
+                new RequirementNamedCourses(19, "ISE Elective", SseIseElectives).withConcise(),
+                new RequirementNamedCourses(20, "ISE Elective", SseIseElectives).withConcise(),
 
                 new RequirementNamedCourses(23, "System Project Lab",
                     ["ESE 2900", "ESE 2910", "ESE 3500", "ESE 4210", "ESE 5050", "BE 4700"]).withCUs(1.5),
