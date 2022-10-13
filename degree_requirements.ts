@@ -333,6 +333,9 @@ abstract class DegreeRequirement {
     /** toString() returns a detailed version of this requirement, e.g., listing all courses/attrs that will satisfy it */
     protected verbose: boolean = true
 
+    /** which course(s) are currently applied to this requirement */
+    public coursesApplied: CourseTaken[] = []
+
     constructor(displayIndex: number) {
         this.displayIndex = displayIndex
     }
@@ -344,12 +347,14 @@ abstract class DegreeRequirement {
     /** internal method for actually applying `c` to this requirement, decrementing CUs for both `c` and `this` */
     protected applyCourse(c: CourseTaken, tag: string): boolean {
         if (this.doesntConsume) {
+            this.coursesApplied.push(c)
             return true
         }
         if (c.courseUnitsRemaining > 0 && !(c.courseUnitsRemaining == 1 && this.remainingCUs == 0.5)) {
-            if (c.consumedBy == null) {
-                c.consumedBy = tag
+            if (c.consumedBy == undefined) {
+                c.consumedBy = this
             }
+            this.coursesApplied.push(c)
             const cusToUse = Math.min(c.courseUnitsRemaining, this.remainingCUs)
             // console.log(`${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulling ${cusToUse} from ${c.code()} for ${this}`)
             c.courseUnitsRemaining -= cusToUse
@@ -358,6 +363,18 @@ abstract class DegreeRequirement {
             return true
         }
         return false
+    }
+
+    public unapplyCourse(c: CourseTaken) {
+        if (!this.coursesApplied.includes(c)) {
+            throw new Error(`${c} missing from ${this.coursesApplied}`)
+        }
+        // remove c from coursesApplied
+        this.coursesApplied.splice(this.coursesApplied.indexOf(c), 1);
+        // TODO: doesn't account for fractional CU usage
+        this.remainingCUs += c.courseUnits
+        c.courseUnitsRemaining = c.courseUnits
+        c.consumedBy = undefined
     }
 
     /** Set the required CUs for this requirement to be `n` */
@@ -502,8 +519,8 @@ class RequirementNaturalScienceLab extends RequirementNamedCourses {
             c.courseNumberInt >= this.minLevel)
         if (matched == undefined) return undefined
 
-        if (matched.consumedBy == null) {
-            matched.consumedBy = this.tag
+        if (matched.consumedBy == undefined) {
+            matched.consumedBy = this
         }
         matched.courseUnitsRemaining -= 0.5
         this.remainingCUs -= 0.5
@@ -896,7 +913,7 @@ class CourseTaken {
     partOfMinor: boolean = false
 
     /** tracks which (if any) requirement has been satisfied by this course */
-    consumedBy: string | null = null
+    consumedBy: DegreeRequirement | undefined = undefined
     /** the number of CUs of this course not yet consumed by any requirements */
     courseUnitsRemaining: number
 
@@ -1513,6 +1530,7 @@ function webMain(): void {
 
             $(".droppable").delay(100).droppable({
                 accept: ".course",
+                tolerance: "fit",
                 create: function(event, _) {
                     // console.log("creating droppable: " + $(this).attr("id"))
                     const myReq = allDegreeReqs.find(req => req.uuid() == $(this).attr("id"))!
@@ -1521,24 +1539,40 @@ function webMain(): void {
                 over: function(event,ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
+                    console.log(`${course.code()} *over* ${req.uuid()}, ${course.consumedBy?.uuid()}`)
+
+                    // if req is already filled by something else, ignore this course
+                    if (req.coursesApplied.length != 0 && !req.coursesApplied.includes(course)) {
+                        return
+                    }
+
                     dropHandler(this, event, ui)
-                    // HACK: reset state so that drop() will work
-                    course.courseUnitsRemaining = course.courseUnits
-                    req.remainingCUs = req.cus
+                    // // HACK: reset state so that drop() will work
+                    // req.unapplyCourse(course)
                 },
                 drop: function(event, ui) {
-                    dropHandler(this, event, ui)
+                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
+                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
+                    console.log(`drop ${course.code()} on ${req.uuid()}`)
+
+                    // if req is already filled by something else, ignore this course
+                    if (!req.coursesApplied.includes(course)) {
+                        dropHandler(this, event, ui)
+                    }
                 },
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
-                    course.courseUnitsRemaining = course.courseUnits
-                    req.remainingCUs = req.cus
-
+                    console.log(`${course.code()} *left* ${req.uuid()}`)
+                    if (!req.coursesApplied.includes(course)) {
+                        return
+                    }
+                    // update model
+                    req.unapplyCourse(course)
+                    // update styling
                     $(this).removeClass("requirementSatisfied")
                     $(this).removeClass("requirementUnsatisfied")
                     $(this).removeClass("requirementPartiallySatisfied")
-
                     $(this).addClass("requirementUnsatisfied")
                     const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
                     $(this).find("span.outcome").text(ro.outcomeString())
@@ -1663,9 +1697,9 @@ class RequirementOutcome {
     public outcomeString(): string {
         switch (this.applyResult) {
             case RequirementApplyResult.Satisfied:
-                return `${this.degreeReq} satisfied`
+                return `${this.degreeReq} satisfied by`
             case RequirementApplyResult.PartiallySatisfied:
-                return `${this.degreeReq} PARTIALLY satisfied`
+                return `${this.degreeReq} PARTIALLY satisfied by`
             case RequirementApplyResult.Unsatisfied:
                 return `${this.degreeReq} NOT satisfied`
             default:
@@ -2178,7 +2212,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
     })
 
     // handle special ShareWith requirements: writing, ethics, depth
-    const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy == SsHTbsTag)
+    const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy != undefined && c.consumedBy!.toString() == SsHTbsTag)
 
     { // writing requirement
         const writingReq = new RequirementAttributes(40, "Writing", [CourseAttribute.Writing]).withNoConsume()
