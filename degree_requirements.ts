@@ -1475,6 +1475,27 @@ function webMain(): void {
                 if (i > allReqs.length/2) {
                     column = NodeDegreeRequirementsColumn2
                 }
+                if (ro.degreeReq.doesntConsume) {
+                    const courses = ro.coursesApplied.map(c => c.code()).join(" ")
+                    switch (ro.applyResult) {
+                        case RequirementApplyResult.Satisfied:
+                            $(column).append(`<div class="requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
+<span class="outcome">${ro.outcomeString()} by</span> ${courses}</div>`)
+                            break;
+                        case RequirementApplyResult.PartiallySatisfied:
+                            $(column).append(`<div class="requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
+<span class="outcome">${ro.outcomeString()} by</span> ${courses} </div>`)
+                            break;
+                        case RequirementApplyResult.Unsatisfied:
+                            console.assert(ro.coursesApplied.length == 0)
+                            $(column).append(`<div class="requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}">
+<span class="outcome">${ro.outcomeString()}</span></div>`)
+                            break;
+                        default:
+                            throw new Error("invalid requirement outcome: " + ro)
+                    }
+                    return
+                }
                 const courses = ro.coursesApplied.map(c => {
                     const completed = c.completed ? "courseCompleted" : "courseInProgress"
                     return `<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`
@@ -1544,6 +1565,24 @@ function webMain(): void {
                     const myReq = allDegreeReqs.find(req => req.uuid() == $(this).attr("id"))!
                     $(this).data(DroppableDataProperty, myReq)
                 },
+                activate: function(event, ui) {
+                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
+                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
+                    if (course.consumedBy != undefined) {
+                        course.consumedBy.unapplyCourse(course)
+                    }
+                    if (req.coursesApplied.length == 0) {
+                        const result = req.satisfiedBy([course])
+                        if (result != undefined) {
+                            console.log(`${course.code()} *activate* ${req}: ${result}`)
+                            $(this).removeClass("requirementSatisfied")
+                            $(this).removeClass("requirementUnsatisfied")
+                            $(this).removeClass("requirementPartiallySatisfied")
+                            $(this).addClass("requirementCouldBeSatisfied")
+                            req.unapplyCourse(course)
+                        }
+                    }
+                },
                 over: function(event,ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
@@ -1555,28 +1594,39 @@ function webMain(): void {
                     }
 
                     dropHandler(this, event, ui)
+                    if (req.coursesApplied.includes(course)) {
+                        req.unapplyCourse(course)
+                    }
                 },
                 drop: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
                     console.log(`drop ${course.code()} on ${req.uuid()}`)
 
+                    $(".requirementCouldBeSatisfied")
+                        .addClass("requirementUnsatisfied")
+                        .removeClass("requirementCouldBeSatisfied")
+
                     // if req is already filled by something else, ignore this course
                     if (!req.coursesApplied.includes(course)) {
                         dropHandler(this, event, ui)
                     }
                     setRemainingCUs(countRemainingCUs(allDegreeReqs))
+                    // TODO: update Writing, Depth reqs based on current SS/H block contents
                 },
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
                     console.log(`${course.code()} *left* ${req.uuid()}`)
-                    if (!req.coursesApplied.includes(course)) {
+                    if (req.coursesApplied.length > 0) {
                         return
                     }
                     // update model
-                    req.unapplyCourse(course)
+                    if (req.coursesApplied.includes(course)) {
+                        req.unapplyCourse(course)
+                    }
                     setRemainingCUs(countRemainingCUs(allDegreeReqs))
+                    // TODO: update Writing, Depth reqs based on current SS/H block contents
                     // update styling
                     $(this).removeClass("requirementSatisfied")
                     $(this).removeClass("requirementUnsatisfied")
@@ -2225,7 +2275,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
     })
 
     // handle special ShareWith requirements: writing, ethics, depth
-    const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy != undefined && c.consumedBy!.toString() == SsHTbsTag)
+    const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
 
     { // writing requirement
         const writingReq = new RequirementAttributes(40, "Writing", [CourseAttribute.Writing]).withNoConsume()
