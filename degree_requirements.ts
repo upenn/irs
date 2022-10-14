@@ -325,7 +325,7 @@ abstract class DegreeRequirement {
     public minLevel: number = 0
 
     /** Set to true for requirements that don't consume a course, e.g., SEAS Writing Requirement */
-    private doesntConsume: boolean = false
+    public doesntConsume: boolean = false
 
     /** Used to sort requirements for display */
     readonly displayIndex: number
@@ -1441,7 +1441,7 @@ function webMain(): void {
         .then(json => {
             const telist = JSON.parse(json);
             const result = run(telist, degree, coursesTaken)
-            $(NodeRemainingCUs).append(`<div class="alert alert-primary" role="alert">${result.cusRemaining} CUs needed to graduate</div>`)
+            setRemainingCUs(result.cusRemaining)
 
             if (IncorrectCMAttributes.size > 0) {
                 let wrongAttrsMsg = `<div>found ${IncorrectCMAttributes.size} incorrect/missing attributes in CM:<ul>`
@@ -1527,6 +1527,11 @@ function webMain(): void {
                     $(t).find("span.outcome").text(ro.outcomeString())
                 }
             }
+            const countRemainingCUs = function(allReqs: DegreeRequirement[]): number {
+                return allReqs
+                    .map(ro => ro.doesntConsume ? 0 : ro.remainingCUs)
+                    .reduce((sum, remCUs) => sum + remCUs, 0)
+            }
 
             $(".droppable").delay(100).droppable({
                 accept: ".course",
@@ -1547,8 +1552,6 @@ function webMain(): void {
                     }
 
                     dropHandler(this, event, ui)
-                    // // HACK: reset state so that drop() will work
-                    // req.unapplyCourse(course)
                 },
                 drop: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
@@ -1559,6 +1562,7 @@ function webMain(): void {
                     if (!req.coursesApplied.includes(course)) {
                         dropHandler(this, event, ui)
                     }
+                    setRemainingCUs(countRemainingCUs(allDegreeReqs))
                 },
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
@@ -1569,6 +1573,7 @@ function webMain(): void {
                     }
                     // update model
                     req.unapplyCourse(course)
+                    setRemainingCUs(countRemainingCUs(allDegreeReqs))
                     // update styling
                     $(this).removeClass("requirementSatisfied")
                     $(this).removeClass("requirementUnsatisfied")
@@ -1579,6 +1584,11 @@ function webMain(): void {
                 }
             });
         })
+}
+
+function setRemainingCUs(n: number) {
+    $(NodeRemainingCUs).empty()
+    $(NodeRemainingCUs).append(`<div class="alert alert-primary" role="alert">${n} CUs needed to graduate</div>`)
 }
 
 if (typeof window === 'undefined') {
@@ -2236,7 +2246,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
     // SS/H Depth requirement
     const counts: CountMap = countBySubjectSshDepth(sshCourses)
     const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
-    const depthReq = new RequirementNamedCourses(42, "SSH Depth Requirement", [])
+    const depthReq = new RequirementNamedCourses(42, "SSH Depth Requirement", []).withNoConsume()
     if (depthKeys.length > 0) {
         const depthCourses = sshCourses.filter(c => c.subject == depthKeys[0])
         reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, depthCourses])
