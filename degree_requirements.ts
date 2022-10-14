@@ -1475,7 +1475,10 @@ function webMain(): void {
                 if (i > allReqs.length/2) {
                     column = NodeDegreeRequirementsColumn2
                 }
-                const courses = ro.coursesApplied.map(c => `<span class="course" id="${c.uuid}">${c.code()}</span>`).join(" ")
+                const courses = ro.coursesApplied.map(c => {
+                    const completed = c.completed ? "courseCompleted" : "courseInProgress"
+                    return `<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`
+                }).join(" ")
                 switch (ro.applyResult) {
                     case RequirementApplyResult.Satisfied:
                         $(column).append(`<div class="droppable requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
