@@ -1503,16 +1503,16 @@ function webMain(): void {
                     column = NodeDegreeRequirementsColumn2
                 }
                 if (ro.degreeReq.doesntConsume) {
-                    const courses = ro.coursesApplied.map(c => c.code()).join(" ")
+                    const courses = ro.coursesApplied.map(c => c.code()).join(" and ")
                     // NB: put list of courses *inside* the span.outcome, because they get recomputed in updateGlobalReqs
                     switch (ro.applyResult) {
                         case RequirementApplyResult.Satisfied:
                             $(column).append(`<div class="requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()} by ${courses}</span></div>`)
+<span class="outcome">${ro.outcomeString()} ${courses}</span></div>`)
                             break;
                         case RequirementApplyResult.PartiallySatisfied:
                             $(column).append(`<div class="requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()} by ${courses}</span></div>`)
+<span class="outcome">${ro.outcomeString()} ${courses}</span></div>`)
                             break;
                         case RequirementApplyResult.Unsatisfied:
                             console.assert(ro.coursesApplied.length == 0)
@@ -1524,6 +1524,7 @@ function webMain(): void {
                     }
                     return
                 }
+
                 const courses = ro.coursesApplied.map(c => {
                     const completed = c.completed ? "courseCompleted" : "courseInProgress"
                     return `<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`
@@ -1531,18 +1532,18 @@ function webMain(): void {
                 switch (ro.applyResult) {
                     case RequirementApplyResult.Satisfied:
                         $(column).append(`<div class="droppable requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()} by</span> ${courses}</div>`)
+<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span> ${courses}</div>`)
                         break;
                     case RequirementApplyResult.PartiallySatisfied:
                         $(column).append(`<div class="droppable requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()} by</span> ${courses} </div>`)
+<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span> ${courses} </div>`)
                         break;
                     case RequirementApplyResult.Unsatisfied:
                         if (ro.coursesApplied.length != 0) {
                             throw new Error("" + ro.coursesApplied)
                         }
                         $(column).append(`<div class="droppable requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()}</span></div>`)
+<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span></div>`)
                         break;
                     default:
                         throw new Error("invalid requirement outcome: " + ro)
@@ -1581,8 +1582,8 @@ function webMain(): void {
                     if (req.satisfiedBy(sshCourses) != undefined) {
                         elem.addClass("requirementSatisfied")
                         const ro = new RequirementOutcome(req, RequirementApplyResult.Satisfied, req.coursesApplied)
-                        const courses = req.coursesApplied.map(c => c.code()).join(" ")
-                        elem.find("span.outcome").text(ro.outcomeString() + " by " + courses)
+                        const courses = req.coursesApplied.map(c => c.code()).join(" and ")
+                        elem.find("span.outcome").text(ro.outcomeString() + " " + courses)
                     } else {
                         elem.addClass("requirementUnsatisfied")
                         const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
