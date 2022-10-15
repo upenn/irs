@@ -1454,11 +1454,11 @@ function webMain(): void {
             if (result.unconsumedCourses.length > 0) {
                 $(NodeUnusedCoursesHeader).append(`<h3>Unused Courses</h3>`)
                 result.unconsumedCourses.forEach(c => {
+                    const completed = c.completed ? "courseCompleted" : "courseInProgress"
                     if (c.courseUnitsRemaining == c.courseUnits) {
-                        //$(NodeUnusedCoursesList).append(`<li class="list-group-item disabled">totally unused: <div class="draggable">${c}</div></li>`)
-                        $(NodeUnusedCoursesHeader).append(`<span class="course" id="${c.uuid}">${c.code()}</span>`)
+                        $(NodeUnusedCoursesHeader).append(`<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`)
                     } else {
-                        $(NodeUnusedCoursesList).append(`<li class="list-group-item disabled">${c.courseUnitsRemaining} CUs unused from ${c}</li>`)
+                        $(NodeUnusedCoursesList).append(`<span class="course ${completed}" id="${c.uuid}">${c.courseUnitsRemaining} CUs unused from ${c}</span>`)
                     }
                 })
             } else {
@@ -1533,23 +1533,35 @@ function webMain(): void {
                 //snapMode: "inner",
             });
 
-            const dropHandler = function(t: JQueryUI.DroppableOptions, event: JQueryEventObject, ui: DroppableEventUIParam) {
-                const req: DegreeRequirement = $(t).data(DroppableDataProperty)
-                const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
-                const result = req.satisfiedBy([course])
-                $(t).removeClass("requirementSatisfied")
-                $(t).removeClass("requirementUnsatisfied")
-                $(t).removeClass("requirementPartiallySatisfied")
-                if (result == undefined) {
-                    $(t).addClass("requirementUnsatisfied")
-                    const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
-                    $(t).find("span.outcome").text(ro.outcomeString())
-                } else {
-                    $(t).addClass("requirementSatisfied")
-                    const ro = new RequirementOutcome(req, RequirementApplyResult.Satisfied, [course])
-                    console.log($(t).text())
-                    $(t).find("span.outcome").text(ro.outcomeString())
+            const updateGlobalState = function() {
+                setRemainingCUs(countRemainingCUs(allDegreeReqs))
+
+                const sshCourses: CourseTaken[] = coursesTaken
+                    .filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
+
+                // update Writing Requirement based on current SS/H/TBS block contents
+                const writReq = allDegreeReqs.find(r => r.toString().startsWith("Writing"))!
+                console.log(`updateGlobal SSH courses: ${sshCourses}`)
+                console.log(`updateGlobal ${writReq}`)
+                if (writReq.coursesApplied.length > 0) {
+                    writReq.unapplyCourse(writReq.coursesApplied[0])
                 }
+                const writCourse = writReq.satisfiedBy(sshCourses)
+                const writReqElem = $("#" + writReq.uuid())
+                writReqElem.removeClass("requirementSatisfied")
+                writReqElem.removeClass("requirementUnsatisfied")
+                writReqElem.removeClass("requirementPartiallySatisfied")
+                if (writCourse != undefined) {
+                    writReqElem.addClass("requirementSatisfied")
+                    const ro = new RequirementOutcome(writReq, RequirementApplyResult.Satisfied, [writCourse])
+                    writReqElem.find("span.outcome").text(ro.outcomeString())
+                } else {
+                    writReqElem.addClass("requirementUnsatisfied")
+                    const ro = new RequirementOutcome(writReq, RequirementApplyResult.Unsatisfied, [])
+                    writReqElem.find("span.outcome").text(ro.outcomeString())
+                }
+
+                // TODO: update Depth Requirement based on current SS/H/TBS block contents
             }
             const countRemainingCUs = function(allReqs: DegreeRequirement[]): number {
                 return allReqs
@@ -1583,6 +1595,15 @@ function webMain(): void {
                         }
                     }
                 },
+                deactivate: function(event, ui) {
+                    if ($(this).hasClass("requirementCouldBeSatisfied")) {
+                        $(this).removeClass("requirementCouldBeSatisfied")
+                        $(this).addClass("requirementUnsatisfied")
+                    }
+                },
+                drop: function(event, ui) {
+                    // TODO: snap course into place
+                },
                 over: function(event,ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
@@ -1593,47 +1614,40 @@ function webMain(): void {
                         return
                     }
 
-                    dropHandler(this, event, ui)
-                    if (req.coursesApplied.includes(course)) {
-                        req.unapplyCourse(course)
+                    $(this).removeClass("requirementSatisfied")
+                    $(this).removeClass("requirementUnsatisfied")
+                    $(this).removeClass("requirementPartiallySatisfied")
+                    $(this).removeClass("requirementCouldBeSatisfied")
+                    const result = req.satisfiedBy([course])
+                    console.log(" *over* text before: " + $(this).text())
+                    if (result == undefined) {
+                        $(this).addClass("requirementUnsatisfied")
+                        const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
+                        $(this).find("span.outcome").text(ro.outcomeString())
+                    } else {
+                        $(this).addClass("requirementSatisfied")
+                        const ro = new RequirementOutcome(req, RequirementApplyResult.Satisfied, [course])
+                        $(this).find("span.outcome").text(ro.outcomeString())
                     }
-                },
-                drop: function(event, ui) {
-                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
-                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
-                    console.log(`drop ${course.code()} on ${req.uuid()}`)
-
-                    $(".requirementCouldBeSatisfied")
-                        .addClass("requirementUnsatisfied")
-                        .removeClass("requirementCouldBeSatisfied")
-
-                    // if req is already filled by something else, ignore this course
-                    if (!req.coursesApplied.includes(course)) {
-                        dropHandler(this, event, ui)
-                    }
-                    setRemainingCUs(countRemainingCUs(allDegreeReqs))
-                    // TODO: update Writing, Depth reqs based on current SS/H block contents
+                    updateGlobalState()
                 },
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
                     console.log(`${course.code()} *left* ${req.uuid()}`)
-                    if (req.coursesApplied.length > 0) {
-                        return
-                    }
+
                     // update model
                     if (req.coursesApplied.includes(course)) {
                         req.unapplyCourse(course)
+                        updateGlobalState()
+                        // update styling
+                        $(this).removeClass("requirementSatisfied")
+                        $(this).removeClass("requirementUnsatisfied")
+                        $(this).removeClass("requirementPartiallySatisfied")
+                        $(this).addClass("requirementCouldBeSatisfied")
+                        const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
+                        $(this).find("span.outcome").text(ro.outcomeString())
                     }
-                    setRemainingCUs(countRemainingCUs(allDegreeReqs))
-                    // TODO: update Writing, Depth reqs based on current SS/H block contents
-                    // update styling
-                    $(this).removeClass("requirementSatisfied")
-                    $(this).removeClass("requirementUnsatisfied")
-                    $(this).removeClass("requirementPartiallySatisfied")
-                    $(this).addClass("requirementUnsatisfied")
-                    const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
-                    $(this).find("span.outcome").text(ro.outcomeString())
                 }
             });
         })
