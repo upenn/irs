@@ -8,6 +8,7 @@ const DraggableDataProperty = "CourseTaken"
 const DroppableDataProperty = "DegreeRequirement"
 
 const SsHTbsTag = "SS/H/TBS"
+const SshDepthTag = "SSH Depth Requirement"
 
 enum CourseAttribute {
     Writing = "AUWR",
@@ -371,6 +372,9 @@ abstract class DegreeRequirement {
         }
         // remove c from coursesApplied
         this.coursesApplied.splice(this.coursesApplied.indexOf(c), 1);
+        if (this.doesntConsume) {
+            return
+        }
         // TODO: doesn't account for fractional CU usage
         this.remainingCUs += c.courseUnits
         c.courseUnitsRemaining = c.courseUnits
@@ -843,6 +847,29 @@ class RequirementSsh extends RequirementAttributes {
 
     public toString(): string {
         return `SS/H/TBS: ${this.attrs}`
+    }
+}
+
+class RequirementSshDepth extends DegreeRequirement {
+    satisfiedBy(sshCourses: CourseTaken[]): CourseTaken | undefined {
+        const counts = countBySubjectSshDepth(sshCourses)
+        const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
+        if (depthKeys.length > 0) {
+            const depthCourses = sshCourses.filter(c => c.subject == depthKeys[0])
+            this.coursesApplied = depthCourses.slice(0, 2)
+            return this.coursesApplied[0]
+        } else {
+            const eentCourses = [sshCourses.find(c => c.code() == "EAS 5450"), sshCourses.find(c => c.code() == "EAS 5460")]
+            if (eentCourses.every(c => c != undefined)) {
+                this.coursesApplied = eentCourses.map(c => c!)
+                return this.coursesApplied[0]
+            }
+        }
+        return undefined
+    }
+
+    public toString(): string {
+        return SshDepthTag
     }
 }
 
@@ -1477,14 +1504,15 @@ function webMain(): void {
                 }
                 if (ro.degreeReq.doesntConsume) {
                     const courses = ro.coursesApplied.map(c => c.code()).join(" ")
+                    // NB: put list of courses *inside* the span.outcome, because they get recomputed in updateGlobalReqs
                     switch (ro.applyResult) {
                         case RequirementApplyResult.Satisfied:
                             $(column).append(`<div class="requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()} by</span> ${courses}</div>`)
+<span class="outcome">${ro.outcomeString()} by ${courses}</span></div>`)
                             break;
                         case RequirementApplyResult.PartiallySatisfied:
                             $(column).append(`<div class="requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()} by</span> ${courses} </div>`)
+<span class="outcome">${ro.outcomeString()} by ${courses}</span></div>`)
                             break;
                         case RequirementApplyResult.Unsatisfied:
                             console.assert(ro.coursesApplied.length == 0)
@@ -1510,7 +1538,9 @@ function webMain(): void {
 <span class="outcome">${ro.outcomeString()} by</span> ${courses} </div>`)
                         break;
                     case RequirementApplyResult.Unsatisfied:
-                        console.assert(ro.coursesApplied.length == 0)
+                        if (ro.coursesApplied.length != 0) {
+                            throw new Error("" + ro.coursesApplied)
+                        }
                         $(column).append(`<div class="droppable requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}">
 <span class="outcome">${ro.outcomeString()}</span></div>`)
                         break;
@@ -1533,35 +1563,37 @@ function webMain(): void {
                 //snapMode: "inner",
             });
 
-            const updateGlobalState = function() {
+            // update writing and SSH Depth requirements which are "global", i.e., they interact with other reqs
+            const updateGlobalReqs = function() {
                 setRemainingCUs(countRemainingCUs(allDegreeReqs))
 
                 const sshCourses: CourseTaken[] = coursesTaken
                     .filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
+                console.log(`updateGlobal SSH courses: ${sshCourses.map(c => c.code())}`)
 
-                // update Writing Requirement based on current SS/H/TBS block contents
+                const updateGlobalReq = function(req: DegreeRequirement) {
+                    const applied = req.coursesApplied.slice()
+                    applied.forEach(c => req.unapplyCourse(c))
+                    const elem = $("#" + req.uuid())
+                    elem.removeClass("requirementSatisfied")
+                        .removeClass("requirementUnsatisfied")
+                        .removeClass("requirementPartiallySatisfied")
+                    if (req.satisfiedBy(sshCourses) != undefined) {
+                        elem.addClass("requirementSatisfied")
+                        const ro = new RequirementOutcome(req, RequirementApplyResult.Satisfied, req.coursesApplied)
+                        const courses = req.coursesApplied.map(c => c.code()).join(" ")
+                        elem.find("span.outcome").text(ro.outcomeString() + " by " + courses)
+                    } else {
+                        elem.addClass("requirementUnsatisfied")
+                        const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
+                        elem.find("span.outcome").text(ro.outcomeString())
+                    }
+                }
+
                 const writReq = allDegreeReqs.find(r => r.toString().startsWith("Writing"))!
-                console.log(`updateGlobal SSH courses: ${sshCourses}`)
-                console.log(`updateGlobal ${writReq}`)
-                if (writReq.coursesApplied.length > 0) {
-                    writReq.unapplyCourse(writReq.coursesApplied[0])
-                }
-                const writCourse = writReq.satisfiedBy(sshCourses)
-                const writReqElem = $("#" + writReq.uuid())
-                writReqElem.removeClass("requirementSatisfied")
-                writReqElem.removeClass("requirementUnsatisfied")
-                writReqElem.removeClass("requirementPartiallySatisfied")
-                if (writCourse != undefined) {
-                    writReqElem.addClass("requirementSatisfied")
-                    const ro = new RequirementOutcome(writReq, RequirementApplyResult.Satisfied, [writCourse])
-                    writReqElem.find("span.outcome").text(ro.outcomeString())
-                } else {
-                    writReqElem.addClass("requirementUnsatisfied")
-                    const ro = new RequirementOutcome(writReq, RequirementApplyResult.Unsatisfied, [])
-                    writReqElem.find("span.outcome").text(ro.outcomeString())
-                }
-
-                // TODO: update Depth Requirement based on current SS/H/TBS block contents
+                updateGlobalReq(writReq)
+                const depthReq = allDegreeReqs.find(r => r.toString() == SshDepthTag)!
+                updateGlobalReq(depthReq)
             }
             const countRemainingCUs = function(allReqs: DegreeRequirement[]): number {
                 return allReqs
@@ -1629,7 +1661,7 @@ function webMain(): void {
                         const ro = new RequirementOutcome(req, RequirementApplyResult.Satisfied, [course])
                         $(this).find("span.outcome").text(ro.outcomeString())
                     }
-                    updateGlobalState()
+                    updateGlobalReqs()
                 },
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
@@ -1639,7 +1671,7 @@ function webMain(): void {
                     // update model
                     if (req.coursesApplied.includes(course)) {
                         req.unapplyCourse(course)
-                        updateGlobalState()
+                        updateGlobalReqs()
                         // update styling
                         $(this).removeClass("requirementSatisfied")
                         $(this).removeClass("requirementUnsatisfied")
@@ -2288,16 +2320,24 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
         totalRemainingCUs += req.remainingCUs
     })
 
-    // handle special ShareWith requirements: writing, ethics, depth
+    // handle special ShareWith requirements: writing, depth, ethics
     const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
 
-    { // writing requirement
+    { // Writing requirement
         const writingReq = new RequirementAttributes(40, "Writing", [CourseAttribute.Writing]).withNoConsume()
         const matched = writingReq.satisfiedBy(sshCourses)
         if (matched == undefined) {
             reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Unsatisfied, []])
         } else {
             reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Satisfied, [matched]])
+        }
+    }
+    { // SS/H Depth requirement
+        const depthReq = new RequirementSshDepth(42).withNoConsume()
+        if (depthReq.satisfiedBy(sshCourses) != undefined) {
+            reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, depthReq.coursesApplied])
+        } else {
+            reqOutcomes.push([42, depthReq, RequirementApplyResult.Unsatisfied, []])
         }
     }
     { // ethics requirement: NB doesn't have to come from SSH block!
@@ -2307,23 +2347,6 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
             reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Unsatisfied, []])
         } else {
             reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Satisfied, [matched]])
-        }
-    }
-
-    // SS/H Depth requirement
-    const counts: CountMap = countBySubjectSshDepth(sshCourses)
-    const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
-    const depthReq = new RequirementNamedCourses(42, "SSH Depth Requirement", []).withNoConsume()
-    if (depthKeys.length > 0) {
-        const depthCourses = sshCourses.filter(c => c.subject == depthKeys[0])
-        reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, depthCourses])
-    } else {
-        const eentCourses = [sshCourses.find(c => c.code() == "EAS 5450"), sshCourses.find(c => c.code() == "EAS 5460")]
-        if (eentCourses.every(c => c != undefined)) {
-            const ec: CourseTaken[] = eentCourses.map(c => c!)
-            reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, ec])
-        } else {
-            reqOutcomes.push([42, depthReq, RequirementApplyResult.Unsatisfied, []])
         }
     }
 
