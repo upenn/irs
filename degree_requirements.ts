@@ -1570,7 +1570,7 @@ function webMain(): void {
 
                 const sshCourses: CourseTaken[] = coursesTaken
                     .filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
-                console.log(`updateGlobal SSH courses: ${sshCourses.map(c => c.code())}`)
+                // console.log(`updateGlobal SSH courses: ${sshCourses.map(c => c.code())}`)
 
                 const updateGlobalReq = function(req: DegreeRequirement) {
                     const applied = req.coursesApplied.slice()
@@ -1619,7 +1619,7 @@ function webMain(): void {
                     if (req.coursesApplied.length == 0) {
                         const result = req.satisfiedBy([course])
                         if (result != undefined) {
-                            console.log(`${course.code()} *activate* ${req}: ${result}`)
+                            // console.log(`${course.code()} *activate* ${req}: ${result}`)
                             $(this).removeClass("requirementSatisfied")
                             $(this).removeClass("requirementUnsatisfied")
                             $(this).removeClass("requirementPartiallySatisfied")
@@ -1635,12 +1635,21 @@ function webMain(): void {
                     }
                 },
                 drop: function(event, ui) {
-                    // TODO: snap course into place
+                    // snap course into place
+                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
+                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
+                    if (req.coursesApplied.includes(course)) {
+                        ui.draggable.position({
+                            my: "left center",
+                            at: "right center",
+                            of: $(this).find(".courseSnapTarget"),
+                        })
+                    }
                 },
                 over: function(event,ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
-                    console.log(`${course.code()} *over* ${req.uuid()}, ${course.consumedBy?.uuid()}`)
+                    // console.log(`${course.code()} *over* ${req.uuid()}, ${course.consumedBy?.uuid()}`)
 
                     // if req is already filled by something else, ignore this course
                     if (req.coursesApplied.length != 0 && !req.coursesApplied.includes(course)) {
@@ -1652,7 +1661,7 @@ function webMain(): void {
                     $(this).removeClass("requirementPartiallySatisfied")
                     $(this).removeClass("requirementCouldBeSatisfied")
                     const result = req.satisfiedBy([course])
-                    console.log(" *over* text before: " + $(this).text())
+                    // console.log(" *over* text before: " + $(this).text())
                     if (result == undefined) {
                         $(this).addClass("requirementUnsatisfied")
                         const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
@@ -1667,7 +1676,7 @@ function webMain(): void {
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
-                    console.log(`${course.code()} *left* ${req.uuid()}`)
+                    // console.log(`${course.code()} *left* ${req.uuid()}`)
 
                     // update model
                     if (req.coursesApplied.includes(course)) {
