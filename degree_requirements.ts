@@ -376,8 +376,8 @@ abstract class DegreeRequirement {
             return
         }
         // TODO: doesn't account for fractional CU usage
-        this.remainingCUs += c.courseUnits
-        c.courseUnitsRemaining = c.courseUnits
+        this.remainingCUs += c.getCUs()
+        c.courseUnitsRemaining = c.getCUs()
         c.consumedBy = undefined
     }
 
@@ -929,7 +929,7 @@ class CourseTaken {
     readonly courseNumberInt: number
     readonly title: string
     readonly _3dName: string | null
-    readonly courseUnits: number
+    private courseUnits: number
     readonly grading: GradeType
     readonly letterGrade: string
     readonly term: number
@@ -1052,6 +1052,15 @@ class CourseTaken {
     /** Return a course code like "ENGL 1234" */
     public code(): string {
         return `${this.subject} ${this.courseNumber}`
+    }
+
+    public getCUs(): number {
+        return this.courseUnits
+    }
+    /** Disable this course, e.g., when EAS 0091 is superceded by CHEM 1012 */
+    public disable() {
+        this.courseUnits = 0
+        this.courseUnitsRemaining = 0
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Social Science.
@@ -1272,7 +1281,7 @@ class DegreeWorks {
                 console.log(msg)
                 let c0 = coursesTaken.find((c: CourseTaken) => c.code() == forbidden[0])
                 // disable the first of the equivalent courses
-                c0!.courseUnitsRemaining = 0
+                c0!.disable()
             }
         })
 
@@ -1482,7 +1491,7 @@ function webMain(): void {
                 $(NodeUnusedCoursesHeader).append(`<h3>Unused Courses</h3>`)
                 result.unconsumedCourses.forEach(c => {
                     const completed = c.completed ? "courseCompleted" : "courseInProgress"
-                    if (c.courseUnitsRemaining == c.courseUnits) {
+                    if (c.courseUnitsRemaining == c.getCUs()) {
                         $(NodeUnusedCoursesHeader).append(`<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`)
                     } else {
                         $(NodeUnusedCoursesList).append(`<span class="course ${completed}" id="${c.uuid}">${c.courseUnitsRemaining} CUs unused from ${c}</span>`)
