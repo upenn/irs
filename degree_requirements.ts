@@ -297,6 +297,161 @@ const NetsLightTechElectives = new Set<string>([
     "SOCI 5350",
     "STAT 4350",
 ])
+const CisMseNonCisElectivesRestrictions1 = new Set<string>([
+    "EAS 500",
+    "EAS 5100",
+    "EAS 5120",
+    "EAS 5450",
+    "EAS 5460",
+    "EAS 5900",
+    "EAS 5950",
+    "IPD 5150",
+    "IPD 5290",
+    "IPD 5720",
+    "EDUC 6577",
+    "NPLD 7920",
+])
+const CisMseNonCisElectivesRestrictions2 = new Set<string>([
+    "FNCE 7370",
+    "GAFL 5310",
+    "GEOL 5700",
+    "LARP 7430",
+    "STAT 7770",
+])
+const CisMseNonCisElectives = new Set<string>([
+    "BE 5160",
+    "BE 5210",
+    "BE 5300",
+    "PHYS 5585",
+    "BE 5670",
+    "GCB 5670",
+    "CRIM 502",
+    "CRIM 6002",
+    "EAS 5070",
+    "ECON 6100",
+    "ECON 6110",
+    "ECON 7100",
+    "ECON 7110",
+    "ECON 713",
+    "EDUC 5299",
+    "EDUC 545",
+    "EDUC 5152",
+    "ENM 5020",
+    "ENM 5030",
+    "ENM 5220",
+    "ENM 5400",
+    "ESE 5000",
+    "ESE 5040",
+    "ESE 5050",
+    "ESE 5070",
+    "ESE 5140",
+    "ESE 5160",
+    "ESE 5190",
+    "ESE 520",
+    "ESE 5300",
+    "ESE 5310",
+    "ESE 5320",
+    "ESE 534",
+    "ESE 5350",
+    "ESE 5390",
+    "ESE 5400",
+    "ESE 5420",
+    "ESE 5430",
+    "ESE 5460",
+    "ESE 5440",
+    "ESE 5450",
+    "ESE 575",
+    "ESE 576",
+    "ESE 5900",
+    "ESE 6050",
+    "ESE 6180",
+    "ESE 6500",
+    "ESE 6650",
+    "ESE 6740",
+    "ESE 6760",
+    "ESE 6800",
+    "ESE 6800",
+    "FNAR 5025",
+    "GCB 5360",
+    "LAW 5770",
+    "LING 5150",
+    "LING 5250",
+    "LING 545",
+    "LING 546",
+    "LING 549",
+    "MATH 5000",
+    "MATH 5020",
+    "MATH 5080",
+    "MATH 5130",
+    "MATH 5140",
+    "MATH 5300",
+    "MATH 5460",
+    "STAT 530",
+    "MATH 547",
+    "STAT 531",
+    "MATH 570",
+    "MATH 571",
+    "MATH 574",
+    "MATH 5800",
+    "MATH 5810",
+    "MATH 582",
+    "MATH 5840",
+    "MATH 586",
+    "BIOL 5860",
+    "MATH 690",
+    "MATH 691",
+    "MEAM 5100",
+    "MEAM 5200",
+    "MEAM 521",
+    "MEAM 6200",
+    "MEAM 625",
+    "MEAM 6460",
+    "MSE 5610",
+    "MSE 5750",
+    "FNCE 611",
+    "FNCE 7170",
+    "FNCE 720",
+    "FNCE 7210",
+    "REAL 7210",
+    "FNCE 7250",
+    "FNCE 7380",
+    "FNCE 7500",
+    "FNCE 8920",
+    "MKTG 7120",
+    "MKTG 8520",
+    "OIDD 6530",
+    "OIDD 6540",
+    "OIDD 6700",
+    "OIDD 9500",
+    "OIDD 9340",
+    "STAT 5100",
+    "STAT 5000",
+    "STAT 5030",
+    "STAT 5110",
+    "STAT 5120",
+    "STAT 550",
+    "STAT 5150",
+    "STAT 5200",
+    "STAT 530",
+    "STAT 531",
+    "STAT 5330",
+    "STAT 553",
+    "STAT 5420",
+    "STAT 5710",
+    "STAT 7010",
+    "STAT 7050",
+    "STAT 5350",
+    "STAT 7110",
+    "STAT 7700",
+    "STAT 7220",
+    "STAT 900",
+    "STAT 9280",
+    "STAT 9300",
+    "STAT 9700",
+    "STAT 9740",
+    "STAT 9910",
+    "STAT 9910",
+])
 
 enum GradeType {
     PassFail = "PassFail",
@@ -310,7 +465,8 @@ interface TechElectiveDecision {
     status: "yes" | "no" | "ask"
 }
 
-type Degree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE"
+type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" | "none"
+type MastersDegree = "CISMSE" | "DATS" | "ROBO" | "CGGT" | "none"
 
 let IncorrectCMAttributes = new Set<string>()
 
@@ -494,6 +650,39 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
         } else {
             return this.tag
         }
+    }
+}
+
+class RequirementNumbered extends DegreeRequirement {
+    readonly tag: string
+    readonly subject: string
+    readonly numberPredicate: (x: number) => boolean
+    readonly courses: Set<string>
+
+    constructor(displayIndex: number,
+                tag: string,
+                subject: string,
+                numberPredicate: (x: number) => boolean,
+                courses: Set<string> = new Set<string>([])) {
+        super(displayIndex)
+        this.tag = tag
+        this.subject = subject
+        this.numberPredicate = numberPredicate
+        this.courses = courses
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        return courses.find((c: CourseTaken): boolean => {
+            const subjectMatch = this.subject == c.subject && this.numberPredicate(c.courseNumberInt)
+            return (subjectMatch || this.courses.has(c.code())) &&
+                c.grading == GradeType.ForCredit &&
+                c.courseNumberInt >= this.minLevel &&
+                this.applyCourse(c, this.tag)
+        })
+    }
+
+    public toString(): string {
+        return this.tag
     }
 }
 
@@ -1376,7 +1565,10 @@ class DegreeWorks {
             !inProgress)
     }
 
-    public static inferDegree(worksheetText: string, coursesTaken: CourseTaken[]): Degree | undefined {
+    public static inferDegrees(worksheetText: string, coursesTaken: CourseTaken[]): Degrees | undefined {
+        let d = new Degrees()
+
+        // undergrad degrees
         if (worksheetText.includes("Degree in Bachelor of Science in Engineering") &&
             worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CSCI\s+`)) != -1) {
             // heuristic to identify folks who are actually ASCS
@@ -1386,32 +1578,53 @@ class DegreeWorks {
                 !coursesTaken.some(c => c.code() == "CIS 4100")
             ) {
                 myLog("CSCI declared, but coursework is closer to ASCS so using ASCS requirements instead")
-                return "40cu ASCS"
+                d.undergrad = "40cu ASCS"
             }
-            return "40cu CSCI"
+            d.undergrad =  "40cu CSCI"
 
         } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ASCS\s+`)) != -1) {
-            return "40cu ASCS"
+            d.undergrad =  "40cu ASCS"
 
         } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CMPE\s+`)) != -1) {
-            return "40cu CMPE"
+            d.undergrad =  "40cu CMPE"
         } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+NETS\s+`)) != -1) {
-            return "40cu NETS"
+            d.undergrad =  "40cu NETS"
         } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+DMD\s+`)) != -1) {
-            return "40cu DMD"
+            d.undergrad =  "40cu DMD"
         } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+EE\s+`)) != -1) {
-            return "40cu EE"
+            d.undergrad =  "40cu EE"
         } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+SSE\s+`)) != -1) {
-            return "40cu SSE"
+            d.undergrad =  "40cu SSE"
         }
-        return undefined
+
+        // masters degrees
+        if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CIS\s+`)) != -1) {
+            d.masters = "CISMSE"
+        }
+        if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ROBO\s+`)) != -1) {
+            d.masters = "ROBO"
+        }
+        if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+DATS\s+`)) != -1) {
+            d.masters = "DATS"
+        }
+        if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CGGT\s+`)) != -1) {
+            d.masters = "CGGT"
+        }
+
+        if (d.undergrad == "none" && d.masters == "none") {
+            return undefined
+        }
+        return d
     }
 }
 
 const NodeCoursesTaken = "#coursesTaken"
-const NodeDegreeRequirementsHeader = "#degreeRequirementsHeader"
-const NodeDegreeRequirementsColumn1 = "#degreeRequirementsCol1"
-const NodeDegreeRequirementsColumn2 = "#degreeRequirementsCol2"
+const NodeUgradDegreeRequirementsHeader = "#ugradDegreeRequirementsHeader"
+const NodeUgradDegreeRequirementsColumn1 = "#ugradDegreeRequirementsCol1"
+const NodeUgradDegreeRequirementsColumn2 = "#ugradDegreeRequirementsCol2"
+const NodeMastersDegreeRequirementsHeader = "#mastersDegreeRequirementsHeader"
+const NodeMastersDegreeRequirementsColumn1 = "#mastersDegreeRequirementsCol1"
+const NodeMastersDegreeRequirementsColumn2 = "#mastersDegreeRequirementsCol2"
 const NodeRemainingCUs = "#remainingCUs"
 const NodeStudentInfo = "#studentInfo"
 const NodeUnusedCoursesHeader = "#unusedCoursesHeader"
@@ -1419,11 +1632,33 @@ const NodeUnusedCoursesList = "#unusedCoursesList"
 const NodeMessages = "#messages"
 const NodeAllCourses = "#allCourses"
 
+class Degrees {
+    undergrad: UndergradDegree = "none"
+    masters: MastersDegree = "none"
+
+    public toString(): string {
+        let s = ""
+        if (this.undergrad != "none") {
+            s += this.undergrad
+        }
+        if (this.masters != "none") {
+            if (this.undergrad != "none") {
+                s += " and "
+            }
+            s += this.masters
+        }
+        return s
+    }
+}
+
 function webMain(): void {
     // reset output
-    $(NodeDegreeRequirementsHeader).empty()
-    $(NodeDegreeRequirementsColumn1).empty()
-    $(NodeDegreeRequirementsColumn2).empty()
+    $(NodeUgradDegreeRequirementsHeader).empty()
+    $(NodeUgradDegreeRequirementsColumn1).empty()
+    $(NodeUgradDegreeRequirementsColumn2).empty()
+    $(NodeMastersDegreeRequirementsHeader).empty()
+    $(NodeMastersDegreeRequirementsColumn1).empty()
+    $(NodeMastersDegreeRequirementsColumn2).empty()
     $(NodeRemainingCUs).empty()
     $(NodeStudentInfo).empty()
     $(NodeUnusedCoursesHeader).empty()
@@ -1431,7 +1666,8 @@ function webMain(): void {
     $(NodeMessages).empty()
     $(NodeAllCourses).empty()
 
-    let degreeChoice = $("input[name='degree']:checked").val()
+    let autoDegrees = $("#auto_degree").is(":checked")
+    let degrees = new Degrees()
     $(NodeMessages).append("<h3>Notes</h3>")
 
     let coursesTaken: CourseTaken[] = []
@@ -1442,16 +1678,20 @@ function webMain(): void {
             $(NodeStudentInfo).append(`<div class="alert alert-secondary" role="alert">PennID: ${pennid}</div>`)
         }
         coursesTaken = DegreeWorks.extractCourses(worksheetText)
-        if (degreeChoice == "auto") {
-            degreeChoice = DegreeWorks.inferDegree(worksheetText, coursesTaken)
-            if (degreeChoice == undefined) {
-                throw new Error("could not infer degree")
+        if (autoDegrees) {
+            const deg = DegreeWorks.inferDegrees(worksheetText, coursesTaken)
+            if (deg == undefined) {
+                throw new Error("could not infer DegreeWorks degree")
             }
+            // console.log("inferred degrees as " + deg)
+            degrees = deg
+        } else {
+            degrees.undergrad = <UndergradDegree>$("input[name='ugrad_degree']:checked").val()
+            degrees.masters = <MastersDegree>$("input[name='masters_degree']:checked").val()
         }
     } else {
         coursesTaken = UnofficialTranscript.extractCourses(worksheetText)
     }
-    const degree = <Degree>degreeChoice
 
     $(NodeMessages).append(`<div>${coursesTaken.length} courses taken</div>`)
     const allCourses = coursesTaken.map((c: CourseTaken): string => `<div><small>${c.toString()}</small></div>`).join("")
@@ -1476,7 +1716,7 @@ function webMain(): void {
         .then(response => response.text())
         .then(json => {
             const telist = JSON.parse(json);
-            const result = run(telist, degree, coursesTaken)
+            const result = run(telist, degrees, coursesTaken)
             setRemainingCUs(result.cusRemaining)
 
             if (IncorrectCMAttributes.size > 0) {
@@ -1502,64 +1742,24 @@ function webMain(): void {
             }
 
             // display requirement outcomes, in two columns
-            $(NodeDegreeRequirementsHeader).append(`<h3>${degree} Degree Requirements</h3>`)
+            if (result.requirementOutcomes.some(ro => ro.ugrad)) {
+                $(NodeUgradDegreeRequirementsHeader).append(`<h3>${degrees.undergrad} Degree Requirements</h3>`)
+            }
+            if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
+                $(NodeMastersDegreeRequirementsHeader).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
+            }
 
             const allDegreeReqs = result.requirementOutcomes.map(ro => ro.degreeReq)
-            result.requirementOutcomes.forEach(
-                (ro: RequirementOutcome, i: number, allReqs: RequirementOutcome[]) => {
-                let column = NodeDegreeRequirementsColumn1
-                if (i > allReqs.length/2) {
-                    column = NodeDegreeRequirementsColumn2
-                }
-                if (ro.degreeReq.doesntConsume) {
-                    const courses = ro.coursesApplied.map(c => c.code()).join(" and ")
-                    // NB: put list of courses *inside* the span.outcome, because they get recomputed in updateGlobalReqs
-                    switch (ro.applyResult) {
-                        case RequirementApplyResult.Satisfied:
-                            $(column).append(`<div class="requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()} ${courses}</span></div>`)
-                            break;
-                        case RequirementApplyResult.PartiallySatisfied:
-                            $(column).append(`<div class="requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()} ${courses}</span></div>`)
-                            break;
-                        case RequirementApplyResult.Unsatisfied:
-                            console.assert(ro.coursesApplied.length == 0)
-                            $(column).append(`<div class="requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()}</span></div>`)
-                            break;
-                        default:
-                            throw new Error("invalid requirement outcome: " + ro)
-                    }
-                    return
-                }
+            webRenderRequirementOutcomes(
+                result.requirementOutcomes.filter(ro => ro.ugrad),
+                NodeUgradDegreeRequirementsColumn1,
+                NodeUgradDegreeRequirementsColumn2)
+            webRenderRequirementOutcomes(
+                result.requirementOutcomes.filter(ro => !ro.ugrad),
+                NodeMastersDegreeRequirementsColumn1,
+                NodeMastersDegreeRequirementsColumn2)
 
-                const courses = ro.coursesApplied.map(c => {
-                    const completed = c.completed ? "courseCompleted" : "courseInProgress"
-                    return `<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`
-                }).join(" ")
-                switch (ro.applyResult) {
-                    case RequirementApplyResult.Satisfied:
-                        $(column).append(`<div class="droppable requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span> ${courses}</div>`)
-                        break;
-                    case RequirementApplyResult.PartiallySatisfied:
-                        $(column).append(`<div class="droppable requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span> ${courses} </div>`)
-                        break;
-                    case RequirementApplyResult.Unsatisfied:
-                        if (ro.coursesApplied.length != 0) {
-                            throw new Error("" + ro.coursesApplied)
-                        }
-                        $(column).append(`<div class="droppable requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span></div>`)
-                        break;
-                    default:
-                        throw new Error("invalid requirement outcome: " + ro)
-                }
-            })
-
-            console.log("settting up draggables and droppables")
+            // console.log("settting up draggables and droppables")
 
             $(".course").delay(100).draggable({
                 cursor: "move",
@@ -1572,6 +1772,8 @@ function webMain(): void {
                 //snap: ".droppable",
                 //snapMode: "inner",
             });
+
+            const dontCare = false // placeholder, irrelevant for getting RequirementOutcome text
 
             // update writing and SSH Depth requirements which are "global", i.e., they interact with other reqs
             const updateGlobalReqs = function() {
@@ -1590,12 +1792,12 @@ function webMain(): void {
                         .removeClass("requirementPartiallySatisfied")
                     if (req.satisfiedBy(sshCourses) != undefined) {
                         elem.addClass("requirementSatisfied")
-                        const ro = new RequirementOutcome(req, RequirementApplyResult.Satisfied, req.coursesApplied)
+                        const ro = new RequirementOutcome(dontCare, req, RequirementApplyResult.Satisfied, req.coursesApplied)
                         const courses = req.coursesApplied.map(c => c.code()).join(" and ")
                         elem.find("span.outcome").text(ro.outcomeString() + " " + courses)
                     } else {
                         elem.addClass("requirementUnsatisfied")
-                        const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
+                        const ro = new RequirementOutcome(dontCare, req, RequirementApplyResult.Unsatisfied, [])
                         elem.find("span.outcome").text(ro.outcomeString())
                     }
                 }
@@ -1673,11 +1875,11 @@ function webMain(): void {
                     // console.log(" *over* text before: " + $(this).text())
                     if (result == undefined) {
                         $(this).addClass("requirementUnsatisfied")
-                        const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
+                        const ro = new RequirementOutcome(dontCare, req, RequirementApplyResult.Unsatisfied, [])
                         $(this).find("span.outcome").text(ro.outcomeString())
                     } else {
                         $(this).addClass("requirementSatisfied")
-                        const ro = new RequirementOutcome(req, RequirementApplyResult.Satisfied, [course])
+                        const ro = new RequirementOutcome(dontCare, req, RequirementApplyResult.Satisfied, [course])
                         $(this).find("span.outcome").text(ro.outcomeString())
                     }
                     updateGlobalReqs()
@@ -1696,11 +1898,66 @@ function webMain(): void {
                         $(this).removeClass("requirementUnsatisfied")
                         $(this).removeClass("requirementPartiallySatisfied")
                         $(this).addClass("requirementCouldBeSatisfied")
-                        const ro = new RequirementOutcome(req, RequirementApplyResult.Unsatisfied, [])
+                        const ro = new RequirementOutcome(dontCare, req, RequirementApplyResult.Unsatisfied, [])
                         $(this).find("span.outcome").text(ro.outcomeString())
                     }
                 }
             });
+        })
+}
+
+function webRenderRequirementOutcomes(requirementOutcomes: RequirementOutcome[], column1Id: string, column2Id: string) {
+    requirementOutcomes.forEach( (ro: RequirementOutcome, i: number, allReqs: RequirementOutcome[]) => {
+            let column = column1Id
+            if (i > allReqs.length/2) {
+                column = column2Id
+            }
+            if (ro.degreeReq.doesntConsume) {
+                const courses = ro.coursesApplied.map(c => c.code()).join(" and ")
+                // NB: put list of courses *inside* the span.outcome, because they get recomputed in updateGlobalReqs
+                switch (ro.applyResult) {
+                    case RequirementApplyResult.Satisfied:
+                        $(column).append(`<div class="requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
+<span class="outcome">${ro.outcomeString()} ${courses}</span></div>`)
+                        break;
+                    case RequirementApplyResult.PartiallySatisfied:
+                        $(column).append(`<div class="requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
+<span class="outcome">${ro.outcomeString()} ${courses}</span></div>`)
+                        break;
+                    case RequirementApplyResult.Unsatisfied:
+                        console.assert(ro.coursesApplied.length == 0)
+                        $(column).append(`<div class="requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}">
+<span class="outcome">${ro.outcomeString()}</span></div>`)
+                        break;
+                    default:
+                        throw new Error("invalid requirement outcome: " + ro)
+                }
+                return
+            }
+
+            const courses = ro.coursesApplied.map(c => {
+                const completed = c.completed ? "courseCompleted" : "courseInProgress"
+                return `<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`
+            }).join(" ")
+            switch (ro.applyResult) {
+                case RequirementApplyResult.Satisfied:
+                    $(column).append(`<div class="droppable requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
+<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span> ${courses}</div>`)
+                    break;
+                case RequirementApplyResult.PartiallySatisfied:
+                    $(column).append(`<div class="droppable requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
+<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span> ${courses} </div>`)
+                    break;
+                case RequirementApplyResult.Unsatisfied:
+                    if (ro.coursesApplied.length != 0) {
+                        throw new Error("" + ro.coursesApplied)
+                    }
+                    $(column).append(`<div class="droppable requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}">
+<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span></div>`)
+                    break;
+                default:
+                    throw new Error("invalid requirement outcome: " + ro)
+            }
         })
 }
 
@@ -1759,18 +2016,17 @@ function runOneWorksheet(worksheetText: string, analysisOutput: string): void {
         }
 
         // infer degree
-        let deg: Degree | undefined = DegreeWorks.inferDegree(worksheetText, coursesTaken)
-        if (deg == undefined) {
+        let degrees = DegreeWorks.inferDegrees(worksheetText, coursesTaken)
+        if (degrees == undefined) {
             // can't infer degree, just skip it
             return
         }
-        const degree: Degree = deg
 
         fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
             .then(response => response.text())
             .then(json => {
                 const telist = JSON.parse(json)
-                const result = run(telist, degree, coursesTaken)
+                const result = run(telist, degrees!, coursesTaken)
 
                 const unsat = result.requirementOutcomes
                     .filter(ro => ro.applyResult != RequirementApplyResult.Satisfied)
@@ -1781,7 +2037,7 @@ function runOneWorksheet(worksheetText: string, analysisOutput: string): void {
                     .map(c => "  " + c.toString())
                     .join("\n")
                     const summary = `
-${result.cusRemaining} CUs remaining in ${degree}
+${result.cusRemaining} CUs remaining in ${degrees}
 
 unsatisfied requirements:
 ${unsat}
@@ -1814,10 +2070,13 @@ enum RequirementApplyResult {
     Unsatisfied, PartiallySatisfied, Satisfied
 }
 class RequirementOutcome {
+    /** true if this is an undergraduate degree requirement, false if masters */
+    readonly ugrad: boolean
     readonly degreeReq: DegreeRequirement
     readonly applyResult: RequirementApplyResult
     readonly coursesApplied: CourseTaken[]
-    constructor(req: DegreeRequirement, outcome: RequirementApplyResult, courses: CourseTaken[]) {
+    constructor(ugrad: boolean, req: DegreeRequirement, outcome: RequirementApplyResult, courses: CourseTaken[]) {
+        this.ugrad = ugrad
         this.degreeReq = req
         this.applyResult = outcome
         this.coursesApplied = courses
@@ -1848,7 +2107,7 @@ class RunResult {
     }
 }
 
-function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, coursesTaken: CourseTaken[]): RunResult {
+function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, coursesTaken: CourseTaken[]): RunResult {
     csci37techElectiveList
         .filter((te: TechElectiveDecision): boolean => te.status == "yes")
         .forEach((te: TechElectiveDecision) => {
@@ -1859,7 +2118,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
         throw new Error(`Uh-oh, some NETS TEs are both light AND full: ${bothLightAndFull}`)
     }
 
-    let degreeRequirements: DegreeRequirement[] = []
+    let ugradDegreeRequirements: DegreeRequirement[] = []
 
     const ascsNSCourses = ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100","PHYS 093","PHYS 094",
         "PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120",
@@ -1871,9 +2130,9 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
     ]
 
     // NB: below, requirements are listed from highest => lowest priority. Display order is orthogonal.
-    switch (degree) {
+    switch (degrees.undergrad) {
         case "40cu CSCI":
-            degreeRequirements = [
+            ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
@@ -1931,7 +2190,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
             ]
             break
         case "40cu ASCS":
-            degreeRequirements = [
+            ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
@@ -1985,7 +2244,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
             ]
             break
         case "40cu ASCC":
-            degreeRequirements = [
+            ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
@@ -2039,7 +2298,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
             ]
             break
         case "40cu CMPE":
-            degreeRequirements = [
+            ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["MATH 2400","MATH 2600"]),
@@ -2093,7 +2352,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
             ]
             break
         case "40cu NETS":
-            degreeRequirements = [
+            ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["MATH 2400","MATH 2600"]),
@@ -2145,7 +2404,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
             ]
             break
         case "40cu DMD":
-            degreeRequirements = [
+            ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
@@ -2197,7 +2456,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
             ]
             break
         case "40cu EE":
-            degreeRequirements = [
+            ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["MATH 2400","MATH 2600"]),
@@ -2252,7 +2511,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
             ]
             break
         case "40cu SSE":
-            degreeRequirements = [
+            ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["MATH 2400","MATH 2600"]),
@@ -2306,13 +2565,54 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
                 new RequirementFreeElective(45),
             ]
             break
+        case "none":
+            break
         default:
-            throw new Error(`unsupported degree: ${degree}`)
+            throw new Error(`unsupported degree: ${degrees.undergrad}`)
     }
-    const degreeCUs = degreeRequirements.map(r => r.remainingCUs).reduce((sum, e) => sum + e, 0)
-    if (40 != degreeCUs) throw new Error(`${degree} degree should be 40 CUs but was ${degreeCUs}`)
+    {
+        const degreeCUs = ugradDegreeRequirements.map(r => r.remainingCUs).reduce((sum, e) => sum + e, 0)
+        if (40 != degreeCUs) throw new Error(`${degrees.undergrad} degree should be 40 CUs but was ${degreeCUs}`)
+    }
+
+    let mastersDegreeRequirements: DegreeRequirement[] = []
+
+    // NB: layout hack, Masters degree requirements start at displayIndex 101
+    switch (degrees.masters) {
+        case "CISMSE":
+            mastersDegreeRequirements = [
+                new RequirementNamedCourses(101, "Systems", ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710"]),
+                new RequirementNamedCourses(102, "Theory", ["CIS 5020", "CIS 5110"]),
+                new RequirementNamedCourses(103, "Core",
+                    ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710", "CIS 5020", "CIS 5110", "CIS 5000", "CIS 5190", "CIS 5200", "CIS 5210"]),
+                new RequirementNamedCourses(104, "Core non-ML",
+                    ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710", "CIS 5020", "CIS 5110", "CIS 5000"]),
+                new RequirementNumbered(105, "CIS Elective [5000,7000]", "CIS",
+                    function(x: number) { return x >= 5000 && x <= 7000}),
+                new RequirementNumbered(106, "CIS Elective [5000,6999]", "CIS",
+                    function(x: number) { return x >= 5000 && x < 7000}),
+                new RequirementNumbered(107, "CIS Elective [5000,6999]", "CIS",
+                    function(x: number) { return x >= 5000 && x < 7000}),
+                new RequirementNumbered(108, "Elective", "CIS",
+                    function(x: number) { return x >= 5000 && x < 8000},
+                    new Set<string>([...CisMseNonCisElectives, ...CisMseNonCisElectivesRestrictions1])),
+                new RequirementNumbered(109, "Elective", "CIS",
+                    function(x: number) { return x >= 5000 && x < 8000},
+                    new Set<string>([...CisMseNonCisElectives, ...CisMseNonCisElectivesRestrictions2])),
+                new RequirementNumbered(110, "Elective", "CIS",
+                    function(x: number) { return x >= 5000 && x < 8000},
+                    new Set<string>([...CisMseNonCisElectives])),
+            ]
+            break
+        case "none":
+            break
+        default:
+            throw new Error(`unsupported degree: ${degrees.masters}`)
+    }
 
     // APPLY COURSES TO DEGREE REQUIREMENTS
+
+    const degreeRequirements = ugradDegreeRequirements.concat(mastersDegreeRequirements)
 
     // use undergrad courses first, reserve grad courses for AM
     coursesTaken.sort((a,b): number => a.courseNumberInt - b.courseNumberInt)
@@ -2321,20 +2621,21 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
     // displayIndex, DegreeRequirement, RequirementOutcome, course(s) applied
     let reqOutcomes: [number,DegreeRequirement,RequirementApplyResult,CourseTaken[]][] = []
     degreeRequirements.forEach(req => {
+        const displayIndex = mastersDegreeRequirements.includes(req) ? 100 + req.displayIndex : req.displayIndex
         const matched1 = req.satisfiedBy(coursesTaken)
         if (matched1 == undefined) {
-            reqOutcomes.push([req.displayIndex, req, RequirementApplyResult.Unsatisfied, []])
+            reqOutcomes.push([displayIndex, req, RequirementApplyResult.Unsatisfied, []])
         } else if (req.remainingCUs > 0) {
             const matched2 = req.satisfiedBy(coursesTaken)
             if (matched2 == undefined) { // partially satisfied by 1 course
-                reqOutcomes.push([req.displayIndex, req, RequirementApplyResult.PartiallySatisfied, [matched1]])
+                reqOutcomes.push([displayIndex, req, RequirementApplyResult.PartiallySatisfied, [matched1]])
             } else {
                 // fully satisfied by 2 courses
-                reqOutcomes.push([req.displayIndex, req, RequirementApplyResult.Satisfied, [matched1,matched2]])
+                reqOutcomes.push([displayIndex, req, RequirementApplyResult.Satisfied, [matched1,matched2]])
             }
         } else {
             // fully satisfied by 1 course
-            reqOutcomes.push([req.displayIndex, req, RequirementApplyResult.Satisfied, [matched1]])
+            reqOutcomes.push([displayIndex, req, RequirementApplyResult.Satisfied, [matched1]])
         }
         totalRemainingCUs += req.remainingCUs
     })
@@ -2373,7 +2674,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degree: Degree, cou
     reqOutcomes.sort((a,b) => a[0] - b[0])
     return new RunResult(
         reqOutcomes.map((o: [number, DegreeRequirement, RequirementApplyResult, CourseTaken[]]): RequirementOutcome => {
-            return new RequirementOutcome(o[1], o[2], o[3])
+            return new RequirementOutcome(!mastersDegreeRequirements.includes(o[1]), o[1], o[2], o[3])
         }),
         totalRemainingCUs,
         coursesTaken.filter(c => c.courseUnitsRemaining > 0)

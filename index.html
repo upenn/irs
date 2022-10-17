@@ -11,6 +11,21 @@
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" type="application/javascript"></script>
     <script>
         var exports = {};
+        $(function() {
+            // setup degree radios
+            $('[name="ugrad_degree"]').attr("disabled", true)
+            $('[name="masters_degree"]').attr("disabled", true)
+            $('#auto_degree').on('change', function() {
+                // console.log("you clicked the auto checkbox " + this.checked)
+                if (this.checked) {
+                    $('[name="ugrad_degree"]').attr("disabled", true)
+                    $('[name="masters_degree"]').attr("disabled", true)
+                } else {
+                    $('[name="ugrad_degree"]').attr("disabled", false)
+                    $('[name="masters_degree"]').attr("disabled", false)
+                }
+            })
+        })
     </script>
     <script src="degree_requirements.js" type="application/javascript"></script>
 </head>
@@ -66,42 +81,71 @@
             </div>
                 <button type="button" class="btn btn-secondary my-2" onclick="$('#coursesTaken').val('')">clear</button>
             <div>
-                Major <b>(all 40cu)</b>:
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" id="auto" name="degree" value="auto" checked>
-                    <label class="form-check-label" for="auto">auto</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="auto_degree" name="auto_degrees" value="auto" checked>
+                    <label class="form-check-label" for="auto_degree">infer degree(s) automatically</label>
                 </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" id="csci_40" name="degree" value="40cu CSCI">
-                    <label class="form-check-label" for="csci_40">CSCI</label>
+                <div>
+                    <b class="py-2">40cu Undergrad degree:</b>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="no_ugrad" name="ugrad_degree" value="no_ugrad">
+                        <label class="form-check-label" for="no_ugrad">None</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="csci_40" name="ugrad_degree" value="40cu CSCI">
+                        <label class="form-check-label" for="csci_40">CSCI</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="cmpe_40" name="ugrad_degree" value="40cu CMPE">
+                        <label class="form-check-label" for="cmpe_40">CMPE</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="ascs_40" name="ugrad_degree" value="40cu ASCS">
+                        <label class="form-check-label" for="ascs_40">ASCS</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="nets_40" name="ugrad_degree" value="40cu NETS">
+                        <label class="form-check-label" for="nets_40">NETS</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="ascc_40" name="ugrad_degree" value="40cu ASCC">
+                        <label class="form-check-label" for="ascc_40">ASCC</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="dmd_40" name="ugrad_degree" value="40cu DMD">
+                        <label class="form-check-label" for="dmd_40">DMD</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="ee_40" name="ugrad_degree" value="40cu EE">
+                        <label class="form-check-label" for="ee_40">EE</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="sse_40" name="ugrad_degree" value="40cu SSE">
+                        <label class="form-check-label" for="sse_40">SSE</label>
+                    </div>
                 </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" id="cmpe_40" name="degree" value="40cu CMPE">
-                    <label class="form-check-label" for="cmpe_40">CMPE</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" id="ascs_40" name="degree" value="40cu ASCS">
-                    <label class="form-check-label" for="ascs_40">ASCS</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" id="nets_40" name="degree" value="40cu NETS">
-                    <label class="form-check-label" for="nets_40">NETS</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" id="ascc_40" name="degree" value="40cu ASCC">
-                    <label class="form-check-label" for="ascc_40">ASCC</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" id="dmd_40" name="degree" value="40cu DMD">
-                    <label class="form-check-label" for="dmd_40">DMD</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" id="ee_40" name="degree" value="40cu EE">
-                    <label class="form-check-label" for="ee_40">EE</label>
-                </div>
-                <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" id="sse_40" name="degree" value="40cu SSE">
-                    <label class="form-check-label" for="sse_40">SSE</label>
+                <div>
+                    <b>Masters degree:</b>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="no_masters" name="masters_degree" value="no_masters">
+                        <label class="form-check-label" for="no_masters">None</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="cismse" name="masters_degree" value="CISMSE">
+                        <label class="form-check-label" for="cismse">CIS MSE</label>
+                    </div>
+<!--                    <div class="form-check form-check-inline">-->
+<!--                        <input class="form-check-input" type="radio" id="dats" name="masters_degree" value="DATS">-->
+<!--                        <label class="form-check-label" for="dats">DATS</label>-->
+<!--                    </div>-->
+<!--                    <div class="form-check form-check-inline">-->
+<!--                        <input class="form-check-input" type="radio" id="robo" name="masters_degree" value="ROBO">-->
+<!--                        <label class="form-check-label" for="robo">ROBO</label>-->
+<!--                    </div>-->
+<!--                    <div class="form-check form-check-inline">-->
+<!--                        <input class="form-check-input" type="radio" id="cggt" name="masters_degree" value="CGGT">-->
+<!--                        <label class="form-check-label" for="cggt">CGGT</label>-->
+<!--                    </div>-->
                 </div>
                 <div>
                     <button type="button" class="btn btn-primary my-2" onclick="webMain()">apply courses to requirements</button>
@@ -112,12 +156,19 @@
     <div class="row align-items-start py-4">
         <div id="studentInfo"></div>
         <div id="remainingCUs"></div>
-        <div id="degreeRequirementsHeader"></div>
+        <div id="ugradDegreeRequirementsHeader"></div>
         <div class="col">
-            <div class="" id="degreeRequirementsCol1"></div>
+            <div class="" id="ugradDegreeRequirementsCol1"></div>
         </div>
         <div class="col">
-            <div class="" id="degreeRequirementsCol2"></div>
+            <div class="" id="ugradDegreeRequirementsCol2"></div>
+        </div>
+        <div id="mastersDegreeRequirementsHeader"></div>
+        <div class="col">
+            <div class="" id="mastersDegreeRequirementsCol1"></div>
+        </div>
+        <div class="col">
+            <div class="" id="mastersDegreeRequirementsCol2"></div>
         </div>
     </div>
     <div class="row">
