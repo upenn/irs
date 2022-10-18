@@ -1775,13 +1775,13 @@ function webMain(): void {
             // display requirement outcomes, across 1-3 columns
             if (result.requirementOutcomes.some(ro => ro.ugrad)) {
                 $(NodeColumn1Header).append(`<h3>${degrees.undergrad} Degree Requirements</h3>`)
-                webRenderRequirementOutcomes(
+                renderRequirementOutcomesWeb(
                     result.requirementOutcomes.filter(ro => ro.ugrad),
                     NodeColumn1Reqs,
                     NodeColumn2Reqs)
                 if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
                     $(NodeColumn3Header).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
-                    webRenderRequirementOutcomes(
+                    renderRequirementOutcomesWeb(
                         result.requirementOutcomes.filter(ro => !ro.ugrad),
                         NodeColumn3Reqs,
                         undefined)
@@ -1789,7 +1789,7 @@ function webMain(): void {
             } else if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
                 // master's degree only
                 $(NodeColumn1Header).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
-                webRenderRequirementOutcomes(
+                renderRequirementOutcomesWeb(
                     result.requirementOutcomes.filter(ro => !ro.ugrad),
                     NodeColumn1Reqs,
                     undefined)
@@ -2055,60 +2055,27 @@ ${course.code()}
         })
 }
 
-function webRenderRequirementOutcomes(requirementOutcomes: RequirementOutcome[], column1Id: string, column2Id: string | undefined) {
+function renderRequirementOutcomesWeb(requirementOutcomes: RequirementOutcome[], column1Id: string, column2Id: string | undefined) {
     requirementOutcomes.forEach( (ro: RequirementOutcome, i: number, allReqs: RequirementOutcome[]) => {
-            let column = column1Id
-            if (column2Id != undefined && (i+1) > allReqs.length/2) {
-                column = column2Id
-            }
-            if (ro.degreeReq.doesntConsume) {
-                const courses = ro.coursesApplied.map(c => c.code()).join(" and ")
-                // NB: put list of courses *inside* the span.outcome, because they get recomputed in updateGlobalReqs
-                switch (ro.applyResult) {
-                    case RequirementApplyResult.Satisfied:
-                        $(column).append(`<div class="requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()} ${courses}</span></div>`)
-                        break;
-                    case RequirementApplyResult.PartiallySatisfied:
-                        $(column).append(`<div class="requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()} ${courses}</span></div>`)
-                        break;
-                    case RequirementApplyResult.Unsatisfied:
-                        console.assert(ro.coursesApplied.length == 0)
-                        $(column).append(`<div class="requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()}</span></div>`)
-                        break;
-                    default:
-                        throw new Error("invalid requirement outcome: " + ro)
-                }
-                return
-            }
+        let column = column1Id
+        if (column2Id != undefined && (i+1) > allReqs.length/2) {
+            column = column2Id
+        }
+        if (ro.degreeReq.doesntConsume) {
+            $(column).append(`<div class="requirement" id="${ro.degreeReq.uuid()}"><span class="outcome"></span></div>`)
+            ro.degreeReq.updateViewWeb()
+            return
+        }
 
-            // TODO: remove redundancy here
-            const courses = ro.coursesApplied.map(c => {
-                const completed = c.completed ? "courseCompleted" : "courseInProgress"
-                return `<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`
-            }).join(" ")
-            switch (ro.applyResult) {
-                case RequirementApplyResult.Satisfied:
-                    $(column).append(`<div class="droppable requirement requirementSatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span> ${courses}</div>`)
-                    break;
-                case RequirementApplyResult.PartiallySatisfied:
-                    $(column).append(`<div class="droppable requirement requirementPartiallySatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span> ${courses} </div>`)
-                    break;
-                case RequirementApplyResult.Unsatisfied:
-                    if (ro.coursesApplied.length != 0) {
-                        throw new Error("" + ro.coursesApplied)
-                    }
-                    $(column).append(`<div class="droppable requirement requirementUnsatisfied" id="${ro.degreeReq.uuid()}">
-<span class="outcome">${ro.outcomeString()}</span><span class="courseSnapTarget"></span></div>`)
-                    break;
-                default:
-                    throw new Error("invalid requirement outcome: " + ro)
-            }
-        })
+        const courses = ro.coursesApplied.map(c => {
+            const completed = c.completed ? "courseCompleted" : "courseInProgress"
+            return `<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`
+        }).join(" ")
+        $(column).append(`
+<div class="droppable requirement" id="${ro.degreeReq.uuid()}">
+<span class="outcome"></span><span class="courseSnapTarget"></span> ${courses}</div>`)
+        ro.degreeReq.updateViewWeb()
+    })
 }
 
 function setRemainingCUs(n: number) {
