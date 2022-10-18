@@ -6,6 +6,7 @@
     /*border: 2px solid #41464b;*/
     border-radius: 5px;
     color: #41464b;
+    white-space: nowrap;
 }
 .courseCompleted {
     background-color: #e2e3e5;
