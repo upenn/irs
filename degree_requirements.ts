@@ -4,10 +4,10 @@ import {makeArray} from "jquery";
 import DroppableEventUIParam = JQueryUI.DroppableEventUIParam;
 
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
-const DraggableDataProperty = "CourseTaken"
+const DraggableDataGetCourseTaken = "CourseTaken"
 const DraggableOriginalRequirement = "OriginalDegreeRequirement"
-const DraggableDoubleCountShadowProperty = "double-count-shadow"
-const DroppableDataProperty = "DegreeRequirement"
+//const DraggableDoubleCountShadowProperty = "double-count-shadow"
+const DroppableDataGetDegreeRequirement = "DegreeRequirement"
 
 const SsHTbsTag = "SS/H/TBS"
 const SshDepthTag = "SSH Depth Requirement"
@@ -1165,6 +1165,20 @@ class CourseTaken {
     /** the number of CUs of this course not yet consumed by any requirements */
     courseUnitsRemaining: number
 
+    public copy(): CourseTaken {
+        return new CourseTaken(
+            this.subject,
+            this.courseNumber,
+            this.title,
+            this._3dName,
+            this.courseUnits,
+            this.grading,
+            this.letterGrade,
+            this.term,
+            this.allAttributes.join(";"),
+            this.completed
+        )
+    }
     constructor(subject: string,
                 courseNumber: string,
                 title: string,
@@ -1423,6 +1437,19 @@ class CourseTaken {
             noCreditPhys ||
             noCreditNsci ||
             noCreditStat
+    }
+
+    public updateViewWeb(asDoubleCount: boolean) {
+        const myElem = $(`#${this.uuid}`)
+        myElem.removeClass("courseCompleted")
+            .removeClass("courseInProgress")
+            .removeClass("courseDoubleCountCompleted")
+            .removeClass("courseDoubleCountInProgress")
+        if (asDoubleCount) {
+            myElem.addClass(this.completed ? "courseDoubleCountCompleted" : "courseDoubleCountInProgress")
+            return
+        }
+        myElem.addClass(this.completed ? "courseCompleted" : "courseInProgress")
     }
 }
 
@@ -1806,11 +1833,11 @@ function webMain(): void {
                 // runs once when the course is created, binding a CourseTaken object to its HTML element
                 create: function(e, _) {
                     const ct = coursesTaken.find(c => c.uuid == e.target.id)!
-                    $(this).data(DraggableDataProperty, ct)
+                    $(this).data(DraggableDataGetCourseTaken, ct)
                 },
                 // when a course is first picked up for dragging
                 start: function(e, ui) {
-                    const course: CourseTaken = $(this).data(DraggableDataProperty)
+                    const course: CourseTaken = $(this).data(DraggableDataGetCourseTaken)
                     if (course.consumedBy != undefined) {
                         $(this).data(DraggableOriginalRequirement, course.consumedBy!)
                         console.log(`you picked up ${course.code()} from ${course.consumedBy!} ugrad:${ugradDegreeReqs.includes(course.consumedBy!)}`)
@@ -1860,18 +1887,17 @@ function webMain(): void {
                 create: function(event, _) {
                     // console.log("creating droppable: " + $(this).attr("id"))
                     const myReq = allDegreeReqs.find(req => req.uuid() == $(this).attr("id"))!
-                    $(this).data(DroppableDataProperty, myReq)
+                    $(this).data(DroppableDataGetDegreeRequirement, myReq)
                 },
                 // for every requirement, this is called when a course is picked up
                 activate: function(event, ui) {
-                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
-                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
-                    if (ui.draggable.data(DraggableDoubleCountShadowProperty)) {
-                        return
-                    }
+                    const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
+                    const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
+                    // detach course from its current req
                     if (course.consumedBy != undefined) {
                         course.consumedBy.unapplyCourse(course)
                     }
+                    // try to apply course to req, and then undo it so req stays incomplete and course stays unattached
                     if (req.coursesApplied.length == 0) {
                         const result = req.satisfiedBy([course])
                         if (result != undefined) {
@@ -1889,144 +1915,70 @@ function webMain(): void {
                 },
                 // when a course is released over a requirement. NB: course was already bound to the req at over()
                 drop: function(event, ui) {
-                    // snap course into place
-                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
-                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
-                    if (req.coursesApplied.includes(course)) {
+                    const destReq: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
+                    const realCourse: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
+                    if (destReq.coursesApplied.includes(realCourse)) {
+                        // snap course into place
                         ui.draggable.position({
                             my: "left center",
                             at: "right center",
                             of: $(this).find(".courseSnapTarget"),
                         })
 
-                        // if we move a course across degrees, try to double-count it
-                        const origReq: DegreeRequirement = ui.draggable.data(DraggableOriginalRequirement)
+                        // if moving a course across degrees, try to double-count it
+                        const originReq: DegreeRequirement = ui.draggable.data(DraggableOriginalRequirement)
                         const crossDegree =
-                            (ugradDegreeReqs.includes(origReq) && mastersDegreeReqs.includes(req)) ||
-                            (mastersDegreeReqs.includes(origReq) && ugradDegreeReqs.includes(req))
-                        if (doubleCountedCourses.length < 3 && !doubleCountedCourses.includes(course) && crossDegree) {
+                            (ugradDegreeReqs.includes(originReq) && mastersDegreeReqs.includes(destReq)) ||
+                            (mastersDegreeReqs.includes(originReq) && ugradDegreeReqs.includes(destReq))
+                        if (doubleCountedCourses.length < 3 && !doubleCountedCourses.includes(realCourse) && crossDegree) {
+                            console.log(`double-counting ${realCourse.code()} with ${originReq} and ${destReq}`)
+                            doubleCountedCourses.push(realCourse)
 
-                            console.log(`double-counting ${course.code()} with ${origReq} and ${req}`)
-                            doubleCountedCourses.push(course)
-
-                            // duplicate course into origReq
-                            const dupCourse = new CourseTaken(course.subject, course.courseNumber, course.title, course._3dName,
-                                course.getCUs(), course.grading, course.letterGrade, course.term, course.allAttributes.join(";"), course.completed)
-                            const origReqElem = $("#" + origReq.uuid())
+                            // create shadowCourse and place that in originReq
+                            const shadowCourse = realCourse.copy()
+                            const origReqElem = $("#" + originReq.uuid())
                             origReqElem.append(`
 <span 
-class="course courseDoubleCountShadow myTooltip" 
-data-double-count-shadow="true" 
-id="${dupCourse.uuid}" 
+class="course courseDoubleCountShadow myTooltip"  
+id="${shadowCourse.uuid}" 
 >
-${course.code()}
+${realCourse.code()}
 <span class="myTooltipText">click to remove double-count</span>
 </span>`)
 
-                            $(`#${dupCourse.uuid}`).position({
+                            originReq.satisfiedBy([shadowCourse])
+                            originReq.updateViewWeb()
+                            realCourse.updateViewWeb(true)
+                            updateGlobalReqs()
+
+                            // position shadowCourse, close on click
+                            $(`#${shadowCourse.uuid}`).position({
                                 my: "left center",
                                 at: "right center",
                                 of: origReqElem.find(".courseSnapTarget"),
                             }).on('click', function() {
-                                const shadowCourse: CourseTaken = dupCourse //$(this).data(DraggableDataProperty)
-                                console.log("moving a double-count shadow course " + shadowCourse)
-                                const originCourse = doubleCountedCourses.find(c => c.code() == shadowCourse.code())!
-                                // TODO: remove shadowCourse from its req
-                                const shadowReq = allDegreeReqs.find(r => r.coursesApplied.includes(shadowCourse))!
-                                shadowReq.unapplyCourse(shadowCourse)
-                                const shadowReqElem = $(`#${shadowReq.uuid()}`)
-                                shadowReqElem.removeClass("requirementSatisfied")
-                                shadowReqElem.removeClass("requirementUnsatisfied")
-                                shadowReqElem.removeClass("requirementPartiallySatisfied")
-                                shadowReqElem.removeClass("requirementCouldBeSatisfied")
-                                shadowReqElem.addClass("requirementUnsatisfied")
+                                console.log("removing double-count shadow course " + shadowCourse)
 
-                                // remove double-count styling from origin course + element
-                                const originElement = $(`#${originCourse.uuid}`)
-                                originElement.removeClass("courseDoubleCountCompleted")
-                                    .removeClass("courseDoubleCountInProgress")
-                                    .addClass(originCourse.completed ? "courseCompleted" : "courseInProgress")
+                                originReq.unapplyCourse(shadowCourse)
+                                originReq.updateViewWeb()
+                                realCourse.updateViewWeb(false)
+
                                 // remove origin course from doubleCountedCourses
-                                const i = doubleCountedCourses.indexOf(originCourse)
+                                const i = doubleCountedCourses.indexOf(realCourse)
+                                if (i < 0) {
+                                    throw new Error(`expected ${realCourse} in ${doubleCountedCourses}`)
+                                }
                                 doubleCountedCourses.splice(i, 1)
                                 $(this).remove()
                                 updateGlobalReqs()
                             })
-
-                            // TODO: mark origReq as satisfied
-                            origReqElem.removeClass("requirementSatisfied")
-                            origReqElem.removeClass("requirementUnsatisfied")
-                            origReqElem.removeClass("requirementPartiallySatisfied")
-                            origReqElem.removeClass("requirementCouldBeSatisfied")
-                            const result = origReq.satisfiedBy([dupCourse])
-                            // console.log(" *over* text before: " + $(this).text())
-                            if (result == undefined) {
-                                origReqElem.addClass("requirementUnsatisfied")
-                                const ro = new RequirementOutcome(dontCare, origReq, RequirementApplyResult.Unsatisfied, [])
-                                origReqElem.find("span.outcome").text(ro.outcomeString())
-                            } else {
-                                origReqElem.addClass("requirementSatisfied")
-                                const ro = new RequirementOutcome(dontCare, origReq, RequirementApplyResult.Satisfied, [dupCourse])
-                                origReqElem.find("span.outcome").text(ro.outcomeString())
-                            }
-                            updateGlobalReqs()
-
-                            // $(".course").delay(100).draggable({
-                            //     cursor: "move",
-                            //     scroll: true,
-                            //     stack: ".course", // make the currently-selected course appear above all others
-                            //     // runs once when the course is created, binding a CourseTaken object to its HTML element
-                            //     create: function(e, _) {
-                            //         const ct = [dupCourse].find(c => c.uuid == e.target.id)!
-                            //         console.log(`linking ${e.target.id}`)
-                            //         console.log(`  with ${ct.code()}`)
-                            //         $(this).data(DraggableDataProperty, ct)
-                            //     },
-                            //     // when a course is first picked up for dragging
-                            //     start: function(e, ui) {
-                            //         if ($(this).data(DraggableDoubleCountShadowProperty)) {
-                            //             const shadowCourse: CourseTaken = $(this).data(DraggableDataProperty)
-                            //             console.log("moving a double-count shadow course " + shadowCourse)
-                            //             const originCourse = doubleCountedCourses.find(c => c.code() == shadowCourse.code())!
-                            //             // TODO: remove shadowCourse from its req
-                            //             const shadowReq = allDegreeReqs.find(r => r.coursesApplied.includes(shadowCourse))!
-                            //             shadowReq.unapplyCourse(shadowCourse)
-                            //             const shadowReqElem = $(`#${shadowReq.uuid()}`)
-                            //             shadowReqElem.removeClass("requirementSatisfied")
-                            //             shadowReqElem.removeClass("requirementUnsatisfied")
-                            //             shadowReqElem.removeClass("requirementPartiallySatisfied")
-                            //             shadowReqElem.removeClass("requirementCouldBeSatisfied")
-                            //             shadowReqElem.addClass("requirementUnsatisfied")
-                            //
-                            //             // remove double-count styling from origin course + element
-                            //             const originElement = $(`#${originCourse.uuid}`)
-                            //             originElement.removeClass("courseDoubleCountCompleted")
-                            //                 .removeClass("courseDoubleCountInProgress")
-                            //                 .addClass(originCourse.completed ? "courseCompleted" : "courseInProgress")
-                            //             // remove origin course from doubleCountedCourses
-                            //             const i = doubleCountedCourses.indexOf(originCourse)
-                            //             doubleCountedCourses.splice(i, 1)
-                            //             $(this).remove()
-                            //             updateGlobalReqs()
-                            //             return
-                            //         }
-                            //         const course: CourseTaken = $(this).data(DraggableDataProperty)
-                            //         if (course.consumedBy != undefined) {
-                            //             $(this).data(DraggableOriginalRequirement, course.consumedBy!)
-                            //             console.log(`you picked up ${course.code()} from ${course.consumedBy!} ugrad:${ugradDegreeReqs.includes(course.consumedBy!)}`)
-                            //         }
-                            //     },
-                            // });
-
-                            // render course in req
-                            ui.draggable.addClass(course.completed ? "courseDoubleCountCompleted" : "courseDoubleCountInProgress")
                         }
                     }
                 },
                 // when a course is dragged over a requirement
                 over: function(event,ui) {
-                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
-                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
+                    const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
+                    const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
                     // console.log(`${course.code()} *over* ${req.uuid()}, ${course.consumedBy?.uuid()}`)
 
                     // if req is already filled by something else, ignore this course
@@ -2040,8 +1992,8 @@ ${course.code()}
                 },
                 // when a course leaves a requirement
                 out: function(event, ui) {
-                    const req: DegreeRequirement = $(this).data(DroppableDataProperty)
-                    const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
+                    const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
+                    const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
                     // console.log(`${course.code()} *left* ${req.uuid()}`)
 
                     // update model
