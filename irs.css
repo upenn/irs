@@ -15,8 +15,9 @@
     color: white;
 }
 .courseDoubleCount {
-    color: #0f5132;
-    background-color: #d1e7dd;
+    /*color: #0f5132;*/
+    /*background-color: #d1e7dd;*/
+    color: green; !important;
 }
 
 .requirement {

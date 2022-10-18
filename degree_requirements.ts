@@ -5,6 +5,8 @@ import DroppableEventUIParam = JQueryUI.DroppableEventUIParam;
 
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 const DraggableDataProperty = "CourseTaken"
+const DraggableOriginalRequirement = "OriginalDegreeRequirement"
+const DraggableDoubleCountProperty = "CourseDoubleCounts"
 const DroppableDataProperty = "DegreeRequirement"
 
 const SsHTbsTag = "SS/H/TBS"
@@ -1571,6 +1573,7 @@ class DegreeWorks {
         // undergrad degrees
         if (worksheetText.includes("Degree in Bachelor of Science in Engineering") &&
             worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CSCI\s+`)) != -1) {
+            d.undergrad =  "40cu CSCI"
             // heuristic to identify folks who are actually ASCS
             if (
                 (!coursesTaken.some(c => c.code() == "CIS 4710") && !coursesTaken.some(c => c.code() == "CIS 5710")) &&
@@ -1580,7 +1583,6 @@ class DegreeWorks {
                 myLog("CSCI declared, but coursework is closer to ASCS so using ASCS requirements instead")
                 d.undergrad = "40cu ASCS"
             }
-            d.undergrad =  "40cu CSCI"
 
         } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ASCS\s+`)) != -1) {
             d.undergrad =  "40cu ASCS"
@@ -1619,12 +1621,11 @@ class DegreeWorks {
 }
 
 const NodeCoursesTaken = "#coursesTaken"
-const NodeUgradDegreeRequirementsHeader = "#ugradDegreeRequirementsHeader"
-const NodeUgradDegreeRequirementsColumn1 = "#ugradDegreeRequirementsCol1"
-const NodeUgradDegreeRequirementsColumn2 = "#ugradDegreeRequirementsCol2"
-const NodeMastersDegreeRequirementsHeader = "#mastersDegreeRequirementsHeader"
-const NodeMastersDegreeRequirementsColumn1 = "#mastersDegreeRequirementsCol1"
-const NodeMastersDegreeRequirementsColumn2 = "#mastersDegreeRequirementsCol2"
+const NodeColumn1Header = "#col1Header"
+const NodeColumn1Reqs = "#col1Reqs"
+const NodeColumn2Reqs = "#col2Reqs"
+const NodeColumn3Header = "#col3Header"
+const NodeColumn3Reqs = "#col3Reqs"
 const NodeRemainingCUs = "#remainingCUs"
 const NodeStudentInfo = "#studentInfo"
 const NodeUnusedCoursesHeader = "#unusedCoursesHeader"
@@ -1653,12 +1654,7 @@ class Degrees {
 
 function webMain(): void {
     // reset output
-    $(NodeUgradDegreeRequirementsHeader).empty()
-    $(NodeUgradDegreeRequirementsColumn1).empty()
-    $(NodeUgradDegreeRequirementsColumn2).empty()
-    $(NodeMastersDegreeRequirementsHeader).empty()
-    $(NodeMastersDegreeRequirementsColumn1).empty()
-    $(NodeMastersDegreeRequirementsColumn2).empty()
+    $(".requirementsList").empty()
     $(NodeRemainingCUs).empty()
     $(NodeStudentInfo).empty()
     $(NodeUnusedCoursesHeader).empty()
@@ -1728,7 +1724,7 @@ function webMain(): void {
             }
 
             if (result.unconsumedCourses.length > 0) {
-                $(NodeUnusedCoursesHeader).append(`<h3>Unused Courses</h3>`)
+                $(NodeUnusedCoursesHeader).append(`<hr/><h3>Unused Courses</h3>`)
                 result.unconsumedCourses.forEach(c => {
                     const completed = c.completed ? "courseCompleted" : "courseInProgress"
                     if (c.courseUnitsRemaining == c.getCUs()) {
@@ -1741,23 +1737,32 @@ function webMain(): void {
                 $(NodeMessages).append("<div>all courses applied to degree requirements</div>")
             }
 
-            // display requirement outcomes, in two columns
-            if (result.requirementOutcomes.some(ro => ro.ugrad)) {
-                $(NodeUgradDegreeRequirementsHeader).append(`<h3>${degrees.undergrad} Degree Requirements</h3>`)
-            }
-            if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
-                $(NodeMastersDegreeRequirementsHeader).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
-            }
-
             const allDegreeReqs = result.requirementOutcomes.map(ro => ro.degreeReq)
-            webRenderRequirementOutcomes(
-                result.requirementOutcomes.filter(ro => ro.ugrad),
-                NodeUgradDegreeRequirementsColumn1,
-                NodeUgradDegreeRequirementsColumn2)
-            webRenderRequirementOutcomes(
-                result.requirementOutcomes.filter(ro => !ro.ugrad),
-                NodeMastersDegreeRequirementsColumn1,
-                NodeMastersDegreeRequirementsColumn2)
+            const ugradDegreeReqs = result.requirementOutcomes.filter(ro => ro.ugrad).map(ro => ro.degreeReq)
+            const mastersDegreeReqs = result.requirementOutcomes.filter(ro => !ro.ugrad).map(ro => ro.degreeReq)
+
+            // display requirement outcomes, across 1-3 columns
+            if (result.requirementOutcomes.some(ro => ro.ugrad)) {
+                $(NodeColumn1Header).append(`<h3>${degrees.undergrad} Degree Requirements</h3>`)
+                webRenderRequirementOutcomes(
+                    result.requirementOutcomes.filter(ro => ro.ugrad),
+                    NodeColumn1Reqs,
+                    NodeColumn2Reqs)
+                if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
+                    $(NodeColumn3Header).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
+                    webRenderRequirementOutcomes(
+                        result.requirementOutcomes.filter(ro => !ro.ugrad),
+                        NodeColumn3Reqs,
+                        undefined)
+                }
+            } else if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
+                // master's degree only
+                $(NodeColumn1Header).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
+                webRenderRequirementOutcomes(
+                    result.requirementOutcomes.filter(ro => !ro.ugrad),
+                    NodeColumn1Reqs,
+                    undefined)
+            }
 
             // console.log("settting up draggables and droppables")
 
@@ -1769,6 +1774,14 @@ function webMain(): void {
                 create: function(e, _) {
                     const ct = coursesTaken.find(c => c.uuid == e.target.id)!
                     $(this).data(DraggableDataProperty, ct)
+                },
+                // when a course is first picked up for dragging
+                start: function(e, ui) {
+                    const course: CourseTaken = $(this).data(DraggableDataProperty)
+                    if (course.consumedBy != undefined) {
+                        $(this).data(DraggableOriginalRequirement, course.consumedBy!)
+                        console.log(`you picked up ${course.code()} from ${course.consumedBy!} ugrad:${ugradDegreeReqs.includes(course.consumedBy!)}`)
+                    }
                 },
                 //snap: ".droppable",
                 //snapMode: "inner",
@@ -1860,6 +1873,13 @@ function webMain(): void {
                             at: "right center",
                             of: $(this).find(".courseSnapTarget"),
                         })
+
+                        // if we dragged a course from ugrad to grad, double-count it
+                        const origReq: DegreeRequirement = ui.draggable.data(DraggableOriginalRequirement)
+                        if (ugradDegreeReqs.includes(origReq) && mastersDegreeReqs.includes(req)) {
+                            console.log(`potentially double-counting ${course.code()} with ${origReq} and ${req}`)
+                            ui.draggable.addClass("courseDoubleCount")
+                        }
                     }
                 },
                 // when a course is dragged over a requirement
@@ -1913,10 +1933,10 @@ function webMain(): void {
         })
 }
 
-function webRenderRequirementOutcomes(requirementOutcomes: RequirementOutcome[], column1Id: string, column2Id: string) {
+function webRenderRequirementOutcomes(requirementOutcomes: RequirementOutcome[], column1Id: string, column2Id: string | undefined) {
     requirementOutcomes.forEach( (ro: RequirementOutcome, i: number, allReqs: RequirementOutcome[]) => {
             let column = column1Id
-            if (i > allReqs.length/2) {
+            if (column2Id != undefined && (i+1) > allReqs.length/2) {
                 column = column2Id
             }
             if (ro.degreeReq.doesntConsume) {
@@ -2577,7 +2597,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
         default:
             throw new Error(`unsupported degree: ${degrees.undergrad}`)
     }
-    {
+    if (ugradDegreeRequirements.length > 0) {
         const degreeCUs = ugradDegreeRequirements.map(r => r.remainingCUs).reduce((sum, e) => sum + e, 0)
         if (40 != degreeCUs) throw new Error(`${degrees.undergrad} degree should be 40 CUs but was ${degreeCUs}`)
     }
@@ -2647,33 +2667,35 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
         totalRemainingCUs += req.remainingCUs
     })
 
-    // handle special ShareWith requirements: writing, depth, ethics
-    const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
+    if (ugradDegreeRequirements.length > 0) {
+        // handle special ShareWith requirements: writing, depth, ethics
+        const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
 
-    { // Writing requirement
-        const writingReq = new RequirementAttributes(40, "Writing", [CourseAttribute.Writing]).withNoConsume()
-        const matched = writingReq.satisfiedBy(sshCourses)
-        if (matched == undefined) {
-            reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Unsatisfied, []])
-        } else {
-            reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Satisfied, [matched]])
+        { // Writing requirement
+            const writingReq = new RequirementAttributes(40, "Writing", [CourseAttribute.Writing]).withNoConsume()
+            const matched = writingReq.satisfiedBy(sshCourses)
+            if (matched == undefined) {
+                reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Unsatisfied, []])
+            } else {
+                reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Satisfied, [matched]])
+            }
         }
-    }
-    { // SS/H Depth requirement
-        const depthReq = new RequirementSshDepth(42).withNoConsume()
-        if (depthReq.satisfiedBy(sshCourses) != undefined) {
-            reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, depthReq.coursesApplied])
-        } else {
-            reqOutcomes.push([42, depthReq, RequirementApplyResult.Unsatisfied, []])
+        { // SS/H Depth requirement
+            const depthReq = new RequirementSshDepth(42).withNoConsume()
+            if (depthReq.satisfiedBy(sshCourses) != undefined) {
+                reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, depthReq.coursesApplied])
+            } else {
+                reqOutcomes.push([42, depthReq, RequirementApplyResult.Unsatisfied, []])
+            }
         }
-    }
-    { // ethics requirement: NB doesn't have to come from SSH block!
-        const ethicsReq = new RequirementNamedCourses(41, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
-        const matched = ethicsReq.satisfiedBy(coursesTaken)
-        if (matched == undefined) {
-            reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Unsatisfied, []])
-        } else {
-            reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Satisfied, [matched]])
+        { // ethics requirement: NB doesn't have to come from SSH block!
+            const ethicsReq = new RequirementNamedCourses(41, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
+            const matched = ethicsReq.satisfiedBy(coursesTaken)
+            if (matched == undefined) {
+                reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Unsatisfied, []])
+            } else {
+                reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Satisfied, [matched]])
+            }
         }
     }
 
