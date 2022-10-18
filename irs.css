@@ -8,6 +8,9 @@
     color: #41464b;
     white-space: nowrap;
 }
+.courseSnapTarget {
+    padding: 2px
+}
 .courseCompleted {
     background-color: #e2e3e5;
 }
@@ -15,10 +18,18 @@
     background-color: #4d5258;
     color: white;
 }
-.courseDoubleCount {
-    /*color: #0f5132;*/
-    /*background-color: #d1e7dd;*/
-    color: green; !important;
+.courseDoubleCountCompleted {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+.courseDoubleCountInProgress {
+    background-color: #178650;
+    color: white;
+}
+.courseDoubleCountShadow {
+    background-color: white;
+    color: #178650;
+    border: 3px solid #178650;
 }
 
 .requirement {
@@ -42,6 +53,43 @@
     background-color: #cfe2ff;
 }
 
-.courseSnapTarget {
-    padding: 2px
+
+/* https://www.w3schools.com/css/css_tooltip.asp */
+
+/* Tooltip container */
+.myTooltip {
+   /*position: relative;*/
+   /*display: inline-block;*/
+   /*border-bottom: 1px dotted black; !* If you want dots under the hoverable text *!*/
+}
+
+/* Skip the border-bottom dots when a tooltip is in a link; the link is already underlined */
+a .tooltip {
+    border-bottom: none;
+    text-decoration: underline;
+}
+
+/* Tooltip text */
+.myTooltip .myTooltipText {
+    visibility: hidden;
+    background-color: black;
+    color: #fff;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+    font-size: small;
+
+    /* Position the tooltip text - see examples below! */
+    position: absolute;
+    /*z-index: 1; TODO: fix this!! */
+
+    width: 200px;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -100px; /* Use half of the width to center the tooltip */
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.myTooltip:hover .myTooltipText {
+    visibility: visible;
 }
