@@ -14,6 +14,10 @@
     background-color: #4d5258;
     color: white;
 }
+.courseDoubleCount {
+    color: #0f5132;
+    background-color: #d1e7dd;
+}
 
 .requirement {
     padding: 10px 10px;

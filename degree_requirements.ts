@@ -732,8 +732,8 @@ class RequirementCisElective extends DegreeRequirement {
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         return courses.slice() // NB: have to use slice since sort() is in-place
-            .sort(byHighestCUsFirst)
-            //.sort((a,b) => a.courseNumberInt - b.courseNumberInt)
+            // try to pull in CIS 19x courses
+            .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
             .find((c: CourseTaken): boolean => {
             const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes(CourseAttribute.NonEngr)
             return foundMatch &&
@@ -1765,8 +1765,9 @@ function webMain(): void {
                 cursor: "move",
                 scroll: true,
                 stack: ".course", // make the currently-selected course appear above all others
-                start: function(e, ui) {
-                    const ct = coursesTaken.find(c => c.uuid == e.currentTarget.id)!
+                // runs once when the course is created, binding a CourseTaken object to its HTML element
+                create: function(e, _) {
+                    const ct = coursesTaken.find(c => c.uuid == e.target.id)!
                     $(this).data(DraggableDataProperty, ct)
                 },
                 //snap: ".droppable",
@@ -1816,11 +1817,13 @@ function webMain(): void {
             $(".droppable").delay(100).droppable({
                 accept: ".course",
                 tolerance: "fit",
+                // runs once when the req is created, binding a DegreeRequirement object to its HTML element
                 create: function(event, _) {
                     // console.log("creating droppable: " + $(this).attr("id"))
                     const myReq = allDegreeReqs.find(req => req.uuid() == $(this).attr("id"))!
                     $(this).data(DroppableDataProperty, myReq)
                 },
+                // for every requirement, this is called when a course is picked up
                 activate: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
@@ -1839,12 +1842,14 @@ function webMain(): void {
                         }
                     }
                 },
+                // for every requirement, this is called when a course is dropped
                 deactivate: function(event, ui) {
                     if ($(this).hasClass("requirementCouldBeSatisfied")) {
                         $(this).removeClass("requirementCouldBeSatisfied")
                         $(this).addClass("requirementUnsatisfied")
                     }
                 },
+                // when a course is released over a requirement. NB: course was already bound to the req at over()
                 drop: function(event, ui) {
                     // snap course into place
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
@@ -1857,6 +1862,7 @@ function webMain(): void {
                         })
                     }
                 },
+                // when a course is dragged over a requirement
                 over: function(event,ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
@@ -1884,6 +1890,7 @@ function webMain(): void {
                     }
                     updateGlobalReqs()
                 },
+                // when a course leaves a requirement
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataProperty)
                     const course: CourseTaken = ui.draggable.data(DraggableDataProperty)
