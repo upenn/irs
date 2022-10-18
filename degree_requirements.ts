@@ -454,6 +454,17 @@ const CisMseNonCisElectives = new Set<string>([
     "STAT 9910",
 ])
 
+function myAssert(condition: boolean, message: string = "") {
+    if (!condition) {
+        throw new Error(message)
+    }
+}
+function myAssertEquals(a: any, b: any, message: string = "") {
+    if (a != b) {
+        throw new Error(`expected ${a} == ${b} ${message}`)
+    }
+}
+
 enum GradeType {
     PassFail = "PassFail",
     ForCredit = "ForCredit",
@@ -525,9 +536,8 @@ abstract class DegreeRequirement {
     }
 
     public unapplyCourse(c: CourseTaken) {
-        if (!this.coursesApplied.includes(c)) {
-            throw new Error(`${c} missing from ${this.coursesApplied}`)
-        }
+        myAssert(this.coursesApplied.includes(c), `${c} missing from ${this.coursesApplied}`)
+
         // remove c from coursesApplied
         this.coursesApplied.splice(this.coursesApplied.indexOf(c), 1);
         if (this.doesntConsume) {
@@ -801,9 +811,7 @@ class RequirementCsci40TechElective extends DegreeRequirement {
 
     constructor(displayIndex: number) {
         super(displayIndex)
-        if (RequirementCsci40TechElective.techElectives.size == 0) {
-            throw new Error("CSCI 40cu TE list is empty(!)")
-        }
+        myAssert(RequirementCsci40TechElective.techElectives.size > 0, "CSCI 40cu TE list is empty(!)")
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
@@ -1733,11 +1741,9 @@ function webMain(): void {
         coursesTaken = DegreeWorks.extractCourses(worksheetText)
         if (autoDegrees) {
             const deg = DegreeWorks.inferDegrees(worksheetText, coursesTaken)
-            if (deg == undefined) {
-                throw new Error("could not infer DegreeWorks degree")
-            }
+            myAssert(deg != undefined, "could not infer DegreeWorks degree")
             // console.log("inferred degrees as " + deg)
-            degrees = deg
+            degrees = deg!
         } else {
             degrees.undergrad = <UndergradDegree>$("input[name='ugrad_degree']:checked").val()
             degrees.masters = <MastersDegree>$("input[name='masters_degree']:checked").val()
@@ -1850,7 +1856,7 @@ function webMain(): void {
                         $(this).position({
                             my: "left center",
                             at: "right center",
-                            of: $(`#${req.uuid()}`).find(".courseSnapTarget"),
+                            of: $(`#${req.uuid()}_snapTarget`),
                         })
                     }
                 }
@@ -1935,7 +1941,7 @@ function webMain(): void {
                         ui.draggable.position({
                             my: "left center",
                             at: "right center",
-                            of: $(this).find(".courseSnapTarget"),
+                            of: $(`#${destReq.uuid()}_snapTarget`),
                         })
 
                         // if moving a course across degrees, try to double-count it
@@ -1980,9 +1986,7 @@ ${realCourse.code()}
 
                                 // remove origin course from doubleCountedCourses
                                 const i = doubleCountedCourses.indexOf(realCourse)
-                                if (i < 0) {
-                                    throw new Error(`expected ${realCourse} in ${doubleCountedCourses}`)
-                                }
+                                myAssert(i >= 0, `expected ${realCourse} in ${doubleCountedCourses}`)
                                 doubleCountedCourses.splice(i, 1)
                                 $(this).remove()
                                 updateGlobalReqs()
@@ -2040,7 +2044,7 @@ function renderRequirementOutcomesWeb(requirementOutcomes: RequirementOutcome[],
         }).join(" ")
         $(column).append(`
 <div class="droppable requirement" id="${ro.degreeReq.uuid()}">
-<span class="outcome"></span><span class="courseSnapTarget"></span> ${courses}</div>`)
+<span class="outcome"></span><span id="${ro.degreeReq.uuid()}_snapTarget" class="courseSnapTarget"></span> ${courses}</div>`)
         ro.degreeReq.updateViewWeb()
     })
 }
@@ -2198,9 +2202,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
             RequirementCsci40TechElective.techElectives.add(te.course4d)
         })
     const bothLightAndFull = [...NetsFullTechElectives].filter(full => NetsLightTechElectives.has(full))
-    if (bothLightAndFull.length > 0) {
-        throw new Error(`Uh-oh, some NETS TEs are both light AND full: ${bothLightAndFull}`)
-    }
+    myAssertEquals(bothLightAndFull.length, 0, `Uh-oh, some NETS TEs are both light AND full: ${bothLightAndFull}`)
 
     let ugradDegreeRequirements: DegreeRequirement[] = []
 
@@ -2530,7 +2532,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
                 new RequirementSsh(33, [CourseAttribute.SocialScience]),
                 new RequirementSsh(34, [CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.Humanities]),
-                new RequirementSsh(37, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(38, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 // NB: Writing, Ethics, SSH Depth are [40,42]
@@ -2655,8 +2657,10 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
             throw new Error(`unsupported degree: ${degrees.undergrad}`)
     }
     if (ugradDegreeRequirements.length > 0) {
+        const displayIndices = new Set<number>(ugradDegreeRequirements.map(r => r.displayIndex))
+        myAssertEquals(displayIndices.size, ugradDegreeRequirements.length, "duplicate ugrad displayIndex")
         const degreeCUs = ugradDegreeRequirements.map(r => r.remainingCUs).reduce((sum, e) => sum + e, 0)
-        if (40 != degreeCUs) throw new Error(`${degrees.undergrad} degree should be 40 CUs but was ${degreeCUs}`)
+        myAssertEquals(40, degreeCUs, `${degrees.undergrad} degree should be 40 CUs but was ${degreeCUs}`)
     }
 
     let mastersDegreeRequirements: DegreeRequirement[] = []
@@ -2692,6 +2696,10 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
             break
         default:
             throw new Error(`unsupported degree: ${degrees.masters}`)
+    }
+    if (mastersDegreeRequirements.length > 0) {
+        const displayIndices = new Set<number>(mastersDegreeRequirements.map(r => r.displayIndex))
+        myAssertEquals(displayIndices.size, mastersDegreeRequirements.length, "duplicate masters displayIndex")
     }
 
     // APPLY COURSES TO DEGREE REQUIREMENTS
