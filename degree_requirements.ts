@@ -6,7 +6,6 @@ import DroppableEventUIParam = JQueryUI.DroppableEventUIParam;
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 const DraggableDataGetCourseTaken = "CourseTaken"
 const DraggableOriginalRequirement = "OriginalDegreeRequirement"
-//const DraggableDoubleCountShadowProperty = "double-count-shadow"
 const DroppableDataGetDegreeRequirement = "DegreeRequirement"
 
 const SsHTbsTag = "SS/H/TBS"
@@ -1843,6 +1842,18 @@ function webMain(): void {
                         console.log(`you picked up ${course.code()} from ${course.consumedBy!} ugrad:${ugradDegreeReqs.includes(course.consumedBy!)}`)
                     }
                 },
+                stop: function(e, ui) {
+                    const course: CourseTaken = $(this).data(DraggableDataGetCourseTaken)
+                    if (course.consumedBy != undefined) {
+                        // snap course into place
+                        const req: DegreeRequirement = course.consumedBy
+                        $(this).position({
+                            my: "left center",
+                            at: "right center",
+                            of: $(`#${req.uuid()}`).find(".courseSnapTarget"),
+                        })
+                    }
+                }
             });
 
             const dontCare = false // placeholder, irrelevant for getting RequirementOutcome text
@@ -1852,11 +1863,12 @@ function webMain(): void {
                 setRemainingCUs(countRemainingCUs(allDegreeReqs))
 
                 const dcc = doubleCountedCourses.map(c => c.code()).join(", ")
+                const dcAvail = 3 - doubleCountedCourses.length
                 $(NodeDoubleCounts).empty()
                 if (doubleCountedCourses.length == 0) {
-                    $(NodeDoubleCounts).append(`<div class="alert alert-secondary" role="alert">Not double-counting any courses</div>`)
+                    $(NodeDoubleCounts).append(`<div class="alert alert-secondary" role="alert">Not using any of ${dcAvail} double-counts</div>`)
                 } else {
-                    $(NodeDoubleCounts).append(`<div class="alert alert-success" role="alert">Double-counting ${dcc}</div>`)
+                    $(NodeDoubleCounts).append(`<div class="alert alert-success" role="alert">Double-counting ${dcc} (${dcAvail} more available)</div>`)
                 }
 
                 const sshCourses: CourseTaken[] = coursesTaken
@@ -1917,6 +1929,7 @@ function webMain(): void {
                 drop: function(event, ui) {
                     const destReq: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
                     const realCourse: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
+                    console.log(`drop ${realCourse} onto ${destReq}`)
                     if (destReq.coursesApplied.includes(realCourse)) {
                         // snap course into place
                         ui.draggable.position({
@@ -1931,7 +1944,7 @@ function webMain(): void {
                             (ugradDegreeReqs.includes(originReq) && mastersDegreeReqs.includes(destReq)) ||
                             (mastersDegreeReqs.includes(originReq) && ugradDegreeReqs.includes(destReq))
                         if (doubleCountedCourses.length < 3 && !doubleCountedCourses.includes(realCourse) && crossDegree) {
-                            console.log(`double-counting ${realCourse.code()} with ${originReq} and ${destReq}`)
+                            // console.log(`double-counting ${realCourse.code()} with ${originReq} and ${destReq}`)
                             doubleCountedCourses.push(realCourse)
 
                             // create shadowCourse and place that in originReq
@@ -1952,12 +1965,14 @@ ${realCourse.code()}
                             updateGlobalReqs()
 
                             // position shadowCourse, close on click
-                            $(`#${shadowCourse.uuid}`).position({
-                                my: "left center",
-                                at: "right center",
-                                of: origReqElem.find(".courseSnapTarget"),
-                            }).on('click', function() {
-                                console.log("removing double-count shadow course " + shadowCourse)
+                            // $(`#${shadowCourse.uuid}`)
+                            //     .position({
+                            //     my: "left center",
+                            //     at: "right center",
+                            //     of: origReqElem.find(".courseSnapTarget"),
+                            // })
+                            $(`#${shadowCourse.uuid}`).on('click', function() {
+                                // console.log("removing double-count shadow course " + shadowCourse)
 
                                 originReq.unapplyCourse(shadowCourse)
                                 originReq.updateViewWeb()
@@ -1986,7 +2001,7 @@ ${realCourse.code()}
                         return
                     }
 
-                    const result = req.satisfiedBy([course])
+                    req.satisfiedBy([course])
                     req.updateViewWeb()
                     updateGlobalReqs()
                 },
@@ -2662,10 +2677,10 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
                     function(x: number) { return x >= 5000 && x < 7000}),
                 new RequirementNumbered(107, "CIS Elective [5000,6999]", "CIS",
                     function(x: number) { return x >= 5000 && x < 7000}),
-                new RequirementNumbered(108, "Elective", "CIS",
+                new RequirementNumbered(108, "Elective + Restriction 1", "CIS",
                     function(x: number) { return x >= 5000 && x < 8000},
                     new Set<string>([...CisMseNonCisElectives, ...CisMseNonCisElectivesRestrictions1])),
-                new RequirementNumbered(109, "Elective", "CIS",
+                new RequirementNumbered(109, "Elective + Restriction 2", "CIS",
                     function(x: number) { return x >= 5000 && x < 8000},
                     new Set<string>([...CisMseNonCisElectives, ...CisMseNonCisElectivesRestrictions2])),
                 new RequirementNumbered(110, "Elective", "CIS",
