@@ -545,7 +545,6 @@ abstract class DegreeRequirement {
                 c.consumedBy = this
             }
             this.coursesApplied.push(c)
-            // console.log(`${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulling ${cusToUse} from ${c.code()} for ${this}`)
             const cusToUse = Math.min(c.courseUnitsRemaining, this.remainingCUs)
             c.courseUnitsRemaining -= cusToUse
             myAssert(c.courseUnitsRemaining >= 0, c.toString())
@@ -572,7 +571,6 @@ abstract class DegreeRequirement {
             this.remainingCUs = this.cus
             return
         }
-        // TODO: doesn't account for fractional CU usage
         this.remainingCUs += c.getCUs()
         c.courseUnitsRemaining = c.getCUs()
         c.consumedBy = undefined
@@ -1844,7 +1842,6 @@ function webMain(): void {
         .then(json => {
             const telist = JSON.parse(json);
             const result = run(telist, degrees, coursesTaken)
-            console.log(coursesTaken.filter(c => c.code().startsWith("PHYS 0150")))
             setRemainingCUs(result.cusRemaining)
 
             if (IncorrectCMAttributes.size > 0) {
@@ -1912,6 +1909,7 @@ function webMain(): void {
                 // when a course is first picked up for dragging
                 start: function(e, ui) {
                     const course: CourseTaken = $(this).data(DraggableDataGetCourseTaken)
+                    console.log(`start dragging ${course}`)
                     if (course.consumedBy != undefined) {
                         $(this).data(DraggableOriginalRequirement, course.consumedBy!)
                         console.log(`you picked up ${course.code()} from ${course.consumedBy!} ugrad:${ugradDegreeReqs.includes(course.consumedBy!)}`)
@@ -1927,10 +1925,10 @@ function webMain(): void {
                 }
             });
 
-            // update writing and SSH Depth requirements which are "global", i.e., they interact with other reqs
-            const updateGlobalReqs = function() {
-                setRemainingCUs(countRemainingCUs(allDegreeReqs))
-
+            function setDoubleCount() {
+                if (mastersDegreeReqs.length == 0) {
+                    return
+                }
                 const dcc = doubleCountedCourses.map(c => c.code()).join(", ")
                 const dcAvail = 3 - doubleCountedCourses.length
                 $(NodeDoubleCounts).empty()
@@ -1939,6 +1937,14 @@ function webMain(): void {
                 } else {
                     $(NodeDoubleCounts).append(`<div class="alert alert-success" role="alert">Double-counting ${dcc} (${dcAvail} more available)</div>`)
                 }
+            }
+
+            setDoubleCount()
+
+            // update writing and SSH Depth requirements which are "global", i.e., they interact with other reqs
+            const updateGlobalReqs = function() {
+                setRemainingCUs(countRemainingCUs(allDegreeReqs))
+                setDoubleCount()
 
                 const sshCourses: CourseTaken[] = coursesTaken
                     .filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
@@ -1974,6 +1980,7 @@ function webMain(): void {
                 activate: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
                     const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
+                    // console.log(`activate ${course}`)
                     // detach course from its current req
                     if (course.consumedBy != undefined) {
                         course.consumedBy.unapplyCourse(course)
@@ -2007,8 +2014,9 @@ function webMain(): void {
                         const crossDegree =
                             (ugradDegreeReqs.includes(originReq) && mastersDegreeReqs.includes(destReq)) ||
                             (mastersDegreeReqs.includes(originReq) && ugradDegreeReqs.includes(destReq))
+                        // console.log(`JLD ${doubleCountedCourses.length} ${originReq} ${crossDegree}`)
                         if (doubleCountedCourses.length < 3 && !doubleCountedCourses.includes(realCourse) && crossDegree) {
-                            // console.log(`double-counting ${realCourse.code()} with ${originReq} and ${destReq}`)
+                            console.log(`double-counting ${realCourse.code()} with ${originReq} and ${destReq}`)
                             doubleCountedCourses.push(realCourse)
 
                             // create shadowCourse and place that in originReq
@@ -2020,7 +2028,7 @@ class="course courseDoubleCountShadow myTooltip"
 id="${shadowCourse.uuid}" 
 >
 ${realCourse.code()}
-<span class="myTooltipText">click to remove double-count</span>
+<span class="myTooltipText">click to remove</span>
 </span>`)
 
                             originReq.satisfiedBy([shadowCourse])
@@ -2028,13 +2036,8 @@ ${realCourse.code()}
                             realCourse.updateViewWeb(true)
                             updateGlobalReqs()
 
-                            // TODO: position shadowCourse, close on click
-                            // $(`#${shadowCourse.uuid}`)
-                            //     .position({
-                            //     my: "left center",
-                            //     at: "right center",
-                            //     of: origReqElem.find(".courseSnapTarget"),
-                            // })
+                            snapCourseIntoPlace(shadowCourse, originReq)
+                            // close shadowCourse on click
                             $(`#${shadowCourse.uuid}`).on('click', function() {
                                 // console.log("removing double-count shadow course " + shadowCourse)
 
@@ -2056,7 +2059,7 @@ ${realCourse.code()}
                 over: function(event,ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
                     const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    // console.log(`${course.code()} *over* ${req.uuid}, ${course.consumedBy?.uuid}`)
+                    console.log(`${course.code()} *over* ${req}, ${course.consumedBy?.uuid}`)
 
                     // if req is already filled by something else, ignore this course
                     if (req.coursesApplied.length != 0 && !req.coursesApplied.includes(course)) {
