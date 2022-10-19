@@ -471,6 +471,12 @@ const CisMseNonCisElectives = new Set<string>([
     "STAT 9910",
 ])
 
+const CggtGraphicsElectives = ["CIS 5610", "CIS 5630", "CIS 5650", "FNAR 5670", "FNAR 6610", "FNAR 6650"]
+const CggtTechnicalElectives = [
+    "CIS 5190", "CIS 5200", "CIS 5550", "CIS 5610", "CIS 5630", "CIS 5640", "CIS 5800", "CIS 5810", "CIS 5990",
+    "ESE 5050", "ESE 6190"]
+const CggtBusiness = ["EAS 5450", "IPD 5150"]
+
 function myAssert(condition: boolean, message: string = "") {
     if (!condition) {
         throw new Error(message)
@@ -1736,6 +1742,7 @@ class DegreeWorks extends CourseInputMethod {
 }
 
 const NodeCoursesTaken = "#coursesTaken"
+const NodeDoubleColumn = "#columns1And2"
 const NodeColumn1Header = "#col1Header"
 const NodeColumn1Reqs = "#col1Reqs"
 const NodeColumn2Reqs = "#col2Reqs"
@@ -1877,6 +1884,8 @@ function webMain(): void {
             const mastersDegreeReqs = result.requirementOutcomes.filter(ro => !ro.ugrad).map(ro => ro.degreeReq)
 
             // display requirement outcomes, across 1-3 columns
+            $(NodeDoubleColumn).removeClass("col-xl-8")
+                .addClass("col-xl-12")
             if (result.requirementOutcomes.some(ro => ro.ugrad)) {
                 $(NodeColumn1Header).append(`<h3>${degrees.undergrad} Degree Requirements</h3>`)
                 renderRequirementOutcomesWeb(
@@ -1884,6 +1893,8 @@ function webMain(): void {
                     NodeColumn1Reqs,
                     NodeColumn2Reqs)
                 if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
+                    $(NodeDoubleColumn).removeClass("col-xl-12")
+                        .addClass("col-xl-8")
                     $(NodeColumn3Header).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
                     renderRequirementOutcomesWeb(
                         result.requirementOutcomes.filter(ro => !ro.ugrad),
@@ -1933,7 +1944,7 @@ function webMain(): void {
             });
 
             function setDoubleCount() {
-                if (mastersDegreeReqs.length == 0) {
+                if (mastersDegreeReqs.length == 0 || ugradDegreeReqs.length == 0) {
                     return
                 }
                 const dcc = doubleCountedCourses.map(c => c.code()).join(", ")
@@ -1953,6 +1964,9 @@ function webMain(): void {
                 setRemainingCUs(countRemainingCUs(allDegreeReqs))
                 setDoubleCount()
 
+                if (ugradDegreeReqs.length == 0) {
+                    return
+                }
                 const sshCourses: CourseTaken[] = coursesTaken
                     .filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
                 // console.log(`updateGlobal SSH courses: ${sshCourses.map(c => c.code())}`)
@@ -2767,6 +2781,23 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
                 new RequirementNumbered(10, "Elective", "CIS",
                     function(x: number) { return x >= 5000 && x < 8000},
                     new Set<string>([...CisMseNonCisElectives])),
+            ]
+            break
+        case "CGGT":
+            mastersDegreeRequirements = [
+                new RequirementNamedCourses(1, "Creative Arts & Design", ["DSGN 5005"]),
+                new RequirementNamedCourses(2, "Interactive Computer Graphics", ["CIS 5600"]),
+                new RequirementNamedCourses(3, "Computer Animation", ["CIS 5620"]),
+                new RequirementNamedCourses(4, "Advanced Topics in Graphics", ["CIS 6600"]),
+                new RequirementNamedCourses(5, "Math",
+                    ["CIS 5190", "CIS 5200", "CIS 5610", "CIS 5630", "CIS 5800", "CIS 5810", "ENM 5030"]),
+                new RequirementNamedCourses(6, "Business & Entrepreneurship", CggtBusiness),
+                new RequirementNamedCourses(7, "Graphics Elective",CggtGraphicsElectives),
+                new RequirementNamedCourses(8, "Technical Elective", CggtTechnicalElectives),
+                new RequirementNamedCourses(9, "Design Project", ["CIS 5680", "CIS 5970"]),
+                new RequirementNamedCourses(10, "Free Elective",
+                    ["DSGN 5009", "FNAR 5066", "DSGN 5004", "EAS 5460", "OIDD 6620"]
+                        .concat(CggtBusiness).concat(CggtGraphicsElectives).concat(CggtTechnicalElectives))
             ]
             break
         case "none":
