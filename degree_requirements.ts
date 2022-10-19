@@ -24,6 +24,20 @@ enum CourseAttribute {
     NetsFullTechElective = "NetsFullTE",
 }
 
+const CoursesWithLabs15CUs = [
+    // 1.5 CUs
+    "BIOL 1101", "BIOL 1102",
+    "PHYS 0150", "PHYS 0151",
+    "PHYS 0170", "PHYS 0171",
+    "ESE 1120",
+]
+const LabCourses05CUs = [
+    // 0.5 CUs
+    "CHEM 1101", "CHEM 1102",
+    "PHYS 0050", "PHYS 0051",
+    "MEAM 1470",
+]
+
 const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060"]
 const CsciProjectElectives = [
     "NETS 2120","CIS 3410","CIS 3500",
@@ -483,6 +497,9 @@ type MastersDegree = "CISMSE" | "DATS" | "ROBO" | "CGGT" | "none"
 let IncorrectCMAttributes = new Set<string>()
 
 abstract class DegreeRequirement {
+    static NextUuid: number = 1
+    readonly uuid: string
+
     /** How many CUs are needed to fulfill this requirement. Decremented as courses are applied to this requirement,
      * e.g., with 0.5 CU courses */
     public remainingCUs: number = 1.0
@@ -507,6 +524,8 @@ abstract class DegreeRequirement {
 
     constructor(displayIndex: number) {
         this.displayIndex = displayIndex
+        this.uuid = `degreeReq_${DegreeRequirement.NextUuid}`
+        DegreeRequirement.NextUuid += 1
     }
 
     /** consider the list `courses` and return one that applies to this requirement. Return `undefined` if nothing in
@@ -514,12 +533,13 @@ abstract class DegreeRequirement {
     abstract satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined
 
     /** internal method for actually applying `c` to this requirement, decrementing CUs for both `c` and `this` */
-    protected applyCourse(c: CourseTaken, tag: string): boolean {
+    protected applyCourse(c: CourseTaken, _: CourseTaken[]): boolean {
         if (this.doesntConsume) {
             this.coursesApplied.push(c)
             this.remainingCUs = 0
             return true
         }
+        // don't split a 1cu course to try to fill our last 0.5cu
         if (c.courseUnitsRemaining > 0 && !(c.courseUnitsRemaining == 1 && this.remainingCUs == 0.5)) {
             if (c.consumedBy == undefined) {
                 c.consumedBy = this
@@ -528,7 +548,15 @@ abstract class DegreeRequirement {
             // console.log(`${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulling ${cusToUse} from ${c.code()} for ${this}`)
             const cusToUse = Math.min(c.courseUnitsRemaining, this.remainingCUs)
             c.courseUnitsRemaining -= cusToUse
+            myAssert(c.courseUnitsRemaining >= 0, c.toString())
             this.remainingCUs -= cusToUse
+            // if (c.courseUnitsRemaining > 0) {
+            //     console.log(`${c.code()} is split, ${cusToUse} used and ${c.courseUnitsRemaining} left`)
+            //     const remainder = c.split(c.courseUnitsRemaining)
+            //     c.setCUs(c.getCUs() - c.courseUnitsRemaining)
+            //     c.courseUnitsRemaining = 0
+            //     courses.push(remainder)
+            // }
             // console.log(`   ${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulled ${cusToUse} from ${c.code()} for ${this}, ${this.remainingCUs > 0}`)
             return true
         }
@@ -536,7 +564,7 @@ abstract class DegreeRequirement {
     }
 
     public unapplyCourse(c: CourseTaken) {
-        myAssert(this.coursesApplied.includes(c), `${c} missing from ${this.coursesApplied}`)
+        myAssert(this.coursesApplied.includes(c), `${c} missing from ${this.coursesApplied.length} ${this.coursesApplied}`)
 
         // remove c from coursesApplied
         this.coursesApplied.splice(this.coursesApplied.indexOf(c), 1);
@@ -574,12 +602,8 @@ abstract class DegreeRequirement {
         return this
     }
 
-    public uuid(): string {
-        return `degreeReq_${this.displayIndex}`
-    }
-
     public updateViewWeb(potential: boolean = false) {
-        const myElem = $(`#${this.uuid()}`)
+        const myElem = $(`#${this.uuid}`)
         myElem.removeClass("requirementSatisfied")
         myElem.removeClass("requirementUnsatisfied")
         myElem.removeClass("requirementPartiallySatisfied")
@@ -588,18 +612,19 @@ abstract class DegreeRequirement {
             myElem.addClass("requirementCouldBeSatisfied")
             return
         }
+        const dontCare = false
         const courseText = this.doesntConsume ? " " + this.coursesApplied.map(c => c.code()).join(" and ") : ""
         if (this.remainingCUs == 0) {
             myElem.addClass("requirementSatisfied")
-            const ro = new RequirementOutcome(false, this, RequirementApplyResult.Satisfied, this.coursesApplied)
+            const ro = new RequirementOutcome(dontCare, this, RequirementApplyResult.Satisfied, this.coursesApplied)
             myElem.find("span.outcome").text(ro.outcomeString() + courseText)
         } else if (this.remainingCUs < this.cus) {
             myElem.addClass("requirementPartiallySatisfied")
-            const ro = new RequirementOutcome(false, this, RequirementApplyResult.PartiallySatisfied, this.coursesApplied)
+            const ro = new RequirementOutcome(dontCare, this, RequirementApplyResult.PartiallySatisfied, this.coursesApplied)
             myElem.find("span.outcome").text(ro.outcomeString() + courseText)
         } else {
             myElem.addClass("requirementUnsatisfied")
-            const ro = new RequirementOutcome(false, this, RequirementApplyResult.Unsatisfied, [])
+            const ro = new RequirementOutcome(dontCare, this, RequirementApplyResult.Unsatisfied, [])
             myElem.find("span.outcome").text(ro.outcomeString())
         }
     }
@@ -619,7 +644,7 @@ class RequirementNamedCourses extends DegreeRequirement {
             return this.courses.includes(c.code()) &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, this.tag)
+                this.applyCourse(c, courses)
         })
     }
 
@@ -652,7 +677,7 @@ class RequirementAttributes extends DegreeRequirement {
                     return foundMatch &&
                         c.grading == GradeType.ForCredit &&
                         c.courseNumberInt >= this.minLevel &&
-                        this.applyCourse(c, this.tag)
+                        this.applyCourse(c, courses)
                 })
             if (match != undefined) {
                 return match
@@ -679,7 +704,7 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
             return foundMatch &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, this.tag)
+                this.applyCourse(c, courses)
         })
     }
 
@@ -716,7 +741,7 @@ class RequirementNumbered extends DegreeRequirement {
             return (subjectMatch || this.courses.has(c.code())) &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, this.tag)
+                this.applyCourse(c, courses)
         })
     }
 
@@ -727,19 +752,7 @@ class RequirementNumbered extends DegreeRequirement {
 
 class RequirementNaturalScienceLab extends RequirementNamedCourses {
     constructor(displayIndex: number, tag: string) {
-        const coursesWithLabs = [
-            // 1.5 CUs
-            "BIOL 1101", "BIOL 1102",
-            "PHYS 0150", "PHYS 0151",
-            "PHYS 0170", "PHYS 0171",
-            "ESE 1120",
-
-            // 0.5 CUs
-            "CHEM 1101", "CHEM 1102",
-            "PHYS 0050", "PHYS 0051",
-            "MEAM 1470",
-        ]
-        super(displayIndex, tag, coursesWithLabs)
+        super(displayIndex, tag, CoursesWithLabs15CUs.map(c => c + " lab").concat(LabCourses05CUs))
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
@@ -748,14 +761,16 @@ class RequirementNaturalScienceLab extends RequirementNamedCourses {
             this.courses.includes(c.code()) &&
             c.grading == GradeType.ForCredit &&
             c.courseUnitsRemaining >= 0.5 &&
-            c.courseNumberInt >= this.minLevel)
+            c.courseNumberInt >= this.minLevel &&
+            this.applyCourse(c, courses)
+        )
         if (matched == undefined) return undefined
 
         if (matched.consumedBy == undefined) {
             matched.consumedBy = this
         }
-        matched.courseUnitsRemaining -= 0.5
-        this.remainingCUs -= 0.5
+        // matched.courseUnitsRemaining -= 0.5
+        // this.remainingCUs -= 0.5
         return matched
     }
 
@@ -778,7 +793,7 @@ class RequirementCisElective extends DegreeRequirement {
             return foundMatch &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, "CisElective")
+                this.applyCourse(c, courses)
         })
     }
 
@@ -796,7 +811,7 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
             return c.suhSaysEngr() &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, "TechElective")
+                this.applyCourse(c, courses)
         })
     }
 
@@ -826,7 +841,7 @@ class RequirementCsci40TechElective extends DegreeRequirement {
                     RequirementCsci40TechElective.techElectives.has(c.code()) ||
                     c.partOfMinor) &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, "TechElective")
+                this.applyCourse(c, courses)
         })
     }
 
@@ -850,7 +865,7 @@ class RequirementAscs40TechElective extends RequirementCsci40TechElective {
                     ["ACCT","BEPP","FNCE","LGST","MGMT","MKTG","OIDD"].includes(c.subject) &&
                     c.courseNumberInt >= this.minLevel &&
                     !c.suhSaysNoCredit() &&
-                    this.applyCourse(c, "Concentration")
+                    this.applyCourse(c, courses)
             })
     }
 
@@ -874,7 +889,7 @@ class RequirementDmdElective extends DegreeRequirement {
                 return dmdSubjects.includes(c.subject) &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, "DMD Elective")
+                    this.applyCourse(c, courses)
             })
     }
 
@@ -896,7 +911,7 @@ class RequirementEngineeringElective extends DegreeRequirement {
                 return c.suhSaysEngr() &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, "Engineering Elective")
+                    this.applyCourse(c, courses)
             })
     }
 
@@ -919,7 +934,7 @@ class RequirementEseEngineeringElective extends DegreeRequirement {
                     c.suhSaysEngr() &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, "ESE Elective")
+                    this.applyCourse(c, courses)
             })
     }
 
@@ -965,7 +980,7 @@ class RequirementAdvancedEseElective extends DegreeRequirement {
                 return (cmpe.includes(c.code()) || nano.includes(c.code()) || isd.includes(c.code())) &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, "EE Advanced Elective")
+                    this.applyCourse(c, courses)
             })
     }
 
@@ -977,7 +992,6 @@ class RequirementAdvancedEseElective extends DegreeRequirement {
 class RequirementEseProfessionalElective extends DegreeRequirement {
     readonly froshLevelEngr: boolean
     readonly allowedCourses: string[]
-    static readonly myTag: string = "Professional Elective"
 
     constructor(displayIndex: number, froshLevelEngr: boolean, courses: string[] = []) {
         super(displayIndex)
@@ -994,19 +1008,19 @@ class RequirementEseProfessionalElective extends DegreeRequirement {
                     return c.suhSaysEngr() &&
                         c.grading == GradeType.ForCredit &&
                         c.courseNumberInt >= this.minLevel &&
-                        this.applyCourse(c, RequirementEseProfessionalElective.myTag)
+                        this.applyCourse(c, courses)
                 }
 
                 return (c.attributes.includes(CourseAttribute.MathNatSciEngr) || this.allowedCourses.includes(c.code())) &&
                     (!c.suhSaysEngr() || c.courseNumberInt >= 2000) &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, RequirementEseProfessionalElective.myTag)
+                    this.applyCourse(c, courses)
             })
     }
 
     public toString(): string {
-        return RequirementEseProfessionalElective.myTag
+        return "Professional Elective"
     }
 }
 
@@ -1025,7 +1039,7 @@ class RequirementSpa extends DegreeRequirement {
                 return (SseSpaList.includes(c.code()) || (this.light && SseSpaOnlyOne.includes(c.code()))) &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, "Societal Problem Application")
+                    this.applyCourse(c, courses)
             })
     }
 
@@ -1066,7 +1080,7 @@ class RequirementSsh extends RequirementAttributes {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
             return foundMatch &&
-                gradeOk && c.courseNumberInt >= this.minLevel && this.applyCourse(c, this.tag)
+                gradeOk && c.courseNumberInt >= this.minLevel && this.applyCourse(c, courses)
 
         })
     }
@@ -1110,7 +1124,7 @@ class RequirementFreeElective extends DegreeRequirement {
             return !c.suhSaysNoCredit() &&
                 (c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail) &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, "FreeElective")
+                this.applyCourse(c, courses)
         })
     }
 
@@ -1150,7 +1164,7 @@ function byLowestLevelFirst(a: CourseTaken, b: CourseTaken): number {
 
 /** Records a course that was taken and passed, so it can conceivably count towards some requirement */
 class CourseTaken {
-    static NextUuid: number = 0
+    private static NextUuid: number = 0
     readonly uuid: string
     readonly subject: string
     readonly courseNumber: string
@@ -1179,6 +1193,21 @@ class CourseTaken {
             this.title,
             this._3dName,
             this.courseUnits,
+            this.grading,
+            this.letterGrade,
+            this.term,
+            this.allAttributes.join(";"),
+            this.completed
+        )
+    }
+    /** make a copy of this course, but the copy has only the given number of CUs */
+    public split(cus: number, courseNumber: string): CourseTaken {
+        return new CourseTaken(
+            this.subject,
+            courseNumber,
+            this.title,
+            this._3dName,
+            cus,
             this.grading,
             this.letterGrade,
             this.term,
@@ -1298,6 +1327,9 @@ class CourseTaken {
 
     public getCUs(): number {
         return this.courseUnits
+    }
+    public setCUs(x: number) {
+        this.courseUnits = x
     }
     /** Disable this course, e.g., when EAS 0091 is superceded by CHEM 1012 */
     public disable() {
@@ -1460,13 +1492,27 @@ class CourseTaken {
     }
 }
 
+class CourseInputMethod {
+    public static splitLabCourses(courses: CourseTaken[]): CourseTaken[] {
+        let labs: CourseTaken[] = []
+        courses.forEach(c => {
+            if (CoursesWithLabs15CUs.includes(c.code())) {
+                c.setCUs(c.getCUs() - 0.5)
+                const lab = c.split(0.5, c.courseNumber + " lab")
+                labs.push(lab)
+            }
+        })
+        return courses.concat(labs)
+    }
+}
+
 class UnofficialTranscript {
     public static extractCourses(transcriptText: string): CourseTaken[] {
         throw new Error("can't parse unofficial transcripts yet")
     }
 }
 
-class DegreeWorks {
+class DegreeWorks extends CourseInputMethod {
     public static extractPennID(worksheetText: string): string | undefined {
         const matches = worksheetText.match(/Student\s+(\d{8})/)
         if (matches != null) {
@@ -1574,7 +1620,7 @@ class DegreeWorks {
         // "For the Class of 2025 and earlier, if you pass Math 2410 at Penn with at least a grade of B, you may come to
         // the math office and receive retroactive credit for (and only one) Math 1400, Math 1410, or Math 2400"
 
-        return coursesTaken
+        return this.splitLabCourses(coursesTaken)
     }
 
     private static parseOneCourse(subject: string, courseNumber: string, courseInfo: string, rawAttrs: string): CourseTaken | null {
@@ -1778,6 +1824,7 @@ function webMain(): void {
         .then(json => {
             const telist = JSON.parse(json);
             const result = run(telist, degrees, coursesTaken)
+            console.log(coursesTaken.filter(c => c.code().startsWith("PHYS 0150")))
             setRemainingCUs(result.cusRemaining)
 
             if (IncorrectCMAttributes.size > 0) {
@@ -1853,18 +1900,16 @@ function webMain(): void {
                 stop: function(e, ui) {
                     const course: CourseTaken = $(this).data(DraggableDataGetCourseTaken)
                     if (course.consumedBy != undefined) {
-                        // snap course into place
+                        // snap course into place, since we don't always get a drop event
                         const req: DegreeRequirement = course.consumedBy
                         $(this).position({
                             my: "left center",
                             at: "right center",
-                            of: $(`#${req.uuid()}_snapTarget`),
+                            of: $(`#${req.uuid}_snapTarget`),
                         })
                     }
                 }
             });
-
-            const dontCare = false // placeholder, irrelevant for getting RequirementOutcome text
 
             // update writing and SSH Depth requirements which are "global", i.e., they interact with other reqs
             const updateGlobalReqs = function() {
@@ -1906,7 +1951,7 @@ function webMain(): void {
                 // runs once when the req is created, binding a DegreeRequirement object to its HTML element
                 create: function(event, _) {
                     // console.log("creating droppable: " + $(this).attr("id"))
-                    const myReq = allDegreeReqs.find(req => req.uuid() == $(this).attr("id"))!
+                    const myReq = allDegreeReqs.find(req => req.uuid == $(this).attr("id"))!
                     $(this).data(DroppableDataGetDegreeRequirement, myReq)
                 },
                 // for every requirement, this is called when a course is picked up
@@ -1929,8 +1974,8 @@ function webMain(): void {
                 // for every requirement, this is called when a course is dropped
                 deactivate: function(event, ui) {
                     if ($(this).hasClass("requirementCouldBeSatisfied")) {
-                        $(this).removeClass("requirementCouldBeSatisfied")
-                        $(this).addClass("requirementUnsatisfied")
+                        const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
+                        req.updateViewWeb()
                     }
                 },
                 // when a course is released over a requirement. NB: course was already bound to the req at over()
@@ -1943,7 +1988,7 @@ function webMain(): void {
                         ui.draggable.position({
                             my: "left center",
                             at: "right center",
-                            of: $(`#${destReq.uuid()}_snapTarget`),
+                            of: $(`#${destReq.uuid}_snapTarget`),
                         })
 
                         // if moving a course across degrees, try to double-count it
@@ -1957,7 +2002,7 @@ function webMain(): void {
 
                             // create shadowCourse and place that in originReq
                             const shadowCourse = realCourse.copy()
-                            const origReqElem = $("#" + originReq.uuid())
+                            const origReqElem = $("#" + originReq.uuid)
                             origReqElem.append(`
 <span 
 class="course courseDoubleCountShadow myTooltip"  
@@ -2000,7 +2045,7 @@ ${realCourse.code()}
                 over: function(event,ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
                     const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    // console.log(`${course.code()} *over* ${req.uuid()}, ${course.consumedBy?.uuid()}`)
+                    // console.log(`${course.code()} *over* ${req.uuid}, ${course.consumedBy?.uuid}`)
 
                     // if req is already filled by something else, ignore this course
                     if (req.coursesApplied.length != 0 && !req.coursesApplied.includes(course)) {
@@ -2015,12 +2060,12 @@ ${realCourse.code()}
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
                     const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    // console.log(`${course.code()} *left* ${req.uuid()}`)
+                    // console.log(`${course.code()} *left* ${req.uuid}`)
 
                     // update model
                     if (req.coursesApplied.includes(course)) {
                         req.unapplyCourse(course)
-                        req.updateViewWeb()
+                        req.updateViewWeb(true)
                         updateGlobalReqs()
                     }
                 }
@@ -2035,14 +2080,14 @@ function renderRequirementOutcomesWeb(requirementOutcomes: RequirementOutcome[],
             column = column2Id
         }
         if (ro.degreeReq.doesntConsume) {
-            $(column).append(`<div class="requirement" id="${ro.degreeReq.uuid()}"><span class="outcome"></span></div>`)
+            $(column).append(`<div class="requirement" id="${ro.degreeReq.uuid}"><span class="outcome"></span></div>`)
             ro.degreeReq.updateViewWeb()
             return
         }
 
         $(column).append(`
-<div class="droppable requirement" id="${ro.degreeReq.uuid()}">
-<span class="outcome"></span><span id="${ro.degreeReq.uuid()}_snapTarget" class="courseSnapTarget"></span></div>`)
+<div class="droppable requirement" id="${ro.degreeReq.uuid}">
+<span class="outcome"></span><span id="${ro.degreeReq.uuid}_snapTarget" class="courseSnapTarget"></span></div>`)
 
         const courses = ro.coursesApplied.map(c => {
             const completed = c.completed ? "courseCompleted" : "courseInProgress"
@@ -2054,14 +2099,14 @@ function renderRequirementOutcomesWeb(requirementOutcomes: RequirementOutcome[],
         // must delay course placement, I guess because courses aren't added to DOM instantly?
         setTimeout(function() {
             ro.coursesApplied.forEach(c => {
-                // console.log(`positioning ${c.uuid} next to ${ro.degreeReq.uuid()}_snapTarget`)
+                // console.log(`positioning ${c.uuid} next to ${ro.degreeReq.uuid}_snapTarget`)
                 $(`#${c.uuid}`).position({
                     my: "left center",
                     at: "right center",
-                    of: $(`#${ro.degreeReq.uuid()}_snapTarget`),
+                    of: $(`#${ro.degreeReq.uuid}_snapTarget`),
                 })
             })
-        }, 100)
+        }, 200)
     })
 }
 
@@ -2681,29 +2726,28 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
 
     let mastersDegreeRequirements: DegreeRequirement[] = []
 
-    // NB: layout hack, Masters degree requirements start at displayIndex 101
     switch (degrees.masters) {
         case "CISMSE":
             mastersDegreeRequirements = [
-                new RequirementNamedCourses(101, "Systems", ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710"]),
-                new RequirementNamedCourses(102, "Theory", ["CIS 5020", "CIS 5110"]),
-                new RequirementNamedCourses(103, "Core",
-                    ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710", "CIS 5020", "CIS 5110", "CIS 5000", "CIS 5190", "CIS 5200", "CIS 5210"]),
-                new RequirementNamedCourses(104, "Core non-ML",
+                new RequirementNamedCourses(1, "Systems", ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710"]),
+                new RequirementNamedCourses(2, "Theory", ["CIS 5020", "CIS 5110"]),
+                new RequirementNamedCourses(3, "Core non-ML",
                     ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710", "CIS 5020", "CIS 5110", "CIS 5000"]),
-                new RequirementNumbered(105, "CIS Elective [5000,7000]", "CIS",
+                new RequirementNamedCourses(4, "Core",
+                    ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710", "CIS 5020", "CIS 5110", "CIS 5000", "CIS 5190", "CIS 5200", "CIS 5210"]),
+                new RequirementNumbered(5, "CIS Elective [5000,7000]", "CIS",
                     function(x: number) { return x >= 5000 && x <= 7000}),
-                new RequirementNumbered(106, "CIS Elective [5000,6999]", "CIS",
+                new RequirementNumbered(6, "CIS Elective [5000,6999]", "CIS",
                     function(x: number) { return x >= 5000 && x < 7000}),
-                new RequirementNumbered(107, "CIS Elective [5000,6999]", "CIS",
+                new RequirementNumbered(7, "CIS Elective [5000,6999]", "CIS",
                     function(x: number) { return x >= 5000 && x < 7000}),
-                new RequirementNumbered(108, "Elective + Restriction 1", "CIS",
+                new RequirementNumbered(8, "Elective + Restriction 1", "CIS",
                     function(x: number) { return x >= 5000 && x < 8000},
                     new Set<string>([...CisMseNonCisElectives, ...CisMseNonCisElectivesRestrictions1])),
-                new RequirementNumbered(109, "Elective + Restriction 2", "CIS",
+                new RequirementNumbered(9, "Elective + Restriction 2", "CIS",
                     function(x: number) { return x >= 5000 && x < 8000},
                     new Set<string>([...CisMseNonCisElectives, ...CisMseNonCisElectivesRestrictions2])),
-                new RequirementNumbered(110, "Elective", "CIS",
+                new RequirementNumbered(10, "Elective", "CIS",
                     function(x: number) { return x >= 5000 && x < 8000},
                     new Set<string>([...CisMseNonCisElectives])),
             ]
