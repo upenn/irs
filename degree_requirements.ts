@@ -1765,6 +1765,25 @@ class Degrees {
     }
 }
 
+function snapCourseIntoPlace(course: CourseTaken, req: DegreeRequirement) {
+    myAssert(req.coursesApplied.length > 0)
+    if (req.coursesApplied[0] == course) {
+        $(`#${course.uuid}`).position({
+            my: "left center",
+            at: "right center",
+            of: $(`#${req.uuid}_snapTarget`),
+        })
+        return
+    }
+    myAssert(req.coursesApplied.length <= 2)
+    // NB: never more than 2 course applied to any one req
+    $(`#${course.uuid}`).position({
+        my: "left center",
+        at: "right+35% center",
+        of: $(`#${req.coursesApplied[0].uuid}`),
+    })
+}
+
 function webMain(): void {
     // reset output
     $(".requirementsList").empty()
@@ -1901,13 +1920,9 @@ function webMain(): void {
                 stop: function(e, ui) {
                     const course: CourseTaken = $(this).data(DraggableDataGetCourseTaken)
                     if (course.consumedBy != undefined) {
-                        // snap course into place, since we don't always get a drop event
                         const req: DegreeRequirement = course.consumedBy
-                        $(this).position({
-                            my: "left center",
-                            at: "right center",
-                            of: $(`#${req.uuid}_snapTarget`),
-                        })
+                        // snap course into place, since we don't always get a drop event
+                        snapCourseIntoPlace(course, req)
                     }
                 }
             });
@@ -1985,12 +2000,7 @@ function webMain(): void {
                     const realCourse: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
                     console.log(`drop ${realCourse} onto ${destReq}`)
                     if (destReq.coursesApplied.includes(realCourse)) {
-                        // snap course into place
-                        ui.draggable.position({
-                            my: "left center",
-                            at: "right center",
-                            of: $(`#${destReq.uuid}_snapTarget`),
-                        })
+                        snapCourseIntoPlace(realCourse, destReq)
 
                         // if moving a course across degrees, try to double-count it
                         const originReq: DegreeRequirement = ui.draggable.data(DraggableOriginalRequirement)
@@ -2101,11 +2111,7 @@ function renderRequirementOutcomesWeb(requirementOutcomes: RequirementOutcome[],
         setTimeout(function() {
             ro.coursesApplied.forEach(c => {
                 // console.log(`positioning ${c.uuid} next to ${ro.degreeReq.uuid}_snapTarget`)
-                $(`#${c.uuid}`).position({
-                    my: "left center",
-                    at: "right center",
-                    of: $(`#${ro.degreeReq.uuid}_snapTarget`),
-                })
+                snapCourseIntoPlace(c, ro.degreeReq)
             })
         }, 200)
     })
