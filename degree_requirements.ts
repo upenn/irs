@@ -317,6 +317,8 @@ const NetsLightTechElectives = new Set<string>([
     "SOCI 5350",
     "STAT 4350",
 ])
+
+// CIS MSE imported 16 Oct 2022
 const CisMseNonCisElectivesRestrictions1 = new Set<string>([
     "EAS 500",
     "EAS 5100",
@@ -473,11 +475,188 @@ const CisMseNonCisElectives = new Set<string>([
     "STAT 9910",
 ])
 
+// ROBO imported 19 Oct 2022 from https://www.grasp.upenn.edu/academics/masters-degree-program/curriculum-information/technical-electives/
+const RoboTechElectives = new Set<string>([
+    "BE 5210",
+    "BE 5700",
+    "CIS 5020",
+    "CIS 5110",
+    "CIS 5150",
+    "CIS 5190",
+    "CIS 5200",
+    "CIS 5210",
+    "CIS 5260",
+    "CIS 5300",
+    "CIS 5400",
+    "CIS 5410",
+    "CIS 5450",
+    "CIS 5600",
+    "CIS 5620",
+    "CIS 5630",
+    "CIS 5640",
+    "CIS 5650",
+    "CIS 5800",
+    "CIS 5810",
+    "CIS 6100",
+    "CIS 6200",
+    "CIS 6250",
+    "CIS 6800",
+    "ENM 5100",
+    "ENM 5110",
+    "ENM 5200",
+    "ENM 5210",
+    "ESE 5000",
+    "ESE 5040",
+    "ESE 5050",
+    "MEAM 5130",
+    "ESE 5060",
+    "ESE 5120",
+    "ESE 5140",
+    "ESE 518",
+    "ESE 5190",
+    "ESE 5300",
+    "ESE 5310",
+    "ESE 5460",
+    "ESE 5470",
+    "ESE 6050",
+    "ESE 6150",
+    "ESE 6170",
+    "ESE 6180",
+    "ESE 6190",
+    "ESE 6250",
+    "ESE 6500",
+    "IPD 5010",
+    "IPD 5160",
+    "MEAM 5160",
+    "MEAM 5080",
+    "MEAM 5100",
+    "MEAM 5130",
+    "ESE 5050",
+    "MEAM 5160",
+    "IPD 5160",
+    "MEAM 5170",
+    "MEAM 5200",
+    "MEAM 5350",
+    "MEAM 5430",
+    "MEAM 5450",
+    "MEAM 6200",
+    "MEAM 6240",
+    "PSYC 5790",
+    "ROBO 5990",
+    "ROBO 5970",
+])
+const RoboGeneralElectives = new Set<string>([
+    "CIS 5050",
+    "CIS 5220",
+    "CIS 5230",
+    "CIS 5480",
+    "CIS 5500",
+    "CIS 5530",
+    "CIS 7000",
+    "EAS 5120",
+    "EAS 5450",
+    "EAS 5460",
+    "ENM 5020",
+    "ENM 5030",
+    "ESE 5400",
+    "ESE 5430",
+    "ESE 5450",
+    "ESE 6800",
+    "IPD 5040",
+    "BE 5140",
+    "IPD 5110",
+    "IPD 5140",
+    "MEAM 5140",
+    "IPD 5150",
+    "IPD 5250",
+    "IPD 5270",
+    "ARCH 7270",
+    "PHIL 5640",
+])
+
+// CGGT imported on 18 Oct 2022 from https://www.cis.upenn.edu/graduate/program-offerings/mse-in-computer-graphics-and-game-technology/requirements/
 const CggtGraphicsElectives = ["CIS 5610", "CIS 5630", "CIS 5650", "FNAR 5670", "FNAR 6610", "FNAR 6650"]
 const CggtTechnicalElectives = [
     "CIS 5190", "CIS 5200", "CIS 5550", "CIS 5610", "CIS 5630", "CIS 5640", "CIS 5800", "CIS 5810", "CIS 5990",
     "ESE 5050", "ESE 6190"]
 const CggtBusiness = ["EAS 5450", "IPD 5150"]
+
+// DATS imported 19 Oct 2022 from https://dats.seas.upenn.edu/programofstudy/
+const DatsThesis = ["DATS 5970","DATS 5990"]
+const DatsBiomedicine = [
+    "BE 5210",
+    "BE 5660",
+    "BMIN 5210",
+    "BMIN 5220",
+    "CIS 5360",
+    "CIS 5370",
+    "PHYS 5850",
+]
+const DatsNetworkScience = [
+    "CIS 5230",
+    "ECON 7050",
+    "ECON 7210",
+    "ECON 7220",
+    "MKTG 7760",
+]
+const DatsProgramming = [
+    "CIS 5050",
+    "CIS 5500",
+    "CIS 5520",
+    "CIS 5550",
+    "CIS 5590",
+    "CIS 5730",
+    "CIT 5950",
+]
+const DatsStats = [
+    "MKTG 7120",
+    "OIDD 6120",
+    "STAT 5350",
+    //Accelerated Regression Analysis (STAT 6210) (limited to MBA students only)
+    "STAT 7220",
+    "STAT 9200",
+    "STAT 9210",
+    "STAT 9740",
+]
+const DatsAI = [
+    "CIS 5210",
+    "CIS 5220",
+    "CIS 5300",
+    "CIS 5800",
+    "CIS 5810",
+    "CIS 6200",
+    "CIS 6250",
+    "CIS 6800",
+    "ESE 5140",
+    "ESE 5460",
+    "ESE 6500",
+    "STAT 5710",
+]
+const DatsSimulation = [
+    "CBE 5250",
+    "CBE 5440",
+    "CBE 5590",
+    "MEAM 5270",
+    "MEAM 6460",
+    "MSE 5610",
+]
+const DatsMath = [
+    "AMCS 5140",
+    "CIS 5020",
+    "CIS 6250",
+    "CIS 6770",
+    "CIT 5960",
+    "ENM 5020",
+    "ENM 5310",
+    "ESE 5040",
+    "ESE 5450",
+    "ESE 5030",
+    "ESE 6050",
+    "ESE 6740",
+    "OIDD 9300",
+    "STAT 5150",
+    "STAT 9270",
+]
 
 function myAssert(condition: boolean, message: string = "") {
     if (!condition) {
@@ -694,9 +873,11 @@ class BucketGroup {
     constructor(coursesRequired: number) {
         this.coursesRequired = coursesRequired
     }
-    public satisfied(): boolean {
-        const numSatisfied = this.requirements.filter(r => r.satisfiedLocally()).length
-        return numSatisfied == this.coursesRequired
+    public numSatisfied(): number {
+        return this.requirements.filter(r => r.satisfiedLocally()).length
+    }
+    public allSatisfied(): boolean {
+        return this.numSatisfied() == this.coursesRequired
     }
 }
 /** When we have buckets of named courses, and require students to cover k different buckets */
@@ -706,6 +887,9 @@ class RequireBucketNamedCourses extends RequirementNamedCourses {
     constructor(displayIndex: number, tag: string, courses: string[], groupName: string) {
         super(displayIndex, tag, courses)
         this.groupName = groupName
+    }
+    public getBucketGroupCoursesRemaining(): number {
+        return this.group!.coursesRequired - this.group!.numSatisfied()
     }
     public connectBucketGroup(coursesRequired: number, reqs: DegreeRequirement[]) {
         this.group = new BucketGroup(coursesRequired)
@@ -719,13 +903,13 @@ class RequireBucketNamedCourses extends RequirementNamedCourses {
     }
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         // don't consume any more courses if our group is satisfied
-        if (this.group!.satisfied()) {
+        if (this.group!.allSatisfied()) {
             myAssertEquals(0, this.remainingCUs)
             return
         }
         // group not already satisfied
         const result = super.satisfiedBy(courses)
-        if (this.group!.satisfied()) {
+        if (this.group!.allSatisfied()) {
             // this course completed the last required bucket
             this.group!.requirements
                 .filter(r => r.remainingCUs > 0)
@@ -744,7 +928,7 @@ class RequireBucketNamedCourses extends RequirementNamedCourses {
     }
     public unapplyCourse(c: CourseTaken) {
         super.unapplyCourse(c)
-        if (!this.group!.satisfied()) {
+        if (!this.group!.allSatisfied()) {
             // reset all the bucket reqs that are empty
             this.group!.requirements
                 .filter(r => r.satisfiedByOtherBuckets())
@@ -1389,12 +1573,14 @@ class CourseTaken {
         this.validateAttribute(this.suhSaysMath(), CourseAttribute.Math)
         this.validateAttribute(this.suhSaysNatSci(), CourseAttribute.NatSci)
         this.validateAttribute(this.suhSaysEngr(), CourseAttribute.MathNatSciEngr)
+        this.validateAttribute(RoboTechElectives.has(this.code()), CourseAttribute.RoboTechElective)
+        this.validateAttribute(RoboGeneralElectives.has(this.code()), CourseAttribute.RoboGeneralElective)
         if (this.suhSaysEngr() && this.attributes.includes(CourseAttribute.NonEngr)) {
             IncorrectCMAttributes.add(`${this.code()} incorrectly has ${CourseAttribute.NonEngr}`)
         }
     }
-    private validateAttribute(suhSays: boolean, attr: CourseAttribute): void {
-        if (suhSays && !this.attributes.includes(attr)) {
+    private validateAttribute(groundTruth: boolean, attr: CourseAttribute): void {
+        if (groundTruth && !this.attributes.includes(attr)) {
             this.attributes.push(attr)
             IncorrectCMAttributes.add(`${this.code()} missing ${attr}`)
         }
@@ -1407,7 +1593,7 @@ class CourseTaken {
                 return
             }
         }
-        if (this.attributes.includes(attr) && !suhSays) {
+        if (this.attributes.includes(attr) && !groundTruth) {
             this.attributes.splice(this.attributes.indexOf(attr), 1)
             IncorrectCMAttributes.add(`${this.code()} incorrectly has ${attr}`)
         }
@@ -1639,7 +1825,7 @@ class DegreeWorks extends CourseInputMethod {
                 hits.groups!["number"],
                 hits.groups!["restOfLine"],
                 hits.groups!["attributes"])
-            if (c != null && !coursesTaken.some(e => e.code() == c!.code())) {
+            if (c != null /*&& !coursesTaken.some(e => e.code() == c!.code())*/) {
                 coursesTaken.push(c)
             }
             numHits++
@@ -2019,10 +2205,10 @@ function webMain(): void {
                 start: function(e, ui) {
                     e.stopPropagation(); // magic to get very first drop() event to fire
                     const course: CourseTaken = $(this).data(DraggableDataGetCourseTaken)
-                    console.log(`start dragging ${course}`)
+                    // console.log(`start dragging ${course}`)
                     if (course.consumedBy != undefined) {
                         $(this).data(DraggableOriginalRequirement, course.consumedBy!)
-                        console.log(`you picked up ${course.code()} from ${course.consumedBy!} ugrad:${ugradDegreeReqs.includes(course.consumedBy!)}`)
+                        // console.log(`you picked up ${course.code()} from ${course.consumedBy!} ugrad:${ugradDegreeReqs.includes(course.consumedBy!)}`)
                     }
                 },
                 stop: function(e, ui) {
@@ -2074,11 +2260,6 @@ function webMain(): void {
                 const depthReq = allDegreeReqs.find(r => r.toString() == SshDepthTag)!
                 updateGlobalReq(depthReq)
             }
-            const countRemainingCUs = function(allReqs: DegreeRequirement[]): number {
-                return allReqs
-                    .map(ro => ro.doesntConsume ? 0 : ro.remainingCUs)
-                    .reduce((sum, remCUs) => sum + remCUs, 0)
-            }
 
             $(".droppable").delay(100).droppable({
                 accept: ".course",
@@ -2118,7 +2299,7 @@ function webMain(): void {
                 drop: function(event, ui) {
                     const destReq: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
                     const realCourse: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    console.log(`drop ${realCourse} onto ${destReq}`)
+                    // console.log(`drop ${realCourse} onto ${destReq}`)
                     if (destReq.coursesApplied.includes(realCourse)) {
                         snapCourseIntoPlace(realCourse, destReq)
 
@@ -2129,7 +2310,7 @@ function webMain(): void {
                             (mastersDegreeReqs.includes(originReq) && ugradDegreeReqs.includes(destReq))
                         // console.log(`JLD ${doubleCountedCourses.length} ${originReq} ${crossDegree}`)
                         if (doubleCountedCourses.length < 3 && !doubleCountedCourses.includes(realCourse) && crossDegree) {
-                            console.log(`double-counting ${realCourse.code()} with ${originReq} and ${destReq}`)
+                            // console.log(`double-counting ${realCourse.code()} with ${originReq} and ${destReq}`)
                             doubleCountedCourses.push(realCourse)
 
                             // create shadowCourse and place that in originReq
@@ -2172,7 +2353,7 @@ ${realCourse.code()}
                 over: function(event,ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
                     const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    console.log(`${course.code()} *over* ${req}, ${course.consumedBy?.uuid}`)
+                    // console.log(`${course.code()} *over* ${req}, ${course.consumedBy?.uuid}`)
 
                     // if req is already filled by something else, ignore this course
                     if (req.coursesApplied.length != 0 && !req.coursesApplied.includes(course)) {
@@ -2180,7 +2361,6 @@ ${realCourse.code()}
                     }
 
                     req.satisfiedBy([course])
-                    // allDegreeReqs.forEach(r => r.updateViewWeb())
                     req.updateViewWeb()
                     updateGlobalReqs()
                 },
@@ -2232,6 +2412,22 @@ function renderRequirementOutcomesWeb(requirementOutcomes: RequirementOutcome[],
             })
         }, 200)
     })
+}
+
+function countRemainingCUs(allReqs: DegreeRequirement[]): number {
+    const bucketsProcessed: string[] = []
+    return allReqs
+        .map(r => {
+            if (r instanceof RequireBucketNamedCourses) {
+                if (!bucketsProcessed.includes(r.groupName)) {
+                    bucketsProcessed.push(r.groupName)
+                    return r.getBucketGroupCoursesRemaining()
+                }
+                return 0
+            }
+            return r.doesntConsume ? 0 : r.remainingCUs
+        })
+        .reduce((sum, remCUs) => sum + remCUs, 0)
 }
 
 function setRemainingCUs(n: number) {
@@ -2902,7 +3098,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
         case "ROBO":
             const roboFoundation = "roboFoundation"
             mastersDegreeRequirements = [
-                new RequirementLabel(0, "<b>Take courses in 3 of the 4 buckets below:</b>"),
+                new RequirementLabel(0, "<b>Take courses in at least 3 of the 4 buckets below:</b>"),
                 new RequireBucketNamedCourses(1, "Artificial Intelligence Bucket", ["CIS 5190","CIS 5200","CIS 5210","ESE 6500"], roboFoundation),
                 new RequireBucketNamedCourses(2, "Robot Design & Analysis Bucket", ["MEAM 5100","MEAM 5200","MEAM 6200"], roboFoundation),
                 new RequireBucketNamedCourses(3, "Control Bucket", ["ESE 5000","ESE 5050","ESE 6190","MEAM 5130","MEAM 5170"], roboFoundation),
@@ -2920,24 +3116,27 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
             break
         case "DATS":
             const datsTE = "datsTechElective"
+            const allDatsCourses = DatsThesis.concat(DatsBiomedicine,DatsNetworkScience,DatsProgramming,DatsStats,DatsAI,DatsSimulation,DatsMath)
             mastersDegreeRequirements = [
                 new RequirementNamedCourses(1, "Programming", ["CIT 5900","CIT 5910"]),
                 new RequirementNamedCourses(2, "Statistics", ["ESE 5420"]),
                 new RequirementNamedCourses(3, "Big Data Analytics", ["CIS 5450"]),
                 new RequirementNamedCourses(4, "Linear Algebra", ["CIS 5150", "MATH 5130"]),
                 new RequirementNamedCourses(5, "Machine Learning", ["CIS 5190", "CIS 5200", "ENM 5310", "ESE 5450", "STAT 5710"]),
-                // TODO: need to cover 3 groups
-                new RequireBucketNamedCourses(6, "Thesis Bucket", ["DATS 5970","DATS 5990"], datsTE),
-                new RequireBucketNamedCourses(7, "", [""], datsTE),
-                new RequireBucketNamedCourses(8, "", [""], datsTE),
-                new RequireBucketNamedCourses(9, "", [""], datsTE),
-                new RequireBucketNamedCourses(10, "", [""], datsTE),
-                new RequireBucketNamedCourses(11, "", [""], datsTE),
-                new RequireBucketNamedCourses(12, "", [""], datsTE),
-                new RequireBucketNamedCourses(13, "", [""], datsTE),
-                // TODO: 2 CUs from any groups
+                new RequirementLabel(6, "<b>Take courses in at least 3 of the 8 buckets below</b>"),
+                new RequireBucketNamedCourses(7, "Thesis Bucket", DatsThesis, datsTE),
+                new RequireBucketNamedCourses(8, "Biomedicine Bucket", DatsBiomedicine, datsTE),
+                new RequireBucketNamedCourses(9, "Social/Network Science Bucket", DatsNetworkScience, datsTE),
+                new RequireBucketNamedCourses(10, "Data-centric Programming Bucket", DatsProgramming, datsTE),
+                new RequireBucketNamedCourses(11, "Surveys and Statistics Bucket", DatsStats, datsTE),
+                new RequireBucketNamedCourses(12, "Data Analysis & AI Bucket", DatsAI, datsTE),
+                new RequireBucketNamedCourses(13, "Simulation Methods Bucket", DatsSimulation, datsTE),
+                new RequireBucketNamedCourses(14, "Math & Algorithms Bucket", DatsMath, datsTE),
+
+                new RequirementNamedCourses(15, "Elective (from any bucket)", allDatsCourses).withConcise(),
+                new RequirementNamedCourses(16, "Elective (from any bucket)", allDatsCourses).withConcise(),
             ]
-            const datsBuckets = <RequireBucketNamedCourses>mastersDegreeRequirements[5]
+            const datsBuckets = <RequireBucketNamedCourses>mastersDegreeRequirements[6]
             datsBuckets.connectBucketGroup(3, mastersDegreeRequirements)
             break
         case "none":
@@ -2957,7 +3156,6 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
     // use undergrad courses first, reserve grad courses for AM
     coursesTaken.sort((a,b): number => a.courseNumberInt - b.courseNumberInt)
 
-    let totalRemainingCUs = 0.0
     // displayIndex, DegreeRequirement, RequirementOutcome, course(s) applied
     let reqOutcomes: [number,DegreeRequirement,RequirementApplyResult,CourseTaken[]][] = []
     degreeRequirements.forEach(req => {
@@ -2977,8 +3175,8 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
             // fully satisfied by 1 course
             reqOutcomes.push([displayIndex, req, RequirementApplyResult.Satisfied, [matched1]])
         }
-        totalRemainingCUs += req.remainingCUs
     })
+    const totalRemainingCUs = countRemainingCUs(degreeRequirements)
 
     if (ugradDegreeRequirements.length > 0) {
         // handle special ShareWith requirements: writing, depth, ethics
