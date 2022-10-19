@@ -544,7 +544,7 @@ abstract class DegreeRequirement {
     abstract satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined
 
     /** internal method for actually applying `c` to this requirement, decrementing CUs for both `c` and `this` */
-    protected applyCourse(c: CourseTaken, _: CourseTaken[]): boolean {
+    protected applyCourse(c: CourseTaken): boolean {
         if (this.doesntConsume) {
             this.coursesApplied.push(c)
             this.remainingCUs = 0
@@ -560,6 +560,7 @@ abstract class DegreeRequirement {
             c.courseUnitsRemaining -= cusToUse
             myAssert(c.courseUnitsRemaining >= 0, c.toString())
             this.remainingCUs -= cusToUse
+            // TODO: delete?
             // if (c.courseUnitsRemaining > 0) {
             //     console.log(`${c.code()} is split, ${cusToUse} used and ${c.courseUnitsRemaining} left`)
             //     const remainder = c.split(c.courseUnitsRemaining)
@@ -639,6 +640,27 @@ abstract class DegreeRequirement {
     }
 }
 
+/** Not a real requirement, a hack to show a label in the requirements list */
+class RequirementLabel extends DegreeRequirement {
+    readonly label: string
+    /** `label` can contain HTML */
+    constructor(displayIndex: number, label: string) {
+        super(displayIndex)
+        this.label = label
+        this.cus = 0
+        this.remainingCUs = 0
+        this.doesntConsume = true
+    }
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        return undefined;
+    }
+    public updateViewWeb(potential: boolean = false) {
+        const myElem = $(`#${this.uuid}`)
+        myElem.find("span.outcome").empty()
+        myElem.find("span.outcome").append(this.label)
+    }
+}
+
 class RequirementNamedCourses extends DegreeRequirement {
     readonly tag: string
     readonly courses: string[]
@@ -653,7 +675,7 @@ class RequirementNamedCourses extends DegreeRequirement {
             return this.courses.includes(c.code()) &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, courses)
+                this.applyCourse(c)
         })
     }
 
@@ -662,6 +684,74 @@ class RequirementNamedCourses extends DegreeRequirement {
             return `${this.tag}: ${this.courses}`
         } else {
             return this.tag
+        }
+    }
+}
+
+class BucketGroup {
+    readonly coursesRequired: number = 0
+    public requirements: RequireBucketNamedCourses[] = []
+    constructor(coursesRequired: number) {
+        this.coursesRequired = coursesRequired
+    }
+    public satisfied(): boolean {
+        const numSatisfied = this.requirements.filter(r => r.satisfiedLocally()).length
+        return numSatisfied == this.coursesRequired
+    }
+}
+/** When we have buckets of named courses, and require students to cover k different buckets */
+class RequireBucketNamedCourses extends RequirementNamedCourses {
+    readonly groupName: string
+    private group: BucketGroup | undefined = undefined
+    constructor(displayIndex: number, tag: string, courses: string[], groupName: string) {
+        super(displayIndex, tag, courses)
+        this.groupName = groupName
+    }
+    public connectBucketGroup(coursesRequired: number, reqs: DegreeRequirement[]) {
+        this.group = new BucketGroup(coursesRequired)
+        reqs.filter(r => r instanceof RequireBucketNamedCourses)
+            .map(r => <RequireBucketNamedCourses>r)
+            .filter(r => r.groupName == this.groupName)
+            .forEach(r => {
+                this.group!.requirements.push(r)
+                r.group = this.group
+            })
+    }
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        // don't consume any more courses if our group is satisfied
+        if (this.group!.satisfied()) {
+            myAssertEquals(0, this.remainingCUs)
+            return
+        }
+        // group not already satisfied
+        const result = super.satisfiedBy(courses)
+        if (this.group!.satisfied()) {
+            // this course completed the last required bucket
+            this.group!.requirements
+                .filter(r => r.remainingCUs > 0)
+                .forEach(r => {
+                    r.remainingCUs = 0
+                    r.updateViewWeb()
+                })
+        }
+        return result
+    }
+    public satisfiedLocally(): boolean {
+        return this.remainingCUs == 0 && this.coursesApplied.length > 0
+    }
+    public satisfiedByOtherBuckets(): boolean {
+        return this.remainingCUs == 0 && this.coursesApplied.length == 0
+    }
+    public unapplyCourse(c: CourseTaken) {
+        super.unapplyCourse(c)
+        if (!this.group!.satisfied()) {
+            // reset all the bucket reqs that are empty
+            this.group!.requirements
+                .filter(r => r.satisfiedByOtherBuckets())
+                .forEach(r => {
+                    r.remainingCUs = r.cus
+                    r.updateViewWeb()
+                })
         }
     }
 }
@@ -686,7 +776,7 @@ class RequirementAttributes extends DegreeRequirement {
                     return foundMatch &&
                         c.grading == GradeType.ForCredit &&
                         c.courseNumberInt >= this.minLevel &&
-                        this.applyCourse(c, courses)
+                        this.applyCourse(c)
                 })
             if (match != undefined) {
                 return match
@@ -713,7 +803,7 @@ class RequirementNamedCoursesOrAttributes extends RequirementNamedCourses {
             return foundMatch &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, courses)
+                this.applyCourse(c)
         })
     }
 
@@ -750,7 +840,7 @@ class RequirementNumbered extends DegreeRequirement {
             return (subjectMatch || this.courses.has(c.code())) &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, courses)
+                this.applyCourse(c)
         })
     }
 
@@ -771,7 +861,7 @@ class RequirementNaturalScienceLab extends RequirementNamedCourses {
             c.grading == GradeType.ForCredit &&
             c.courseUnitsRemaining >= 0.5 &&
             c.courseNumberInt >= this.minLevel &&
-            this.applyCourse(c, courses)
+            this.applyCourse(c)
         )
         if (matched == undefined) return undefined
 
@@ -802,7 +892,7 @@ class RequirementCisElective extends DegreeRequirement {
             return foundMatch &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, courses)
+                this.applyCourse(c)
         })
     }
 
@@ -820,7 +910,7 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
             return c.suhSaysEngr() &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, courses)
+                this.applyCourse(c)
         })
     }
 
@@ -850,7 +940,7 @@ class RequirementCsci40TechElective extends DegreeRequirement {
                     RequirementCsci40TechElective.techElectives.has(c.code()) ||
                     c.partOfMinor) &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, courses)
+                this.applyCourse(c)
         })
     }
 
@@ -874,7 +964,7 @@ class RequirementAscs40TechElective extends RequirementCsci40TechElective {
                     ["ACCT","BEPP","FNCE","LGST","MGMT","MKTG","OIDD"].includes(c.subject) &&
                     c.courseNumberInt >= this.minLevel &&
                     !c.suhSaysNoCredit() &&
-                    this.applyCourse(c, courses)
+                    this.applyCourse(c)
             })
     }
 
@@ -898,7 +988,7 @@ class RequirementDmdElective extends DegreeRequirement {
                 return dmdSubjects.includes(c.subject) &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, courses)
+                    this.applyCourse(c)
             })
     }
 
@@ -920,7 +1010,7 @@ class RequirementEngineeringElective extends DegreeRequirement {
                 return c.suhSaysEngr() &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, courses)
+                    this.applyCourse(c)
             })
     }
 
@@ -943,7 +1033,7 @@ class RequirementEseEngineeringElective extends DegreeRequirement {
                     c.suhSaysEngr() &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, courses)
+                    this.applyCourse(c)
             })
     }
 
@@ -989,7 +1079,7 @@ class RequirementAdvancedEseElective extends DegreeRequirement {
                 return (cmpe.includes(c.code()) || nano.includes(c.code()) || isd.includes(c.code())) &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, courses)
+                    this.applyCourse(c)
             })
     }
 
@@ -1017,14 +1107,14 @@ class RequirementEseProfessionalElective extends DegreeRequirement {
                     return c.suhSaysEngr() &&
                         c.grading == GradeType.ForCredit &&
                         c.courseNumberInt >= this.minLevel &&
-                        this.applyCourse(c, courses)
+                        this.applyCourse(c)
                 }
 
                 return (c.attributes.includes(CourseAttribute.MathNatSciEngr) || this.allowedCourses.includes(c.code())) &&
                     (!c.suhSaysEngr() || c.courseNumberInt >= 2000) &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, courses)
+                    this.applyCourse(c)
             })
     }
 
@@ -1048,7 +1138,7 @@ class RequirementSpa extends DegreeRequirement {
                 return (SseSpaList.includes(c.code()) || (this.light && SseSpaOnlyOne.includes(c.code()))) &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
-                    this.applyCourse(c, courses)
+                    this.applyCourse(c)
             })
     }
 
@@ -1089,7 +1179,7 @@ class RequirementSsh extends RequirementAttributes {
             const foundMatch = this.attrs.some((a) => c.attributes.includes(a))
             const gradeOk = c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail
             return foundMatch &&
-                gradeOk && c.courseNumberInt >= this.minLevel && this.applyCourse(c, courses)
+                gradeOk && c.courseNumberInt >= this.minLevel && this.applyCourse(c)
 
         })
     }
@@ -1133,7 +1223,7 @@ class RequirementFreeElective extends DegreeRequirement {
             return !c.suhSaysNoCredit() &&
                 (c.grading == GradeType.ForCredit || c.grading == GradeType.PassFail) &&
                 c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c, courses)
+                this.applyCourse(c)
         })
     }
 
@@ -2090,6 +2180,7 @@ ${realCourse.code()}
                     }
 
                     req.satisfiedBy([course])
+                    // allDegreeReqs.forEach(r => r.updateViewWeb())
                     req.updateViewWeb()
                     updateGlobalReqs()
                 },
@@ -2264,11 +2355,17 @@ class RequirementOutcome {
         this.coursesApplied = courses
     }
     public outcomeString(): string {
+        let by = " by"
+        // is this a bucket requirement that is empty because enough other buckets are filled?
+        if (this.degreeReq instanceof RequireBucketNamedCourses &&
+            this.degreeReq.satisfiedByOtherBuckets()) {
+            by = " by other buckets"
+        }
         switch (this.applyResult) {
             case RequirementApplyResult.Satisfied:
-                return `${this.degreeReq} satisfied by`
+                return `${this.degreeReq} satisfied${by}`
             case RequirementApplyResult.PartiallySatisfied:
-                return `${this.degreeReq} PARTIALLY satisfied by`
+                return `${this.degreeReq} PARTIALLY satisfied${by}`
             case RequirementApplyResult.Unsatisfied:
                 return `${this.degreeReq} NOT satisfied`
             default:
@@ -2803,11 +2900,13 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
             ]
             break
         case "ROBO":
+            const roboFoundation = "roboFoundation"
             mastersDegreeRequirements = [
-                new RequirementNamedCourses(1, "Artificial Intelligence", ["CIS 5190", "CIS 5200", "CIS 5210", "ESE 6500"]),
-                new RequirementNamedCourses(2, "Robot Design & Analysis", ["MEAM 5100", "MEAM 5200", "MEAM 6200"]),
-                new RequirementNamedCourses(3, "Control", ["ESE 5000", "ESE 5050", "ESE 6190", "MEAM 5130", "MEAM 5170"]),
-                new RequirementNamedCourses(4, "Perception", ["CIS 5800", "CIS 5810", "CIS 6800"]),
+                new RequirementLabel(0, "<b>Take courses in 3 of the 4 buckets below:</b>"),
+                new RequireBucketNamedCourses(1, "Artificial Intelligence Bucket", ["CIS 5190","CIS 5200","CIS 5210","ESE 6500"], roboFoundation),
+                new RequireBucketNamedCourses(2, "Robot Design & Analysis Bucket", ["MEAM 5100","MEAM 5200","MEAM 6200"], roboFoundation),
+                new RequireBucketNamedCourses(3, "Control Bucket", ["ESE 5000","ESE 5050","ESE 6190","MEAM 5130","MEAM 5170"], roboFoundation),
+                new RequireBucketNamedCourses(4, "Perception Bucket", ["CIS 5800","CIS 5810","CIS 6800"], roboFoundation),
                 new RequirementAttributes(5, "Technical Elective", [CourseAttribute.RoboTechElective]),
                 new RequirementAttributes(6, "Technical Elective", [CourseAttribute.RoboTechElective]),
                 new RequirementAttributes(7, "Technical Elective", [CourseAttribute.RoboTechElective]),
@@ -2816,6 +2915,30 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
                 new RequirementAttributes(10, "General Elective", [CourseAttribute.RoboGeneralElective]),
                 new RequirementAttributes(11, "General Elective", [CourseAttribute.RoboGeneralElective]),
             ]
+            const roboBuckets = <RequireBucketNamedCourses>mastersDegreeRequirements[1]
+            roboBuckets.connectBucketGroup(3, mastersDegreeRequirements)
+            break
+        case "DATS":
+            const datsTE = "datsTechElective"
+            mastersDegreeRequirements = [
+                new RequirementNamedCourses(1, "Programming", ["CIT 5900","CIT 5910"]),
+                new RequirementNamedCourses(2, "Statistics", ["ESE 5420"]),
+                new RequirementNamedCourses(3, "Big Data Analytics", ["CIS 5450"]),
+                new RequirementNamedCourses(4, "Linear Algebra", ["CIS 5150", "MATH 5130"]),
+                new RequirementNamedCourses(5, "Machine Learning", ["CIS 5190", "CIS 5200", "ENM 5310", "ESE 5450", "STAT 5710"]),
+                // TODO: need to cover 3 groups
+                new RequireBucketNamedCourses(6, "Thesis Bucket", ["DATS 5970","DATS 5990"], datsTE),
+                new RequireBucketNamedCourses(7, "", [""], datsTE),
+                new RequireBucketNamedCourses(8, "", [""], datsTE),
+                new RequireBucketNamedCourses(9, "", [""], datsTE),
+                new RequireBucketNamedCourses(10, "", [""], datsTE),
+                new RequireBucketNamedCourses(11, "", [""], datsTE),
+                new RequireBucketNamedCourses(12, "", [""], datsTE),
+                new RequireBucketNamedCourses(13, "", [""], datsTE),
+                // TODO: 2 CUs from any groups
+            ]
+            const datsBuckets = <RequireBucketNamedCourses>mastersDegreeRequirements[5]
+            datsBuckets.connectBucketGroup(3, mastersDegreeRequirements)
             break
         case "none":
             break
