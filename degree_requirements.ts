@@ -752,7 +752,7 @@ class RequirementNumbered extends DegreeRequirement {
 
 class RequirementNaturalScienceLab extends RequirementNamedCourses {
     constructor(displayIndex: number, tag: string) {
-        super(displayIndex, tag, CoursesWithLabs15CUs.map(c => c + " lab").concat(LabCourses05CUs))
+        super(displayIndex, tag, CoursesWithLabs15CUs.map(c => c + "lab").concat(LabCourses05CUs))
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
@@ -1317,7 +1317,7 @@ class CourseTaken {
     public toString(): string {
         let complete = this.completed ? "completed" : "in progress"
         let minor = this.partOfMinor ? "in minor" : ""
-        return `${this.subject} ${this.courseNumber} ${this.title}, ${this.courseUnits} CUs, ${this.grading} ${this.letterGrade}, taken in ${this.term}, ${complete}, ${this.attributes} ${minor}`
+        return `${this.subject} ${this.courseNumber} ${this.title}, ${this.courseUnitsRemaining} out of ${this.courseUnits} CUs, ${this.grading} ${this.letterGrade}, taken in ${this.term}, ${complete}, ${this.attributes} ${minor}`
     }
 
     /** Return a course code like "ENGL 1234" */
@@ -1330,6 +1330,7 @@ class CourseTaken {
     }
     public setCUs(x: number) {
         this.courseUnits = x
+        this.courseUnitsRemaining = x
     }
     /** Disable this course, e.g., when EAS 0091 is superceded by CHEM 1012 */
     public disable() {
@@ -1498,7 +1499,7 @@ class CourseInputMethod {
         courses.forEach(c => {
             if (CoursesWithLabs15CUs.includes(c.code())) {
                 c.setCUs(c.getCUs() - 0.5)
-                const lab = c.split(0.5, c.courseNumber + " lab")
+                const lab = c.split(0.5, c.courseNumber + "lab")
                 labs.push(lab)
             }
         })
