@@ -739,15 +739,6 @@ abstract class DegreeRequirement {
             c.courseUnitsRemaining -= cusToUse
             myAssert(c.courseUnitsRemaining >= 0, c.toString())
             this.remainingCUs -= cusToUse
-            // TODO: delete?
-            // if (c.courseUnitsRemaining > 0) {
-            //     console.log(`${c.code()} is split, ${cusToUse} used and ${c.courseUnitsRemaining} left`)
-            //     const remainder = c.split(c.courseUnitsRemaining)
-            //     c.setCUs(c.getCUs() - c.courseUnitsRemaining)
-            //     c.courseUnitsRemaining = 0
-            //     courses.push(remainder)
-            // }
-            // console.log(`   ${c.courseUnitsRemaining} vs ${this.remainingCUs}: pulled ${cusToUse} from ${c.code()} for ${this}, ${this.remainingCUs > 0}`)
             return true
         }
         return false
