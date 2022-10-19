@@ -1694,6 +1694,7 @@ const NodeRemainingCUs = "#remainingCUs"
 const NodeDoubleCounts = "#doubleCounts"
 const NodeStudentInfo = "#studentInfo"
 const NodeUnusedCoursesHeader = "#unusedCoursesHeader"
+const NodeCoursesList = "#usedCoursesList"
 const NodeUnusedCoursesList = "#unusedCoursesList"
 const NodeMessages = "#messages"
 const NodeAllCourses = "#allCourses"
@@ -1724,6 +1725,7 @@ function webMain(): void {
     $(NodeStudentInfo).empty()
     $(NodeUnusedCoursesHeader).empty()
     $(NodeUnusedCoursesList).empty()
+    $(NodeCoursesList).empty()
     $(NodeMessages).empty()
     $(NodeAllCourses).empty()
 
@@ -1970,7 +1972,7 @@ ${realCourse.code()}
                             realCourse.updateViewWeb(true)
                             updateGlobalReqs()
 
-                            // position shadowCourse, close on click
+                            // TODO: position shadowCourse, close on click
                             // $(`#${shadowCourse.uuid}`)
                             //     .position({
                             //     my: "left center",
@@ -2038,14 +2040,28 @@ function renderRequirementOutcomesWeb(requirementOutcomes: RequirementOutcome[],
             return
         }
 
+        $(column).append(`
+<div class="droppable requirement" id="${ro.degreeReq.uuid()}">
+<span class="outcome"></span><span id="${ro.degreeReq.uuid()}_snapTarget" class="courseSnapTarget"></span></div>`)
+
         const courses = ro.coursesApplied.map(c => {
             const completed = c.completed ? "courseCompleted" : "courseInProgress"
             return `<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`
         }).join(" ")
-        $(column).append(`
-<div class="droppable requirement" id="${ro.degreeReq.uuid()}">
-<span class="outcome"></span><span id="${ro.degreeReq.uuid()}_snapTarget" class="courseSnapTarget"></span> ${courses}</div>`)
+        $(NodeCoursesList).append(courses)
         ro.degreeReq.updateViewWeb()
+
+        // must delay course placement, I guess because courses aren't added to DOM instantly?
+        setTimeout(function() {
+            ro.coursesApplied.forEach(c => {
+                // console.log(`positioning ${c.uuid} next to ${ro.degreeReq.uuid()}_snapTarget`)
+                $(`#${c.uuid}`).position({
+                    my: "left center",
+                    at: "right center",
+                    of: $(`#${ro.degreeReq.uuid()}_snapTarget`),
+                })
+            })
+        }, 100)
     })
 }
 
