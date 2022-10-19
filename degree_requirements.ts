@@ -20,19 +20,22 @@ enum CourseAttribute {
     Humanities = "EUHS",
     TBS = "EUTB",
     NonEngr = "EUNE",
+    SasLanguage = "AULA",
+    SasLastLanguage = "AULL",
+    SasAdvancedLanguage = "AULA",
     NetsLightTechElective = "NetsLightTE",
     NetsFullTechElective = "NetsFullTE",
 }
 
-const CoursesWithLabs15CUs = [
-    // 1.5 CUs
+/** 1.5 CU Natural Science courses with labs */
+const CoursesWithLab15CUs = [
     "BIOL 1101", "BIOL 1102",
     "PHYS 0150", "PHYS 0151",
     "PHYS 0170", "PHYS 0171",
     "ESE 1120",
 ]
-const LabCourses05CUs = [
-    // 0.5 CUs
+/** 0.5 CU standalone Natural Science lab courses */
+const StandaloneLabCourses05CUs = [
     "CHEM 1101", "CHEM 1102",
     "PHYS 0050", "PHYS 0051",
     "MEAM 1470",
@@ -492,7 +495,7 @@ interface TechElectiveDecision {
 }
 
 type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" | "none"
-type MastersDegree = "CISMSE" | "DATS" | "ROBO" | "CGGT" | "none"
+type MastersDegree = "CIS-MSE" | "DATS" | "ROBO" | "CGGT" | "none"
 
 let IncorrectCMAttributes = new Set<string>()
 
@@ -750,7 +753,7 @@ class RequirementNumbered extends DegreeRequirement {
 
 class RequirementNaturalScienceLab extends RequirementNamedCourses {
     constructor(displayIndex: number, tag: string) {
-        super(displayIndex, tag, CoursesWithLabs15CUs.map(c => c + "lab").concat(LabCourses05CUs))
+        super(displayIndex, tag, CoursesWithLab15CUs.map(c => c + "lab").concat(StandaloneLabCourses05CUs))
     }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
@@ -1245,9 +1248,9 @@ class CourseTaken {
         this.allAttributes = [...attrs]
         this.attributes = []
         this.allAttributes.forEach((attr: string) => {
-            Object.values(CourseAttribute).forEach((seasAttr: CourseAttribute) => {
-                if (seasAttr == attr) {
-                    this.attributes.push(seasAttr)
+            Object.values(CourseAttribute).forEach((a: CourseAttribute) => {
+                if (a == attr) {
+                    this.attributes.push(a)
                 }
             })
         })
@@ -1340,9 +1343,8 @@ class CourseTaken {
      * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
     private suhSaysSS(): boolean {
         // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SAST
-        // TODO: ECON except statistics, probability, and math courses, [ECON 104 is not allowed]
-        // TODO: LING except language courses which can be used as Humanities electives and LING 0700 which can be used as a free elective
-        // TODO: PSYC, SOCI except statistics, probability, and math courses
+        // TODO: ECON except statistics, probability, and math courses, [ECON 104 is not allowed]. Xlist not helpful
+        // TODO: PSYC, SOCI except statistics, probability, and math courses. Xlist not helpful
         const ssSubjects = ["COMM","CRIM","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
         const ssCourses = [
             "BEPP 2010","BEPP 2030","BEPP 2120","BEPP 2200","BEPP 2500",
@@ -1351,6 +1353,7 @@ class CourseTaken {
             "NURS 3130","NURS 3150","NURS 3160","NURS 3300","NURS 5250"]
         return (this.courseNumberInt < 5000 && ssSubjects.includes(this.subject)) ||
             ssCourses.includes(this.code()) ||
+            (this.subject == "LING" && this.courseNumber != "0700") ||
             WritingSeminarSsHTbs.get(this.code()) == CourseAttribute.SocialScience
     }
 
@@ -1358,8 +1361,7 @@ class CourseTaken {
      * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
     private suhSaysHum(): boolean {
         // TODO: ASAM cross-listed with AMES, ENGL, FNAR, HIST, and SARS only
-        // TODO: PHIL except 005, 006, and all other logic courses
-        // TODO: any foreign language course
+        // TODO: PHIL except 005, 006, and all other logic courses. Does "logic" mean LGIC courses?
         const humSubjects = [
             "ANTH","ANCH","ANEL","ARTH","ASLD","CLST","LATN","GREK","COML","EALC","ENGL","FNAR",
             "FOLK","GRMN","DTCH","SCND","HIST","HSSC","JWST","LALS","MUSC","NELC","RELS","FREN",
@@ -1372,6 +1374,10 @@ class CourseTaken {
             "CIS 1060","IPD 5090"
         ]
         return (this.courseNumberInt < 5000 && humSubjects.includes(this.subject)) ||
+            // "any foreign language course", leverage attrs from SAS
+            this.attributes.includes(CourseAttribute.SasLanguage) ||
+            this.attributes.includes(CourseAttribute.SasAdvancedLanguage) ||
+            this.attributes.includes(CourseAttribute.SasLastLanguage) ||
             humCourses.includes(this.code()) ||
             (this.subject == "VLST" && this.courseNumberInt != 2090) ||
             WritingSeminarSsHTbs.get(this.code()) == CourseAttribute.Humanities
@@ -1495,7 +1501,7 @@ class CourseInputMethod {
     public static splitLabCourses(courses: CourseTaken[]): CourseTaken[] {
         let labs: CourseTaken[] = []
         courses.forEach(c => {
-            if (CoursesWithLabs15CUs.includes(c.code())) {
+            if (CoursesWithLab15CUs.includes(c.code())) {
                 c.setCUs(c.getCUs() - 0.5)
                 const lab = c.split(0.5, c.courseNumber + "lab")
                 labs.push(lab)
@@ -1710,7 +1716,7 @@ class DegreeWorks extends CourseInputMethod {
 
         // masters degrees
         if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CIS\s+`)) != -1) {
-            d.masters = "CISMSE"
+            d.masters = "CIS-MSE"
         }
         if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ROBO\s+`)) != -1) {
             d.masters = "ROBO"
@@ -1908,6 +1914,7 @@ function webMain(): void {
                 },
                 // when a course is first picked up for dragging
                 start: function(e, ui) {
+                    e.stopPropagation(); // magic to get very first drop() event to fire
                     const course: CourseTaken = $(this).data(DraggableDataGetCourseTaken)
                     console.log(`start dragging ${course}`)
                     if (course.consumedBy != undefined) {
@@ -2737,7 +2744,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
     let mastersDegreeRequirements: DegreeRequirement[] = []
 
     switch (degrees.masters) {
-        case "CISMSE":
+        case "CIS-MSE":
             mastersDegreeRequirements = [
                 new RequirementNamedCourses(1, "Systems", ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710"]),
                 new RequirementNamedCourses(2, "Theory", ["CIS 5020", "CIS 5110"]),
