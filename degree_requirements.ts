@@ -23,6 +23,8 @@ enum CourseAttribute {
     SasLanguage = "AULA",
     SasLastLanguage = "AULL",
     SasAdvancedLanguage = "AULA",
+    RoboTechElective = "EMRT",
+    RoboGeneralElective = "EMRE",
     NetsLightTechElective = "NetsLightTE",
     NetsFullTechElective = "NetsFullTE",
 }
@@ -2798,6 +2800,21 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
                 new RequirementNamedCourses(10, "Free Elective",
                     ["DSGN 5009", "FNAR 5066", "DSGN 5004", "EAS 5460", "OIDD 6620"]
                         .concat(CggtBusiness).concat(CggtGraphicsElectives).concat(CggtTechnicalElectives))
+            ]
+            break
+        case "ROBO":
+            mastersDegreeRequirements = [
+                new RequirementNamedCourses(1, "Artificial Intelligence", ["CIS 5190", "CIS 5200", "CIS 5210", "ESE 6500"]),
+                new RequirementNamedCourses(2, "Robot Design & Analysis", ["MEAM 5100", "MEAM 5200", "MEAM 6200"]),
+                new RequirementNamedCourses(3, "Control", ["ESE 5000", "ESE 5050", "ESE 6190", "MEAM 5130", "MEAM 5170"]),
+                new RequirementNamedCourses(4, "Perception", ["CIS 5800", "CIS 5810", "CIS 6800"]),
+                new RequirementAttributes(5, "Technical Elective", [CourseAttribute.RoboTechElective]),
+                new RequirementAttributes(6, "Technical Elective", [CourseAttribute.RoboTechElective]),
+                new RequirementAttributes(7, "Technical Elective", [CourseAttribute.RoboTechElective]),
+                new RequirementAttributes(8, "Technical Elective", [CourseAttribute.RoboTechElective]),
+                new RequirementAttributes(9, "Technical Elective", [CourseAttribute.RoboTechElective]),
+                new RequirementAttributes(10, "General Elective", [CourseAttribute.RoboGeneralElective]),
+                new RequirementAttributes(11, "General Elective", [CourseAttribute.RoboGeneralElective]),
             ]
             break
         case "none":
