@@ -2440,11 +2440,11 @@ ${realCourse.code()}
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
                     const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    console.log(`${course.code()} *left* ${req.uuid} ${req}`)
+                    // console.log(`${course.code()} *left* ${req.uuid} ${req}`)
 
                     // update model
                     if (req.coursesApplied.includes(course)) {
-                        console.log(`unapplying ${course.code()}`)
+                        // console.log(`unapplying ${course.code()}`)
                         req.unapplyCourse(course)
                         req.updateViewWeb(true)
                         updateGlobalReqs()
