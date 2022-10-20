@@ -11,6 +11,11 @@ const DroppableDataGetDegreeRequirement = "DegreeRequirement"
 const SsHTbsTag = "SS/H/TBS"
 const SshDepthTag = "SSH Depth Requirement"
 
+/** grades indicating a completed course, as opposed to I, NR, GR or 'IN PROGRESS' which indicate non-completion */
+const CompletedGrades = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","P","TR"]
+/** academic terms during which students could take unlimited P/F courses */
+const CovidTerms = [202010, 202020, 202030, 202110]
+
 enum CourseAttribute {
     Writing = "AUWR",
     Math = "EUMA",
@@ -1778,8 +1783,92 @@ class CourseTaken {
     }
 }
 
-class CourseInputMethod {
-    public static splitLabCourses(courses: CourseTaken[], degrees: Degrees): CourseTaken[] {
+class CourseParserResult {
+    courses: CourseTaken[] = []
+    degrees: Degrees = new Degrees()
+}
+abstract class CourseParser {
+    /** returns a parser object, inferred based on the given text */
+    public static getParser(text: string): CourseParser {
+        if (text.includes("Degree Works Release")) {
+            return new DegreeWorksDiagnosticsReportParser()
+        } else if (text.includes("END OF TRANSCRIPT")) {
+            return new UnofficialTranscriptParser()
+        }
+        throw new Error("cannot parse courses")
+    }
+
+    /** Updates `degrees` IN-PLACE, using heuristic to identify students declared as CSCI but following ASCS instead.
+     * Check for and disable equivalent courses, add MATH retroactive credit, and split lab courses. */
+    protected postProcess(courses: CourseTaken[], degrees: Degrees): CourseTaken[] {
+        if (degrees.undergrad == "40cu CSCI" &&
+            !courses.some(c => c.code() == "CIS 4710") &&
+            !courses.some(c => c.code() == "CIS 5710") &&
+            // !courses.some(c => c.code() == "CIS 3800") &&
+            !courses.some(c => c.code() == "CIS 4000")
+        ) {
+            myLog("CSCI declared, but coursework is closer to ASCS so using ASCS requirements instead")
+            degrees.undergrad = "40cu ASCS"
+        }
+
+        const newCourses = courses.slice()
+
+        // Check for equivalent courses. If two are found, the first element of the pair is disabled
+        const equivalentCourses: [string,string][] = [
+            ["EAS 0091", "CHEM 1012"],
+            ["ESE 3010", "STAT 4300"],
+            // NB: only STAT 4310 will be retained out of STAT 4310, ESE 4020, ENM 3750
+            ["ESE 4020", "STAT 4310"], ["ENM 3750", "STAT 4310"],
+            ["ENM 2510", "MATH 2410"],
+            ["ESE 1120", "PHYS 0151"],
+            ["MEAM 1100", "PHYS 0150"],
+            ["MEAM 1470", "PHYS 0150"],
+        ]
+        equivalentCourses.forEach((forbidden: [string,string]) => {
+            if (courses.some((c: CourseTaken) => c.code() == forbidden[0]) &&
+                courses.some((c: CourseTaken) => c.code() == forbidden[1])) {
+                const msg = `took ${forbidden[0]} & ${forbidden[1]}, uh-oh: disabling ${forbidden[0]}`
+                myLog(msg)
+                console.log(msg)
+                let c0 = courses.find((c: CourseTaken) => c.code() == forbidden[0])
+                // disable the first of the equivalent courses
+                c0!.disable()
+            }
+        })
+
+        // Math retroactive credit
+        // https://www.math.upenn.edu/undergraduate/advice-new-students/advanced-placement-transfer-retroactive-credit
+        if (!courses.some((c: CourseTaken): boolean => c.code() == "MATH 1400") ) {
+            const math1400Retro = courses.find((c: CourseTaken): boolean => {
+                const calc = ["MATH 1410", "MATH 1610", "MATH 2400", "MATH 2600"].includes(c.code())
+                const bOrBetter = ["A+", "A", "A-", "B+", "B"]
+                let gradeOk
+                if ([202010, 202020, 202030, 202110].includes(c.term)) { // Covid terms
+                    gradeOk = bOrBetter.concat("P").includes(c.letterGrade)
+                } else {
+                    gradeOk = bOrBetter.includes(c.letterGrade)
+                }
+                return calc && gradeOk
+            })
+            if (math1400Retro != undefined) {
+                const math1400 = new CourseTaken(
+                    "MATH",
+                    "1400",
+                    "Calculus 1 retro credit",
+                    "MATH 104",
+                    1.0,
+                    GradeType.ForCredit,
+                    "TR",
+                    math1400Retro.term,
+                    "ATTRIBUTE=EUMA; ATTRIBUTE=EUMS;",
+                    true)
+                newCourses.push(math1400)
+            }
+        }
+        // TODO: Math 2410 retro credit for students entering in Fall 2021 and earlier?
+        // "For the Class of 2025 and earlier, if you pass Math 2410 at Penn with at least a grade of B, you may come to
+        // the math office and receive retroactive credit for (and only one) Math 1400, Math 1410, or Math 2400"
+
         let labs: CourseTaken[] = []
         courses.forEach(c => {
             const nosplit =
@@ -1792,18 +1881,81 @@ class CourseInputMethod {
                 labs.push(lab)
             }
         })
-        return courses.concat(labs)
+
+        return newCourses.concat(labs)
+            .sort((a, b) => a.code().localeCompare(b.code()))
+    }
+
+    abstract extractPennID(worksheetText: string): string | undefined
+    abstract parse(text: string, degrees: Degrees | undefined): CourseParserResult
+}
+
+class UnofficialTranscriptParser extends CourseParser {
+    constructor() {
+        super();
+    }
+
+    extractPennID(worksheetText: string): string | undefined {
+        const matches = worksheetText.match(/Penn ID:\s+(\d{8})/)
+        if (matches != null) {
+            return matches![1]
+        }
+        return undefined
+    }
+
+    parse(text: string, degrees: Degrees | undefined): CourseParserResult {
+        const result = new CourseParserResult()
+        if (degrees != undefined) {
+            result.degrees = degrees
+        } else {
+            // TODO: infer degrees
+            throw new Error("unimplemented")
+        }
+
+        const coursePattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})(?<title>.*?)(?<cus>\d.\d\d) (?<grade>A\+|A|A\-|B\+|B|B\-|C\+|C|C\-|D\+|D|F|P|TR|GR|NR|IN PROGRESS|I)`, "g")
+        let numHits = 0
+        while (numHits < 100) {
+            let hits = coursePattern.exec(text)
+            if (hits == null) {
+                break
+            }
+            let c = this.parseOneCourse(
+                hits.groups!["subject"],
+                hits.groups!["number"],
+                hits.groups!["title"],
+                hits.groups!["cus"],
+                hits.groups!["grade"])
+            if (c != null) {
+                result.courses.push(c)
+            }
+            numHits++
+        }
+
+        result.courses = this.postProcess(result.courses, result.degrees)
+        return result
+    }
+
+    private parseOneCourse(subject: string, number: string, title:string, cus: string, grade:string): CourseTaken {
+        const gradeType = grade == "P" ? GradeType.PassFail : GradeType.ForCredit
+        return new CourseTaken(
+            subject,
+            number,
+            title,
+            null,
+            parseFloat(cus),
+            gradeType,
+            grade,
+            0, // TODO: need to figure out term to check for Covid P/F policy
+            "",
+            grade != "IN PROGRESS")
     }
 }
 
-class UnofficialTranscript {
-    public static extractCourses(transcriptText: string): CourseTaken[] {
-        throw new Error("can't parse unofficial transcripts yet")
+class DegreeWorksDiagnosticsReportParser extends CourseParser {
+    constructor() {
+        super();
     }
-}
-
-class DegreeWorks extends CourseInputMethod {
-    public static extractPennID(worksheetText: string): string | undefined {
+    public extractPennID(worksheetText: string): string | undefined {
         const matches = worksheetText.match(/Student\s+(\d{8})/)
         if (matches != null) {
             return matches![1]
@@ -1811,7 +1963,22 @@ class DegreeWorks extends CourseInputMethod {
         return undefined
     }
 
-    public static extractCourses(worksheetText: string): CourseTaken[] {
+    public parse(text: string, degrees: Degrees | undefined): CourseParserResult {
+        const result = new CourseParserResult()
+        result.courses = this.extractCourses(text)
+        if (degrees != undefined) {
+            result.degrees = degrees
+        } else {
+            const deg = this.inferDegrees(text)
+            myAssert(deg != undefined, "could not infer DegreeWorks degree")
+            //console.log("inferred degrees as " + deg)
+            result.degrees = deg!
+        }
+        result.courses = this.postProcess(result.courses, result.degrees)
+        return result
+    }
+
+    private extractCourses(worksheetText: string): CourseTaken[] {
         let coursesTaken: CourseTaken[] = []
 
         const courseTakenPattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})(?<restOfLine>.*)\nAttributes\t(?<attributes>.*)`, "g")
@@ -1821,12 +1988,12 @@ class DegreeWorks extends CourseInputMethod {
             if (hits == null) {
                 break
             }
-            let c = DegreeWorks.parseOneCourse(
+            let c = this.parseOneCourse(
                 hits.groups!["subject"],
                 hits.groups!["number"],
                 hits.groups!["restOfLine"],
                 hits.groups!["attributes"])
-            if (c != null /*&& !coursesTaken.some(e => e.code() == c!.code())*/) {
+            if (c != null) {
                 coursesTaken.push(c)
             }
             numHits++
@@ -1853,67 +2020,10 @@ class DegreeWorks extends CourseInputMethod {
                 })
         }
 
-        // Check for equivalent courses. If two are found, the first element of the pair is disabled
-        const equivalentCourses: [string,string][] = [
-            ["EAS 0091", "CHEM 1012"],
-            ["ESE 3010", "STAT 4300"],
-            // NB: only STAT 4310 will be retained out of STAT 4310, ESE 4020, ENM 3750
-            ["ESE 4020", "STAT 4310"], ["ENM 3750", "STAT 4310"],
-            ["ENM 2510", "MATH 2410"],
-            ["ESE 1120", "PHYS 0151"],
-            ["MEAM 1100", "PHYS 0150"],
-            ["MEAM 1470", "PHYS 0150"],
-        ]
-        equivalentCourses.forEach((forbidden: [string,string]) => {
-            if (coursesTaken.some((c: CourseTaken) => c.code() == forbidden[0]) &&
-                coursesTaken.some((c: CourseTaken) => c.code() == forbidden[1])) {
-                const msg = `took ${forbidden[0]} & ${forbidden[1]}, uh-oh: disabling ${forbidden[0]}`
-                myLog(msg)
-                console.log(msg)
-                let c0 = coursesTaken.find((c: CourseTaken) => c.code() == forbidden[0])
-                // disable the first of the equivalent courses
-                c0!.disable()
-            }
-        })
-
-        // Math retroactive credit
-        // https://www.math.upenn.edu/undergraduate/advice-new-students/advanced-placement-transfer-retroactive-credit
-        if (!coursesTaken.some((c: CourseTaken): boolean => c.code() == "MATH 1400") ) {
-            const math1400Retro = coursesTaken.find((c: CourseTaken): boolean => {
-                const calc = ["MATH 1410", "MATH 1610", "MATH 2400", "MATH 2600"].includes(c.code())
-                const bOrBetter = ["A+", "A", "A-", "B+", "B"]
-                let gradeOk
-                if ([202010, 202020, 202030, 202110].includes(c.term)) { // Covid terms
-                    gradeOk = bOrBetter.concat("P").includes(c.letterGrade)
-                } else {
-                    gradeOk = bOrBetter.includes(c.letterGrade)
-                }
-                return calc && gradeOk
-            })
-            if (math1400Retro != undefined) {
-                const math1400 = new CourseTaken(
-                    "MATH",
-                    "1400",
-                    "Calculus 1 retro credit",
-                    "MATH 104",
-                    1.0,
-                    GradeType.ForCredit,
-                    "TR",
-                    math1400Retro.term,
-                    "ATTRIBUTE=EUMA; ATTRIBUTE=EUMS;",
-                    true)
-                coursesTaken.push(math1400)
-                coursesTaken.sort((a, b) => a.code().localeCompare(b.code()))
-            }
-        }
-        // TODO: Math 2410 retro credit for students entering in Fall 2021 and earlier?
-        // "For the Class of 2025 and earlier, if you pass Math 2410 at Penn with at least a grade of B, you may come to
-        // the math office and receive retroactive credit for (and only one) Math 1400, Math 1410, or Math 2400"
-
         return coursesTaken
     }
 
-    private static parseOneCourse(subject: string, courseNumber: string, courseInfo: string, rawAttrs: string): CourseTaken | null {
+    private parseOneCourse(subject: string, courseNumber: string, courseInfo: string, rawAttrs: string): CourseTaken | null {
         const code = `${subject} ${courseNumber}`
         const parts = courseInfo.split("\t")
         const letterGrade = parts[1].trim()
@@ -1928,12 +2038,11 @@ class DegreeWorks extends CourseInputMethod {
         const _4d = parts[28]
             .replace("[", "")
             .replace("]","").trim()
-        const covidTerms = [202010, 202020, 202030, 202110]
-        if (covidTerms.includes(term) && gradingType == GradeType.PassFail) {
+        if (CovidTerms.includes(term) && gradingType == GradeType.PassFail) {
             gradingType = GradeType.ForCredit
         }
 
-        if (!inProgress && !["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","P","TR"].includes(letterGrade)) {
+        if (!inProgress && !CompletedGrades.includes(letterGrade)) {
             myLog(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${letterGrade}`)
             return null
         }
@@ -1967,22 +2076,12 @@ class DegreeWorks extends CourseInputMethod {
             !inProgress)
     }
 
-    public static inferDegrees(worksheetText: string, coursesTaken: CourseTaken[]): Degrees | undefined {
+    private inferDegrees(worksheetText: string): Degrees | undefined {
         let d = new Degrees()
 
         // undergrad degrees
-        if (worksheetText.includes("Degree in Bachelor of Science in Engineering") &&
-            worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CSCI\s+`, "m")) != -1) {
+        if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CSCI\s+`, "m")) != -1) {
             d.undergrad =  "40cu CSCI"
-            // heuristic to identify folks who are actually ASCS
-            if (
-                (!coursesTaken.some(c => c.code() == "CIS 4710") && !coursesTaken.some(c => c.code() == "CIS 5710")) &&
-                // !coursesTaken.some(c => c.code() == "CIS 3800") &&
-                !coursesTaken.some(c => c.code() == "CIS 4000")
-            ) {
-                myLog("CSCI declared, but coursework is closer to ASCS so using ASCS requirements instead")
-                d.undergrad = "40cu ASCS"
-            }
         } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+ASCS\s+`, "m")) != -1) {
             d.undergrad =  "40cu ASCS"
         } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CMPE\s+`, "m")) != -1) {
@@ -2143,30 +2242,25 @@ function webMain(): void {
     $(NodeAllCourses).empty()
 
     let autoDegrees = $("#auto_degree").is(":checked")
-    let degrees = new Degrees()
     $(NodeMessages).append("<h3>Notes</h3>")
 
-    let coursesTaken: CourseTaken[] = []
     const worksheetText = $(NodeCoursesTaken).val() as string
-    if (worksheetText.includes("Degree Works Release")) {
-        const pennid = DegreeWorks.extractPennID(worksheetText)
-        if (pennid != undefined) {
-            $(NodeStudentInfo).append(`<div class="alert alert-secondary" role="alert">PennID: ${pennid}</div>`)
-        }
-        coursesTaken = DegreeWorks.extractCourses(worksheetText)
-        if (autoDegrees) {
-            const deg = DegreeWorks.inferDegrees(worksheetText, coursesTaken)
-            myAssert(deg != undefined, "could not infer DegreeWorks degree")
-            //console.log("inferred degrees as " + deg)
-            degrees = deg!
-        } else {
-            degrees.undergrad = <UndergradDegree>$("input[name='ugrad_degree']:checked").val()
-            degrees.masters = <MastersDegree>$("input[name='masters_degree']:checked").val()
-        }
-        coursesTaken = DegreeWorks.splitLabCourses(coursesTaken, degrees)
-    } else {
-        coursesTaken = UnofficialTranscript.extractCourses(worksheetText)
+    const parser = CourseParser.getParser(worksheetText)
+    const pennid = parser.extractPennID(worksheetText)
+    if (pennid != undefined) {
+        $(NodeStudentInfo).append(`<div class="alert alert-secondary" role="alert">PennID: ${pennid}</div>`)
     }
+    let degrees = new Degrees()
+    let parseResults
+    if (autoDegrees) {
+        parseResults = parser.parse(worksheetText, undefined)
+        degrees = parseResults.degrees
+    } else {
+        degrees.undergrad = <UndergradDegree>$("input[name='ugrad_degree']:checked").val()
+        degrees.masters = <MastersDegree>$("input[name='masters_degree']:checked").val()
+        parseResults = parser.parse(worksheetText, degrees)
+    }
+    const coursesTaken = parseResults.courses
 
     $(NodeMessages).append(`<div>${coursesTaken.length} courses taken</div>`)
     const allCourses = coursesTaken.slice()
@@ -2550,20 +2644,15 @@ function cliMain(): void {
 function runOneWorksheet(worksheetText: string, analysisOutput: string): void {
     const fs = require('fs');
     try {
-        let coursesTaken: CourseTaken[] = []
-        if (worksheetText.includes("Degree Works Release")) {
-            coursesTaken = DegreeWorks.extractCourses(worksheetText)
-        } else {
-            coursesTaken = UnofficialTranscript.extractCourses(worksheetText)
-        }
-
-        // infer degree
-        let degrees = DegreeWorks.inferDegrees(worksheetText, coursesTaken)
-        if (degrees == undefined) {
-            // can't infer degree, just skip it
+        const parser = CourseParser.getParser(worksheetText)
+        let result
+        try {
+            result = parser.parse(worksheetText, undefined)
+        } catch (Error) {
             return
         }
-        coursesTaken = DegreeWorks.splitLabCourses(coursesTaken, degrees)
+        const coursesTaken = result.courses
+        const degrees = result.degrees
 
         fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
             .then(response => response.text())
