@@ -48,6 +48,19 @@ const StandaloneLabCourses05CUs = [
     "MEAM 1470",
 ]
 
+// only allowed for 40cu students: https://ugrad.seas.upenn.edu/student-handbook/courses-requirements/engineering-courses/
+const EngrLinkingCourses = [
+    "MGMT 1010",
+    "MGMT 2370",
+    "FNCE 2170",
+    "MGMT 1110",
+    "OIDD 2900",
+    "FNCE 2030",
+    "FNCE 1010",
+    "ACCT 1020",
+    "STAT 4350",
+]
+
 const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060"]
 const CsciProjectElectives = [
     "NETS 2120","CIS 3410","CIS 3500",
@@ -1088,7 +1101,7 @@ class RequirementTechElectiveEngineering extends DegreeRequirement {
         return courses.slice()
             .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
-            return c.suhSaysEngr() &&
+            return (c.suhSaysEngr() || EngrLinkingCourses.includes(c.code())) &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
                 this.applyCourse(c)
