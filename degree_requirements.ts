@@ -2169,7 +2169,9 @@ function webMain(): void {
     }
 
     $(NodeMessages).append(`<div>${coursesTaken.length} courses taken</div>`)
-    const allCourses = coursesTaken.map((c: CourseTaken): string => `<div><small>${c.toString()}</small></div>`).join("")
+    const allCourses = coursesTaken.slice()
+        .sort((a,b) => a.code().localeCompare(b.code()))
+        .map((c: CourseTaken): string => `<div><small>${c.toString()}</small></div>`).join("")
     $(NodeAllCourses).append(`
 <div class="accordion" id="accordionExample">
   <div class="accordion-item">
