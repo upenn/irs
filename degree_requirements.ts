@@ -2053,8 +2053,8 @@ class Degrees {
 function snapCourseIntoPlace(course: CourseTaken, req: DegreeRequirement) {
     myAssert(req.coursesApplied.length > 0)
     if (req.coursesApplied[0] == course) {
-        // myAssert($(`#${course.uuid}`) != undefined, course.toString())
-        // myAssert($(`#${req.uuid}_snapTarget`) != undefined, req.toString())
+        myAssert($(`#${course.uuid}`) != undefined, course.toString())
+        myAssert($(`#${req.uuid}_snapTarget`) != undefined, req.toString())
         $(`#${course.uuid}`).position({
             my: "left center",
             at: "right center",
@@ -2066,7 +2066,7 @@ function snapCourseIntoPlace(course: CourseTaken, req: DegreeRequirement) {
     // NB: never more than 2 course applied to any one req
     $(`#${course.uuid}`).position({
         my: "left center",
-        at: "right+35% center",
+        at: "right center",
         of: $(`#${req.coursesApplied[0].uuid}`),
     })
 }
@@ -2426,12 +2426,13 @@ ${realCourse.code()}
                     const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
                     // console.log(`${course.code()} *over* ${req}, ${course.consumedBy?.uuid}`)
 
-                    // if req is already filled by something else, ignore this course
-                    if (req.coursesApplied.length != 0 && !req.coursesApplied.includes(course)) {
+                    // if req is already filled, ignore this course
+                    if (req.remainingCUs == 0) {
                         return
                     }
 
                     req.satisfiedBy([course])
+                    // console.log(`jld0 ${course.code()} over ${req}: ${result}`)
                     req.updateViewWeb()
                     updateGlobalReqs()
                 },
@@ -2439,10 +2440,11 @@ ${realCourse.code()}
                 out: function(event, ui) {
                     const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
                     const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    // console.log(`${course.code()} *left* ${req.uuid}`)
+                    console.log(`${course.code()} *left* ${req.uuid} ${req}`)
 
                     // update model
                     if (req.coursesApplied.includes(course)) {
+                        console.log(`unapplying ${course.code()}`)
                         req.unapplyCourse(course)
                         req.updateViewWeb(true)
                         updateGlobalReqs()
