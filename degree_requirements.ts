@@ -759,6 +759,7 @@ abstract class DegreeRequirement {
             return
         }
         this.remainingCUs += c.getCUs()
+        this.remainingCUs = Math.min(this.cus, this.remainingCUs)
         c.courseUnitsRemaining = c.getCUs()
         c.consumedBy = undefined
     }
