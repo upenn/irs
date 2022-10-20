@@ -2065,6 +2065,66 @@ function snapCourseIntoPlace(course: CourseTaken, req: DegreeRequirement) {
     })
 }
 
+function runTestInput(): void {
+    const sampleDegreeWorks = `
+Diagnostics Report
+Student\t12345678
+Degree Works Release\t5.0.4.2
+
+RA000817: MAJOR = ROBO
+Class Information   CIS  520, 522, 530, 545, 700, 7000, 7000, DATS  5990, EAS  8970, ESE  542
+Course Hide\tGrade\tCredits\tId-num\tTerm\tForce insuff\tForce fallthru\tIn-progress\tIncomplete\tPassfail\tPassed\tGrade Pts\tNumeric Grade\tGPA Grade Pts\tGPA Credits\tGrade type\tRepeat disc\tRepeat num\tRepeat policy\tReason insuff\tWITH data\tCourse title\tSS Credits\tLocation / Campus\tRec-type\tRec-seq\tError\tStatus\tEquivalence\tTransfer\tTransfer code\tTransfer type\tTransfer course\tTransfer school\tSchool / Level\tSection
+CIS 520 E\tA- \t1\t0004\t202130\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tMachine Learning\t1\tPHL \tC\t \t \tA  \t[CIS 5200]  \tC\tAC \tAC  \t \t \tPR \t001
+Attributes\tDWSISKEY=Z1644; ATTRIBUTE=ABBT; ATTRIBUTE=EMRT;
+MEAM 510 E\tA \t1\t0013\t202210\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tDesign of Mechatronic Systems\t1\tPHL \tC\t \t \tA  \t[MEAM 5100]  \tC\tAC \tAC  \t \t \tPR \t002
+Attributes\tDWSISKEY=Z1690;
+CIS 580 E\tA \t1\t0007\t202130\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tMachine Perception\t1\tPHL \tC\t \t \tA  \t[CIS 5800]  \tC\tAC \tAC  \t \t \tPR \t001
+Attributes\tDWSISKEY=Z1649; ATTRIBUTE=ALNR; ATTRIBUTE=EMRT;
+CIS 545 E\tA \t1\t0010\t202210\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tBig Data Analytics\t1\tPHL \tC\t \t \tA  \t[CIS 5450]  \tC\tAC \tAC  \t \t \tPR \t001
+Attributes\tDWSISKEY=Z1693; ATTRIBUTE=ABCB; ATTRIBUTE=AMAM; ATTRIBUTE=EMRT; ATTRIBUTE=MPAE; ATTRIBUTE=WMBS; ATTRIBUTE=WUBC; ATTRIBUTE=WUBD; ATTRIBUTE=WUBN;
+
+RA000673: MAJOR = CMPE\tClasses applied: 24\tCredits applied: 26.5
+NETS 112 E\tA \t1\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tProg Lang & Tech I\t1\tPHL \tC\t \t \tA  \t[NETS 1120]  \tC\tAC \tAC  \t \t \tUG \t002
+Attributes\tATTRIBUTE=NURS; ATTRIBUTE=UNBF; ATTRIBUTE=UNFF; ATTRIBUTE=WUNM; DWSISKEY=Z1695; ATTRIBUTE=ACGC; ATTRIBUTE=ACGL; ATTRIBUTE=ACGN; ATTRIBUTE=ALCN; ATTRIBUTE=ALNR; ATTRIBUTE=AU16; ATTRIBUTE=AUFR; ATTRIBUTE=EUMS; ATTRIBUTE=HEBF;
+NETS 212 E\tA \t1\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tProg Lang & Tech I\t1\tPHL \tC\t \t \tA  \t[NETS 2120]  \tC\tAC \tAC  \t \t \tUG \t002
+Attributes\tATTRIBUTE=NURS; ATTRIBUTE=UNBF; ATTRIBUTE=UNFF; ATTRIBUTE=WUNM; DWSISKEY=Z1695; ATTRIBUTE=ACGC; ATTRIBUTE=ACGL; ATTRIBUTE=ACGN; ATTRIBUTE=ALCN; ATTRIBUTE=ALNR; ATTRIBUTE=AU16; ATTRIBUTE=AUFR; ATTRIBUTE=EUMS; ATTRIBUTE=HEBF;
+NETS 312 E\tA \t1\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tProg Lang & Tech I\t1\tPHL \tC\t \t \tA  \t[NETS 3120]  \tC\tAC \tAC  \t \t \tUG \t002
+Attributes\tATTRIBUTE=NURS; ATTRIBUTE=UNBF; ATTRIBUTE=UNFF; ATTRIBUTE=WUNM; DWSISKEY=Z1695; ATTRIBUTE=ACGC; ATTRIBUTE=ACGL; ATTRIBUTE=ACGN; ATTRIBUTE=ALCN; ATTRIBUTE=ALNR; ATTRIBUTE=AU16; ATTRIBUTE=AUFR; ATTRIBUTE=EUMS; ATTRIBUTE=HEBF;
+DSGN 100 E\tA \t1\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tProg Lang & Tech I\t1\tPHL \tC\t \t \tA  \t[DSGN 1000]  \tC\tAC \tAC  \t \t \tUG \t002
+Attributes\tATTRIBUTE=NURS; ATTRIBUTE=UNBF; ATTRIBUTE=UNFF; ATTRIBUTE=WUNM; DWSISKEY=Z1695; ATTRIBUTE=ACGC; ATTRIBUTE=ACGL; ATTRIBUTE=ACGN; ATTRIBUTE=ALCN; ATTRIBUTE=ALNR; ATTRIBUTE=AU16; ATTRIBUTE=AUFR; ATTRIBUTE=HEBF;
+DSGN 101 E\tA \t1\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tProg Lang & Tech I\t1\tPHL \tC\t \t \tA  \t[DSGN 1001]  \tC\tAC \tAC  \t \t \tUG \t002
+Attributes\tATTRIBUTE=NURS; ATTRIBUTE=UNBF; ATTRIBUTE=UNFF; ATTRIBUTE=WUNM; DWSISKEY=Z1695; ATTRIBUTE=ACGC; ATTRIBUTE=ACGL; ATTRIBUTE=ACGN; ATTRIBUTE=ALCN; ATTRIBUTE=ALNR; ATTRIBUTE=AU16; ATTRIBUTE=AUFR; ATTRIBUTE=HEBF;
+DSGN 102 E\tA \t1\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tProg Lang & Tech I\t1\tPHL \tC\t \t \tA  \t[DSGN 1002]  \tC\tAC \tAC  \t \t \tUG \t002
+Attributes\tATTRIBUTE=NURS; ATTRIBUTE=UNBF; ATTRIBUTE=UNFF; ATTRIBUTE=WUNM; DWSISKEY=Z1695; ATTRIBUTE=ACGC; ATTRIBUTE=ACGL; ATTRIBUTE=ACGN; ATTRIBUTE=ALCN; ATTRIBUTE=ALNR; ATTRIBUTE=AU16; ATTRIBUTE=AUFR; ATTRIBUTE=HEBF;
+
+PHYS 150 E\tA \t1.5\t0011\t201930\t \t \t \t \t \t \t4\t4\t4\t1.5\tZ \t \t \t \t \t \tPrinciples I\t1.5\tPHL \tC\t \t \tA  \t[PHYS 0150]  \tC\tAC \tAC  \t \t \tUG \t003
+Attributes\tATTRIBUTE=WUNM; DWSISKEY=Z6359; ATTRIBUTE=ABBM; ATTRIBUTE=ABBN; ATTRIBUTE=AERH; ATTRIBUTE=AMOR; ATTRIBUTE=AUPW; ATTRIBUTE=AUQD; ATTRIBUTE=EUMS; ATTRIBUTE=EUNS; ATTRIBUTE=UNFF;
+ESE 112 E\tP \t1.5\t0024\t202010\t \t \t \t \tYPF\t \t0\t0\t0\t0\tZ \t \t \t \t \t \tEng Electromagnetics\t1.5\tPHL \tC\t \t \tA  \t[ESE 1120]  \tC\tAC \tAC  \t \t \tUG \t001
+Attributes\tDWSISKEY=Z3498; ATTRIBUTE=UNFF;
+CIS 191 E\tA \t0.5\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t0.5\tZ \t \t \t \t \t \tUnix/Linux Skills\t0.5\tPHL \tC\t \t \tA  \t[CIS 1910]  \tC\tAC \tAC  \t \t \tUG \t002
+Attributes\tATTRIBUTE=NURS; ATTRIBUTE=UNBF; ATTRIBUTE=UNFF; ATTRIBUTE=WUNM; DWSISKEY=Z1695; ATTRIBUTE=ACGC; ATTRIBUTE=ACGL; ATTRIBUTE=ACGN; ATTRIBUTE=ALCN; ATTRIBUTE=ALNR; ATTRIBUTE=AU16; ATTRIBUTE=AUFR; ATTRIBUTE=EUMS; ATTRIBUTE=HEBF;
+CIS 192 E\tA \t0.5\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t0.5\tZ \t \t \t \t \t \tPython\t0.5\tPHL \tC\t \t \tA  \t[CIS 1920]  \tC\tAC \tAC  \t \t \tUG \t002
+Attributes\tATTRIBUTE=NURS; ATTRIBUTE=UNBF; ATTRIBUTE=UNFF; ATTRIBUTE=WUNM; DWSISKEY=Z1695; ATTRIBUTE=ACGC; ATTRIBUTE=ACGL; ATTRIBUTE=ACGN; ATTRIBUTE=ALCN; ATTRIBUTE=ALNR; ATTRIBUTE=AU16; ATTRIBUTE=AUFR; ATTRIBUTE=EUMS; ATTRIBUTE=HEBF;
+
+EAS 203 E\tA \t1\t0081\t202130\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tEngineering Ethics\t1\tPHL \tC\t \t \tA  \t[EAS 2030]  \tC\tAC \tAC  \t \t \tUG \t001
+Attributes\tDWSISKEY=Z2247; ATTRIBUTE=APPE; ATTRIBUTE=ASTB; ATTRIBUTE=ASTI; ATTRIBUTE=EUNE; ATTRIBUTE=EUNP; ATTRIBUTE=EUSS; ATTRIBUTE=WUFG;
+WRIT 037 E\tA \t1\t0018\t202010\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tDecision Making\t1\tPHL \tC\t \t \tA  \t[WRIT 0370]  \tC\tAC \tAC  \t \t \tUG \t301
+Attributes\tDWSISKEY=Z9016; ATTRIBUTE=AUWR; ATTRIBUTE=EUSS; ATTRIBUTE=UNFF;
+PHIL 157 E\tA \t1\t0094\t202210\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tRepairing The Climate\t1\tPHL \tC\t \t \tA  \t[ENVS 1043]  \tC\tAC \tAC  \t \t \tUG \t401
+Attributes\tDWSISKEY=Z6059; ATTRIBUTE=APLS; ATTRIBUTE=AUNM; ATTRIBUTE=EUHS;
+PHIL 001 E\tB+ \t1\t0072\t202130\t \t \t \t \t \t \t3.3\t3.3\t3.3\t1\tZ \t \t \t \t \t \tIntro To Philosophy\t1\tPHL \tC\t \t \tA  \t[PHIL 1000]  \tC\tAC \tAC  \t \t \tUG \t001
+Attributes\tDWSISKEY=Z5859; ATTRIBUTE=AUHS; ATTRIBUTE=EUHS; ATTRIBUTE=NUAL; ATTRIBUTE=NUHT; ATTRIBUTE=UNFF; ATTRIBUTE=UNSA; ATTRIBUTE=WUCN; ATTRIBUTE=WUSS;
+STSC 168 E\tA \t1\t0084\t202130\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tEnvironment And Society\t1\tPHL \tC\t \t \tA  \t[STSC 1880]  \tC\tAC \tAC  \t \t \tUG \t001
+Attributes\tDWSISKEY=Z6767; ATTRIBUTE=AEHH; ATTRIBUTE=AHPE; ATTRIBUTE=AHSM; ATTRIBUTE=ASTE; ATTRIBUTE=ASTL; ATTRIBUTE=AUHS; ATTRIBUTE=EUSS; ATTRIBUTE=UNFF; ATTRIBUTE=WUFG;
+STSC 160 E\tA \t1\t0051\t202110\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tInformation Age\t1\tONL \tC\t \t \tA  \t[STSC 1600]  \tC\tAC \tAC  \t \t \tUG \t401
+Attributes\tDWSISKEY=Z6892; ATTRIBUTE=AHSM; ATTRIBUTE=AHST; ATTRIBUTE=ASTI; ATTRIBUTE=ASTL; ATTRIBUTE=AUHS; ATTRIBUTE=EUSS; ATTRIBUTE=NUHT; ATTRIBUTE=UNFF; ATTRIBUTE=WUSS;
+EAS 204 E\tA \t1\t0066\t202110\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tTech Innv&civil Discrse\t1\tONL \tC\t \t \tA  \t[EAS 2040]  \tC\tAC \tAC  \t \t \tUG \t001
+Attributes\tDWSISKEY=Z2255; ATTRIBUTE=EUTB; ATTRIBUTE=NURS; ATTRIBUTE=UNPP;
+`
+    $(NodeCoursesTaken).text(sampleDegreeWorks)
+    webMain()
+}
+
 function webMain(): void {
     // reset output
     $(".requirementsList").empty()
