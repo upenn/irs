@@ -1779,10 +1779,14 @@ class CourseTaken {
 }
 
 class CourseInputMethod {
-    public static splitLabCourses(courses: CourseTaken[]): CourseTaken[] {
+    public static splitLabCourses(courses: CourseTaken[], degrees: Degrees): CourseTaken[] {
         let labs: CourseTaken[] = []
         courses.forEach(c => {
-            if (CoursesWithLab15CUs.includes(c.code())) {
+            const nosplit =
+                (["PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) && degrees.undergrad == "40cu CMPE") ||
+                (["PHYS 0150","PHYS 0170","PHYS 0151","PHYS 0171"].includes(c.code()) && degrees.undergrad == "40cu NETS") ||
+                (["PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) && degrees.undergrad == "40cu EE")
+            if (CoursesWithLab15CUs.includes(c.code()) && !nosplit) {
                 c.setCUs(c.getCUs() - 0.5)
                 const lab = c.split(0.5, c.courseNumber + "lab")
                 labs.push(lab)
@@ -1906,7 +1910,7 @@ class DegreeWorks extends CourseInputMethod {
         // "For the Class of 2025 and earlier, if you pass Math 2410 at Penn with at least a grade of B, you may come to
         // the math office and receive retroactive credit for (and only one) Math 1400, Math 1410, or Math 2400"
 
-        return this.splitLabCourses(coursesTaken)
+        return coursesTaken
     }
 
     private static parseOneCourse(subject: string, courseNumber: string, courseInfo: string, rawAttrs: string): CourseTaken | null {
@@ -2159,6 +2163,7 @@ function webMain(): void {
             degrees.undergrad = <UndergradDegree>$("input[name='ugrad_degree']:checked").val()
             degrees.masters = <MastersDegree>$("input[name='masters_degree']:checked").val()
         }
+        coursesTaken = DegreeWorks.splitLabCourses(coursesTaken, degrees)
     } else {
         coursesTaken = UnofficialTranscript.extractCourses(worksheetText)
     }
@@ -2554,6 +2559,7 @@ function runOneWorksheet(worksheetText: string, analysisOutput: string): void {
             // can't infer degree, just skip it
             return
         }
+        coursesTaken = DegreeWorks.splitLabCourses(coursesTaken, degrees)
 
         fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
             .then(response => response.text())
