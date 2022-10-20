@@ -1476,7 +1476,7 @@ class CourseTaken {
     }
     /** make a copy of this course, but the copy has only the given number of CUs */
     public split(cus: number, courseNumber: string): CourseTaken {
-        return new CourseTaken(
+        const course = new CourseTaken(
             this.subject,
             courseNumber,
             this.title,
@@ -1485,9 +1485,15 @@ class CourseTaken {
             this.grading,
             this.letterGrade,
             this.term,
-            this.allAttributes.join(";"),
+            "",
             this.completed
         )
+        this.attributes.forEach(a => {
+            if (!course.attributes.includes(a)) {
+                course.attributes.push(a)
+            }
+        })
+        return course
     }
     constructor(subject: string,
                 courseNumber: string,
@@ -1962,7 +1968,7 @@ class DegreeWorks extends CourseInputMethod {
 
         // undergrad degrees
         if (worksheetText.includes("Degree in Bachelor of Science in Engineering") &&
-            worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CSCI\s+`)) != -1) {
+            worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CSCI\s+`, "m")) != -1) {
             d.undergrad =  "40cu CSCI"
             // heuristic to identify folks who are actually ASCS
             if (
@@ -1973,33 +1979,28 @@ class DegreeWorks extends CourseInputMethod {
                 myLog("CSCI declared, but coursework is closer to ASCS so using ASCS requirements instead")
                 d.undergrad = "40cu ASCS"
             }
-
-        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ASCS\s+`)) != -1) {
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+ASCS\s+`, "m")) != -1) {
             d.undergrad =  "40cu ASCS"
-
-        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CMPE\s+`)) != -1) {
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CMPE\s+`, "m")) != -1) {
             d.undergrad =  "40cu CMPE"
-        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+NETS\s+`)) != -1) {
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+NETS\s+`, "m")) != -1) {
             d.undergrad =  "40cu NETS"
-        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+DMD\s+`)) != -1) {
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+DMD\s+`, "m")) != -1) {
             d.undergrad =  "40cu DMD"
-        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+EE\s+`)) != -1) {
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+EE\s+`, "m")) != -1) {
             d.undergrad =  "40cu EE"
-        } else if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+SSE\s+`)) != -1) {
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+SSE\s+`, "m")) != -1) {
             d.undergrad =  "40cu SSE"
         }
 
         // masters degrees
-        if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CIS\s+`)) != -1) {
+        if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CIS\s+`, "m")) != -1) {
             d.masters = "CIS-MSE"
-        }
-        if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+ROBO\s+`)) != -1) {
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+ROBO\s+`, "m")) != -1) {
             d.masters = "ROBO"
-        }
-        if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+DATS\s+`)) != -1) {
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+DATS\s+`, "m")) != -1) {
             d.masters = "DATS"
-        }
-        if (worksheetText.search(new RegExp(String.raw`RA\d+:\s+MAJOR\s+=\s+CGGT\s+`)) != -1) {
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CGGT\s+`, "m")) != -1) {
             d.masters = "CGGT"
         }
 
@@ -2090,7 +2091,7 @@ function webMain(): void {
         if (autoDegrees) {
             const deg = DegreeWorks.inferDegrees(worksheetText, coursesTaken)
             myAssert(deg != undefined, "could not infer DegreeWorks degree")
-            // console.log("inferred degrees as " + deg)
+            //console.log("inferred degrees as " + deg)
             degrees = deg!
         } else {
             degrees.undergrad = <UndergradDegree>$("input[name='ugrad_degree']:checked").val()
@@ -2700,7 +2701,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
                 new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing, Ethics, SSH Depth are [40,42]
+                // NB: Writing, SSH Depth, Ethics are [40,42]
 
                 new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
@@ -3183,7 +3184,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
             }
         }
         { // SS/H Depth requirement
-            const depthReq = new RequirementSshDepth(42).withNoConsume()
+            const depthReq = new RequirementSshDepth(41).withNoConsume()
             if (depthReq.satisfiedBy(sshCourses) != undefined) {
                 reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, depthReq.coursesApplied])
             } else {
@@ -3191,7 +3192,7 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
             }
         }
         { // ethics requirement: NB doesn't have to come from SSH block!
-            const ethicsReq = new RequirementNamedCourses(41, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
+            const ethicsReq = new RequirementNamedCourses(42, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
             const matched = ethicsReq.satisfiedBy(coursesTaken)
             if (matched == undefined) {
                 reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Unsatisfied, []])
