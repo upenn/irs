@@ -2049,6 +2049,8 @@ class Degrees {
 function snapCourseIntoPlace(course: CourseTaken, req: DegreeRequirement) {
     myAssert(req.coursesApplied.length > 0)
     if (req.coursesApplied[0] == course) {
+        // myAssert($(`#${course.uuid}`) != undefined, course.toString())
+        // myAssert($(`#${req.uuid}_snapTarget`) != undefined, req.toString())
         $(`#${course.uuid}`).position({
             my: "left center",
             at: "right center",
@@ -2101,10 +2103,10 @@ PHYS 150 E\tA \t1.5\t0011\t201930\t \t \t \t \t \t \t4\t4\t4\t1.5\tZ \t \t \t \t
 Attributes\tATTRIBUTE=WUNM; DWSISKEY=Z6359; ATTRIBUTE=ABBM; ATTRIBUTE=ABBN; ATTRIBUTE=AERH; ATTRIBUTE=AMOR; ATTRIBUTE=AUPW; ATTRIBUTE=AUQD; ATTRIBUTE=EUMS; ATTRIBUTE=EUNS; ATTRIBUTE=UNFF;
 ESE 112 E\tP \t1.5\t0024\t202010\t \t \t \t \tYPF\t \t0\t0\t0\t0\tZ \t \t \t \t \t \tEng Electromagnetics\t1.5\tPHL \tC\t \t \tA  \t[ESE 1120]  \tC\tAC \tAC  \t \t \tUG \t001
 Attributes\tDWSISKEY=Z3498; ATTRIBUTE=UNFF;
-CIS 191 E\tA \t0.5\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t0.5\tZ \t \t \t \t \t \tUnix/Linux Skills\t0.5\tPHL \tC\t \t \tA  \t[CIS 1910]  \tC\tAC \tAC  \t \t \tUG \t002
-Attributes\tATTRIBUTE=NURS; ATTRIBUTE=UNBF; ATTRIBUTE=UNFF; ATTRIBUTE=WUNM; DWSISKEY=Z1695; ATTRIBUTE=ACGC; ATTRIBUTE=ACGL; ATTRIBUTE=ACGN; ATTRIBUTE=ALCN; ATTRIBUTE=ALNR; ATTRIBUTE=AU16; ATTRIBUTE=AUFR; ATTRIBUTE=EUMS; ATTRIBUTE=HEBF;
-CIS 192 E\tA \t0.5\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t0.5\tZ \t \t \t \t \t \tPython\t0.5\tPHL \tC\t \t \tA  \t[CIS 1920]  \tC\tAC \tAC  \t \t \tUG \t002
-Attributes\tATTRIBUTE=NURS; ATTRIBUTE=UNBF; ATTRIBUTE=UNFF; ATTRIBUTE=WUNM; DWSISKEY=Z1695; ATTRIBUTE=ACGC; ATTRIBUTE=ACGL; ATTRIBUTE=ACGN; ATTRIBUTE=ALCN; ATTRIBUTE=ALNR; ATTRIBUTE=AU16; ATTRIBUTE=AUFR; ATTRIBUTE=EUMS; ATTRIBUTE=HEBF;
+CHEM 1101 E\tA \t0.5\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t0.5\tZ \t \t \t \t \t \tUnix/Linux Skills\t0.5\tPHL \tC\t \t \tA  \t[CHEM 1101]  \tC\tAC \tAC  \t \t \tUG \t002
+Attributes\tATTRIBUTE=EUNS;
+CHEM 1102 E\tA \t0.5\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t0.5\tZ \t \t \t \t \t \tPython\t0.5\tPHL \tC\t \t \tA  \t[CHEM 1102]  \tC\tAC \tAC  \t \t \tUG \t002
+Attributes\tATTRIBUTE=EUNS;
 
 EAS 203 E\tA \t1\t0081\t202130\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tEngineering Ethics\t1\tPHL \tC\t \t \tA  \t[EAS 2030]  \tC\tAC \tAC  \t \t \tUG \t001
 Attributes\tDWSISKEY=Z2247; ATTRIBUTE=APPE; ATTRIBUTE=ASTB; ATTRIBUTE=ASTI; ATTRIBUTE=EUNE; ATTRIBUTE=EUNP; ATTRIBUTE=EUSS; ATTRIBUTE=WUFG;
@@ -2213,6 +2215,17 @@ function webMain(): void {
             const ugradDegreeReqs = result.requirementOutcomes.filter(ro => ro.ugrad).map(ro => ro.degreeReq)
             const mastersDegreeReqs = result.requirementOutcomes.filter(ro => !ro.ugrad).map(ro => ro.degreeReq)
 
+            let resizeTimer: NodeJS.Timeout;
+            $(window).on("resize",function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    allDegreeReqs.forEach(r => {
+                        if (r.doesntConsume) { return }
+                        r.coursesApplied.forEach(c => snapCourseIntoPlace(c, r))
+                    })
+                }, 10);
+            });
+
             // display requirement outcomes, across 1-3 columns
             $(NodeDoubleColumn).removeClass("col-xl-8")
                 .addClass("col-xl-12")
@@ -2264,12 +2277,11 @@ function webMain(): void {
                     }
                 },
                 stop: function(e, ui) {
-                    const course: CourseTaken = $(this).data(DraggableDataGetCourseTaken)
-                    if (course.consumedBy != undefined) {
-                        const req: DegreeRequirement = course.consumedBy
-                        // snap course into place, since we don't always get a drop event
-                        snapCourseIntoPlace(course, req)
-                    }
+                    // re-snap all courses in case a req changed height
+                    allDegreeReqs.forEach(r => {
+                        if (r.doesntConsume) { return }
+                        r.coursesApplied.forEach(c => snapCourseIntoPlace(c, r))
+                    })
                 }
             });
 
