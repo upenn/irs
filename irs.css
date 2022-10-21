@@ -96,3 +96,9 @@ a .tooltip {
 .myTooltip:hover .myTooltipText {
     visibility: visible;
 }
+
+.forkme {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+}

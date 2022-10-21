@@ -23,14 +23,17 @@
                 } else {
                     $('[name="ugrad_degree"]').attr("disabled", false)
                     $('[name="masters_degree"]').attr("disabled", false)
-                    if ($('[name="ugrad_degree"]:checked').length == 0) {
-                        $("#no_ugrad").attr("checked", true)
-                    }
-                    if ($('[name="masters_degree"]:checked').length == 0) {
-                        $("#no_masters").attr("checked", true)
-                    }
                 }
             })
+
+            // setup copy/paste symbols
+            if (navigator.userAgent.toLowerCase().includes("mac")) {
+                $(".keys_select_all").text("(⌘-A)")
+                $(".keys_copy").text("(⌘-C)")
+            } else {
+                $(".keys_select_all").text("(Ctrl-A)")
+                $(".keys_copy").text("(Ctrl-C)")
+            }
 
             // run test input if requested
             const searchParams = new URLSearchParams(window.location.search)
@@ -45,44 +48,102 @@
 </head>
 
 <body>
-<div class="container" style="max-width: 2000px">
-    <h4>Institutional Requirements Status</h4>
+<!-- Thanks to https://github.blog/2008-12-19-github-ribbons/ -->
+<a href="https://github.com/upenn/irs">
+    <img loading="lazy" width="149" height="149"
+         src="forkme_right_green_007200.png"
+         class="forkme"
+         alt="Fork me on GitHub" data-recalc-dims="1"></a>
 
-    <div class="accordion my-3" id="accordionExampleHowto">
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingTwoHowto">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwoHowto" aria-expanded="false" aria-controls="collapseTwoHowto">
-                    Usage Instructions
-                </button>
-            </h2>
-            <div id="collapseTwoHowto" class="accordion-collapse collapse" aria-labelledby="headingTwoHowto" data-bs-parent="#accordionExampleHowto">
-                <div class="accordion-body">
-                    This page uses information from DegreeWorks. Everything runs in the browser; no student information is stored locally or remotely.
-                    <ol>
-                        <li>You must be on-campus or on the VPN to access DegreeWorks.</li>
-                        <li><a href="https://degreeworks-prod-j.isc-seo.upenn.edu:9904/worksheets">Visit DegreeWorks</a> and lookup a student by name or PennID</li>
-                        <li>
-                            Click the <b>Process</b> button to ensure the degree audit uses the most-recent courses and
-                            degree requirements. Then, click the <b>Diagnostics</b> link to open the <b>Diagnostics Report</b>
-                            page.<br/>
-                            <img src="degreeworks.png">
-                        </li>
-                        <li>On the <b>Diagnostics Report</b> page, select all then copy (Ctrl-A, Ctrl-C) the contents
-                            into the textbox below.</li>
-                        <li>For Accelerated Masters students, you should copy+paste their Master's Diagnostics Report
-                            <i>as well as</i> their undergrad Diagnostics Report (the order doesn't matter).
-                            <ul>
-                                <li>Currently (as of September 2022), graduate courses taken in Fall 2022 appear only on
-                                    the Master's degree worksheet, even though the student may intend to use them toward
-                                    undergrad degree requirements.
+<div class="container" style="max-width: 85%">
+    <h4 class="pt-5">Institutional Requirements Status</h4>
+    <p>
+        This website provides various degree worksheets, to answer questions like "what courses do I have left to graduate?"
+    </p>
+    <p>
+        Everything runs in the browser; no information is stored locally or remotely. <b>Once you leave this page, your
+        information is lost.</b> You can save the page as a PDF (including backgrounds is recommended) for your records.
+    </p>
+    <p>
+        This code is open source!
+        Please report issues (and submit pull requests!) on <a href="https://github.com/upenn/irs/issues">Github</a>.
+        The code is written in Typescript.
+    </p>
+
+    <div class="row">
+        <div class="col-10">
+            <div class="accordion my-3" id="accordionExampleStudentHowto">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwoStudentHowto">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwoStudentHowto" aria-expanded="false" aria-controls="collapseTwoStudentHowto">
+                            Student usage instructions
+                        </button>
+                    </h2>
+                    <div id="collapseTwoStudentHowto" class="accordion-collapse collapse" aria-labelledby="headingTwoStudentHowto" data-bs-parent="#accordionExampleStudentHowto">
+                        <div class="accordion-body">
+                            This page uses information from DegreeWorks.
+                            <ol>
+                                <li>You must be on-campus or on the <a href="https://www.isc.upenn.edu/how-to/university-vpn-getting-started-guide">Penn VPN</a> to access DegreeWorks.</li>
+                                <li><a href="https://degreeworks-prod-j.isc-seo.upenn.edu:9904/worksheets">Visit DegreeWorks</a></li>
+                                <li>
+                                    Click the three-dot menu and select <b>Class History</b> to pull up your list of courses<br/>
+                                    <img width="600" src="degreeworks-student.png">
                                 </li>
-                            </ul>
-                        </li>
-                        <li>Click the blue <b>apply courses to requirements</b> button</li>
-                        <li>Report issues to <a href="mailto:devietti@cis.upenn.edu">devietti@cis.upenn.edu</a>,
-                            happy to add folks to the <a href="https://github.com/upenn/irs">private GitHub repo</a> as well.
-                            The code is written in TypeScript.</li>
-                    </ol>
+                                <li>Select all <span class="keys_select_all"></span> then copy <span class="keys_copy"></span> the contents into the textbox below.</li>
+                                <li>If you are an Accelerated Masters student, you should copy+paste your Master's Class History
+                                    <b>as well as</b> your undergrad Class History (the order doesn't matter).
+                                    Use the Degree drop-down to switch between degrees.
+                                    <ul>
+                                        <li>Currently (as of September 2022), graduate courses taken in Fall 2022 appear only on
+                                            the Master's transcript/worksheet. To get the full list of courses you've taken, copy+paste
+                                            <b>both</b> Class Histories.
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li>Click the blue <b>apply courses to requirements</b> button</li>
+                            </ol>
+                            You can plan future courses by adding them at the bottom of the textbox. The format is simple:
+                            the <code>course subject</code>, <code>number</code>, <code>title</code>, <code>grade</code> and <code>CUs</code> on one line, like:
+                            <pre>PHYS 0150 Principles I A 1.5</pre>
+                            3-digit course numbers will be translated to 4-digit ones. If you use <code>NA</code> as the grade, the course will appear darker like other in-progress courses.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion my-3" id="accordionExampleFacultyHowto">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwoFacultyHowto">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwoFacultyHowto" aria-expanded="false" aria-controls="collapseTwoFacultyHowto">
+                            Faculty usage instructions
+                        </button>
+                    </h2>
+                    <div id="collapseTwoFacultyHowto" class="accordion-collapse collapse" aria-labelledby="headingTwoFacultyHowto" data-bs-parent="#accordionExampleFacultyHowto">
+                        <div class="accordion-body">
+                            This page uses information from DegreeWorks.
+                            <ol>
+                                <li>You must be on-campus or on the <a href="https://www.isc.upenn.edu/how-to/university-vpn-getting-started-guide">Penn VPN</a> to access DegreeWorks.</li>
+                                <li><a href="https://degreeworks-prod-j.isc-seo.upenn.edu:9904/worksheets">Visit DegreeWorks</a> and lookup a student by name or PennID</li>
+                                <li>
+                                    Click the <b>Process</b> button to ensure the degree audit uses the most-recent courses and
+                                    degree requirements. Then, click the <b>Diagnostics</b> link to open the <b>Diagnostics Report</b>
+                                    page.<br/>
+                                    <img width="600" src="degreeworks-faculty.png">
+                                </li>
+                                <li>On the <b>Diagnostics Report</b> page, select all <span class="keys_select_all"></span> then copy <span class="keys_copy"></span> the contents
+                                    into the textbox below.</li>
+                                <li>For Accelerated Masters students, you should copy+paste their Master's Diagnostics Report
+                                    <b>as well as</b> their undergrad Diagnostics Report (the order doesn't matter).
+                                    <ul>
+                                        <li>Currently (as of September 2022), graduate courses taken in Fall 2022 appear only on
+                                            the Master's degree worksheet, even though the student may intend to use them toward
+                                            undergrad degree requirements.
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li>Click the blue <b>apply courses to requirements</b> button</li>
+                            </ol>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -102,7 +163,7 @@
                 <div>
                     <b class="py-2">40cu Undergrad degree:</b>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" id="no_ugrad" name="ugrad_degree" value="none">
+                        <input class="form-check-input" type="radio" id="no_ugrad" name="ugrad_degree" value="none" checked>
                         <label class="form-check-label" for="no_ugrad">None</label>
                     </div>
                     <div class="form-check form-check-inline">
@@ -141,7 +202,7 @@
                 <div>
                     <b>Masters degree:</b>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" id="no_masters" name="masters_degree" value="none">
+                        <input class="form-check-input" type="radio" id="no_masters" name="masters_degree" value="none" checked>
                         <label class="form-check-label" for="no_masters">None</label>
                     </div>
                     <div class="form-check form-check-inline">

@@ -1980,7 +1980,7 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         const response = await fetch(window.location.origin + "/3d_to_4d_course_translation.json")
         const _324 = <_3digitTo4DigitMap>await response.json()
 
-        const coursePattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})\s+(?<title>.*?)\s+(?<grade>A\+|A|A-|B\+|B|B-|C\+|C|C-|D\+|D|F|P|TR|GR|NR|I|NA)\s+(?<cus>0\.5|1\.5|1|2)`)
+        const coursePattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})\s+(?<title>.*?)\s+(?<grade>A\+|A|A-|B\+|B|B-|C\+|C|C-|D\+|D|F|P|TR|GR|NR|I|NA)\s+(?<cus>0?\.5|1\.5|1|2)`)
         const termPattern = new RegExp(String.raw`(?<season>Spring|Summer|Fall) (?<year>\d{4})`)
 
         const courseText = text.substring(text.indexOf("Courses Completed"))
@@ -2446,7 +2446,7 @@ async function webMain(): Promise<void> {
     const result = run(telist, degrees, coursesTaken)
     setRemainingCUs(result.cusRemaining)
 
-    if (IncorrectCMAttributes.size > 0) {
+    if (IncorrectCMAttributes.size > 0 && parser instanceof DegreeWorksDiagnosticsReportParser) {
         let wrongAttrsMsg = `<div>found ${IncorrectCMAttributes.size} incorrect/missing attributes in CM:<ul>`
         wrongAttrsMsg += [...IncorrectCMAttributes.keys()]
             .map((i: string): string => { return `<li>${i}</li>`})
