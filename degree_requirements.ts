@@ -1756,7 +1756,7 @@ class CourseTaken {
             "CIS 1050", "CIS 1070", "CIS 1250", "CIS 1600", "CIS 2610", "CIS 4230", "CIS 5230", "CIS 7980",
             "ESE 3010", "ESE 4020",
             // IPD courses cross listed with ARCH, EAS or FNAR do not count as Engineering
-            // TODO: look up IPD cross-lists automatically instead
+            // TODO: these IPD cross-lists are hard-code, look them up automatically instead
             "IPD 5090", "IPD 5210", "IPD 5270", "IPD 5280", "IPD 5440", "IPD 5450", "IPD 5720",
             "MEAM 1100", "MEAM 1470",
             "MSE 2210",
@@ -1902,7 +1902,18 @@ abstract class CourseParser {
     }
 
     abstract extractPennID(worksheetText: string): string | undefined
-    abstract parse(text: string, degrees: Degrees | undefined): CourseParserResult
+    async parse(text: string, degrees: Degrees | undefined): Promise<CourseParserResult> {
+        throw new Error("unreachable")
+    }
+}
+
+interface _4DigitCourse {
+    _4d: string
+    title: string
+    title_3d?: string
+}
+interface _3digitTo4DigitMap {
+    [index: string]: _4DigitCourse
 }
 
 class DegreeWorksClassHistoryParser extends CourseParser {
@@ -1954,13 +1965,16 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         return deg
     }
 
-    parse(text: string, degrees: Degrees | undefined): CourseParserResult {
+    async parse(text: string, degrees: Degrees | undefined): Promise<CourseParserResult> {
         const result = new CourseParserResult()
         if (degrees != undefined) {
             result.degrees = degrees
         } else {
             result.degrees = this.parseDegrees(text)
         }
+
+        const response = await fetch(window.location.origin + "/3d_to_4d_course_translation.json")
+        const _324 = <_3digitTo4DigitMap>await response.json()
 
         const coursePattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})\s+(?<title>.*?)\s+(?<grade>A\+|A|A-|B\+|B|B-|C\+|C|C-|D\+|D|F|P|TR|GR|NR|I|NA)\s+(?<cus>0\.5|1\.5|1|2)`)
         const termPattern = new RegExp(String.raw`(?<season>Spring|Summer|Fall) (?<year>\d{4})`)
@@ -1989,9 +2003,18 @@ class DegreeWorksClassHistoryParser extends CourseParser {
             }
             hits = coursePattern.exec(line)
             if (hits != null) {
-                let c = this.parseOneCourse(
-                    hits.groups!["subject"],
-                    hits.groups!["number"],
+                let subject = hits.groups!["subject"]
+                let number = hits.groups!["number"]
+                const _3dCode = `${subject} ${number}`
+                if (number.length == 3 && _324.hasOwnProperty(_3dCode)) {
+                    const _4dInfo = _324[_3dCode]
+                    subject = _4dInfo._4d.split(" ")[0]
+                    number = _4dInfo._4d.split(" ")[1]
+                }
+
+                const c = this.parseOneCourse(
+                    subject,
+                    number,
                     hits.groups!["title"],
                     hits.groups!["cus"],
                     hits.groups!["grade"],
@@ -2007,8 +2030,18 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         return result
     }
 
-    private parseOneCourse(subject: string, number: string, title:string, cus: string, grade:string, term:number): CourseTaken {
-        const gradeType = grade == "P" ? GradeType.PassFail : GradeType.ForCredit
+    private parseOneCourse(subject: string, number: string, title:string, cus: string, grade:string, term:number): CourseTaken | null {
+        let gradeType = grade == "P" ? GradeType.PassFail : GradeType.ForCredit
+        if (CovidTerms.includes(term) && gradeType == GradeType.PassFail) {
+            gradeType = GradeType.ForCredit
+        }
+
+        const inProgress = grade == "NA"
+        if (!inProgress && !CompletedGrades.includes(grade)) {
+            myLog(`Ignoring failed/incomplete course ${subject} ${number} from ${term} with grade of ${grade}`)
+            return null
+        }
+
         return new CourseTaken(
             subject,
             number,
@@ -2019,7 +2052,7 @@ class DegreeWorksClassHistoryParser extends CourseParser {
             grade,
             term,
             "",
-            grade != "IN PROGRESS")
+            !inProgress)
     }
 }
 
@@ -2035,7 +2068,7 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
         return undefined
     }
 
-    public parse(text: string, degrees: Degrees | undefined): CourseParserResult {
+    public async parse(text: string, degrees: Degrees | undefined): Promise<CourseParserResult> {
         const result = new CourseParserResult()
         result.courses = this.extractCourses(text)
         if (degrees != undefined) {
@@ -2107,9 +2140,6 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
         // const numericGrade = parseFloat(parts[12])
         const title = parts[21].trim()
 
-        const _4d = parts[28]
-            .replace("[", "")
-            .replace("]","").trim()
         if (CovidTerms.includes(term) && gradingType == GradeType.PassFail) {
             gradingType = GradeType.ForCredit
         }
@@ -2119,6 +2149,9 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
             return null
         }
 
+        const _4d = parts[28]
+            .replace("[", "")
+            .replace("]","").trim()
         if (_4d != "") {
             // student took 3d course, DW mapped to a 4d course
             const _4dparts = _4d.split(" ")
@@ -2338,7 +2371,7 @@ EAS 204 Tech Innv&civil Discrse NA 1
     webMain()
 }
 
-function webMain(): void {
+async function webMain(): Promise<void> {
     // reset output
     $(".requirementsList").empty()
     $(NodeRemainingCUs).empty()
@@ -2361,12 +2394,12 @@ function webMain(): void {
     let degrees = new Degrees()
     let parseResults
     if (autoDegrees) {
-        parseResults = parser.parse(worksheetText, undefined)
+        parseResults = await parser.parse(worksheetText, undefined)
         degrees = parseResults.degrees
     } else {
         degrees.undergrad = <UndergradDegree>$("input[name='ugrad_degree']:checked").val()
         degrees.masters = <MastersDegree>$("input[name='masters_degree']:checked").val()
-        parseResults = parser.parse(worksheetText, degrees)
+        parseResults = await parser.parse(worksheetText, degrees)
     }
     const coursesTaken = parseResults.courses
 
@@ -2391,205 +2424,204 @@ function webMain(): void {
 </div>`)
 
     // download the latest Technical Elective list
-    fetch(window.location.origin + "/37cu_csci_tech_elective_list.json")
-        .then(response => response.text())
-        .then(json => {
-            const telist = JSON.parse(json);
-            const result = run(telist, degrees, coursesTaken)
-            setRemainingCUs(result.cusRemaining)
+    const response = await fetch(window.location.origin + "/37cu_csci_tech_elective_list.json")
+    const telist = await response.json()
 
-            if (IncorrectCMAttributes.size > 0) {
-                let wrongAttrsMsg = `<div>found ${IncorrectCMAttributes.size} incorrect/missing attributes in CM:<ul>`
-                wrongAttrsMsg += [...IncorrectCMAttributes.keys()]
-                    .map((i: string): string => { return `<li>${i}</li>`})
-                    .join("")
-                $(NodeMessages).append(wrongAttrsMsg + "</ul></div>")
-            }
+    const result = run(telist, degrees, coursesTaken)
+    setRemainingCUs(result.cusRemaining)
 
-            if (result.unconsumedCourses.length > 0) {
-                $(NodeUnusedCoursesHeader).append(`<hr/><h3>Unused Courses</h3>`)
-                result.unconsumedCourses.forEach(c => {
-                    const completed = c.completed ? "courseCompleted" : "courseInProgress"
-                    if (c.courseUnitsRemaining == c.getCUs()) {
-                        $(NodeUnusedCoursesHeader).append(`<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`)
-                    } else {
-                        $(NodeUnusedCoursesList).append(`<span class="course ${completed}" id="${c.uuid}">${c.courseUnitsRemaining} CUs unused from ${c}</span>`)
-                    }
-                })
+    if (IncorrectCMAttributes.size > 0) {
+        let wrongAttrsMsg = `<div>found ${IncorrectCMAttributes.size} incorrect/missing attributes in CM:<ul>`
+        wrongAttrsMsg += [...IncorrectCMAttributes.keys()]
+            .map((i: string): string => { return `<li>${i}</li>`})
+            .join("")
+        $(NodeMessages).append(wrongAttrsMsg + "</ul></div>")
+    }
+
+    if (result.unconsumedCourses.length > 0) {
+        $(NodeUnusedCoursesHeader).append(`<hr/><h3>Unused Courses</h3>`)
+        result.unconsumedCourses.forEach(c => {
+            const completed = c.completed ? "courseCompleted" : "courseInProgress"
+            if (c.courseUnitsRemaining == c.getCUs()) {
+                $(NodeUnusedCoursesHeader).append(`<span class="course ${completed}" id="${c.uuid}">${c.code()}</span>`)
             } else {
-                $(NodeMessages).append("<div>all courses applied to degree requirements</div>")
+                $(NodeUnusedCoursesList).append(`<span class="course ${completed}" id="${c.uuid}">${c.courseUnitsRemaining} CUs unused from ${c}</span>`)
             }
+        })
+    } else {
+        $(NodeMessages).append("<div>all courses applied to degree requirements</div>")
+    }
 
-            const allDegreeReqs = result.requirementOutcomes.map(ro => ro.degreeReq)
-            const ugradDegreeReqs = result.requirementOutcomes.filter(ro => ro.ugrad).map(ro => ro.degreeReq)
-            const mastersDegreeReqs = result.requirementOutcomes.filter(ro => !ro.ugrad).map(ro => ro.degreeReq)
+    const allDegreeReqs = result.requirementOutcomes.map(ro => ro.degreeReq)
+    const ugradDegreeReqs = result.requirementOutcomes.filter(ro => ro.ugrad).map(ro => ro.degreeReq)
+    const mastersDegreeReqs = result.requirementOutcomes.filter(ro => !ro.ugrad).map(ro => ro.degreeReq)
 
-            let resizeTimer: NodeJS.Timeout;
-            $(window).on("resize",function() {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(function() {
-                    allDegreeReqs.forEach(r => {
-                        if (r.doesntConsume) { return }
-                        r.coursesApplied.forEach(c => snapCourseIntoPlace(c, r))
-                    })
-                }, 10);
-            });
+    let resizeTimer: NodeJS.Timeout;
+    $(window).on("resize",function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            allDegreeReqs.forEach(r => {
+                if (r.doesntConsume) { return }
+                r.coursesApplied.forEach(c => snapCourseIntoPlace(c, r))
+            })
+        }, 10);
+    });
 
-            // display requirement outcomes, across 1-3 columns
-            $(NodeDoubleColumn).removeClass("col-xl-8")
-                .addClass("col-xl-12")
-            if (result.requirementOutcomes.some(ro => ro.ugrad)) {
-                $(NodeColumn1Header).append(`<h3>${degrees.undergrad} Degree Requirements</h3>`)
-                renderRequirementOutcomesWeb(
-                    result.requirementOutcomes.filter(ro => ro.ugrad),
-                    NodeColumn1Reqs,
-                    NodeColumn2Reqs)
-                if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
-                    $(NodeDoubleColumn).removeClass("col-xl-12")
-                        .addClass("col-xl-8")
-                    $(NodeColumn3Header).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
-                    renderRequirementOutcomesWeb(
-                        result.requirementOutcomes.filter(ro => !ro.ugrad),
-                        NodeColumn3Reqs,
-                        undefined)
-                }
-            } else if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
-                // master's degree only
-                $(NodeColumn1Header).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
-                renderRequirementOutcomesWeb(
-                    result.requirementOutcomes.filter(ro => !ro.ugrad),
-                    NodeColumn1Reqs,
-                    undefined)
+    // display requirement outcomes, across 1-3 columns
+    $(NodeDoubleColumn).removeClass("col-xl-8")
+        .addClass("col-xl-12")
+    if (result.requirementOutcomes.some(ro => ro.ugrad)) {
+        $(NodeColumn1Header).append(`<h3>${degrees.undergrad} Degree Requirements</h3>`)
+        renderRequirementOutcomesWeb(
+            result.requirementOutcomes.filter(ro => ro.ugrad),
+            NodeColumn1Reqs,
+            NodeColumn2Reqs)
+        if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
+            $(NodeDoubleColumn).removeClass("col-xl-12")
+                .addClass("col-xl-8")
+            $(NodeColumn3Header).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
+            renderRequirementOutcomesWeb(
+                result.requirementOutcomes.filter(ro => !ro.ugrad),
+                NodeColumn3Reqs,
+                undefined)
+        }
+    } else if (result.requirementOutcomes.some(ro => !ro.ugrad)) {
+        // master's degree only
+        $(NodeColumn1Header).append(`<h3>${degrees.masters} Degree Requirements</h3>`)
+        renderRequirementOutcomesWeb(
+            result.requirementOutcomes.filter(ro => !ro.ugrad),
+            NodeColumn1Reqs,
+            undefined)
+    }
+
+    // console.log("settting up draggables and droppables")
+
+    const doubleCountedCourses: CourseTaken[] = []
+
+    $(".course").delay(100).draggable({
+        cursor: "move",
+        scroll: true,
+        stack: ".course", // make the currently-selected course appear above all others
+        // runs once when the course is created, binding a CourseTaken object to its HTML element
+        create: function(e, _) {
+            const ct = coursesTaken.find(c => c.uuid == e.target.id)!
+            $(this).data(DraggableDataGetCourseTaken, ct)
+        },
+        // when a course is first picked up for dragging
+        start: function(e, ui) {
+            e.stopPropagation(); // magic to get very first drop() event to fire
+            const course: CourseTaken = $(this).data(DraggableDataGetCourseTaken)
+            // console.log(`start dragging ${course}`)
+            if (course.consumedBy != undefined) {
+                $(this).data(DraggableOriginalRequirement, course.consumedBy!)
+                // console.log(`you picked up ${course.code()} from ${course.consumedBy!} ugrad:${ugradDegreeReqs.includes(course.consumedBy!)}`)
             }
+        },
+        stop: function(e, ui) {
+            // re-snap all courses in case a req changed height
+            allDegreeReqs.forEach(r => {
+                if (r.doesntConsume) { return }
+                r.coursesApplied.forEach(c => snapCourseIntoPlace(c, r))
+            })
+        }
+    });
 
-            // console.log("settting up draggables and droppables")
+    function setDoubleCount() {
+        if (mastersDegreeReqs.length == 0 || ugradDegreeReqs.length == 0) {
+            return
+        }
+        const dcc = doubleCountedCourses.map(c => c.code()).join(", ")
+        const dcAvail = 3 - doubleCountedCourses.length
+        $(NodeDoubleCounts).empty()
+        if (doubleCountedCourses.length == 0) {
+            $(NodeDoubleCounts).append(`<div class="alert alert-secondary" role="alert">Not using any of ${dcAvail} double-counts</div>`)
+        } else {
+            $(NodeDoubleCounts).append(`<div class="alert alert-success" role="alert">Double-counting ${dcc} (${dcAvail} more available)</div>`)
+        }
+    }
 
-            const doubleCountedCourses: CourseTaken[] = []
+    setDoubleCount()
 
-            $(".course").delay(100).draggable({
-                cursor: "move",
-                scroll: true,
-                stack: ".course", // make the currently-selected course appear above all others
-                // runs once when the course is created, binding a CourseTaken object to its HTML element
-                create: function(e, _) {
-                    const ct = coursesTaken.find(c => c.uuid == e.target.id)!
-                    $(this).data(DraggableDataGetCourseTaken, ct)
-                },
-                // when a course is first picked up for dragging
-                start: function(e, ui) {
-                    e.stopPropagation(); // magic to get very first drop() event to fire
-                    const course: CourseTaken = $(this).data(DraggableDataGetCourseTaken)
-                    // console.log(`start dragging ${course}`)
-                    if (course.consumedBy != undefined) {
-                        $(this).data(DraggableOriginalRequirement, course.consumedBy!)
-                        // console.log(`you picked up ${course.code()} from ${course.consumedBy!} ugrad:${ugradDegreeReqs.includes(course.consumedBy!)}`)
-                    }
-                },
-                stop: function(e, ui) {
-                    // re-snap all courses in case a req changed height
-                    allDegreeReqs.forEach(r => {
-                        if (r.doesntConsume) { return }
-                        r.coursesApplied.forEach(c => snapCourseIntoPlace(c, r))
-                    })
-                }
-            });
+    // update writing and SSH Depth requirements which are "global", i.e., they interact with other reqs
+    const updateGlobalReqs = function() {
+        setRemainingCUs(countRemainingCUs(allDegreeReqs))
+        setDoubleCount()
 
-            function setDoubleCount() {
-                if (mastersDegreeReqs.length == 0 || ugradDegreeReqs.length == 0) {
-                    return
-                }
-                const dcc = doubleCountedCourses.map(c => c.code()).join(", ")
-                const dcAvail = 3 - doubleCountedCourses.length
-                $(NodeDoubleCounts).empty()
-                if (doubleCountedCourses.length == 0) {
-                    $(NodeDoubleCounts).append(`<div class="alert alert-secondary" role="alert">Not using any of ${dcAvail} double-counts</div>`)
-                } else {
-                    $(NodeDoubleCounts).append(`<div class="alert alert-success" role="alert">Double-counting ${dcc} (${dcAvail} more available)</div>`)
+        if (ugradDegreeReqs.length == 0) {
+            return
+        }
+        const sshCourses: CourseTaken[] = coursesTaken
+            .filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
+        // console.log(`updateGlobal SSH courses: ${sshCourses.map(c => c.code())}`)
+
+        const updateGlobalReq = function(req: DegreeRequirement) {
+            req.coursesApplied.slice().forEach(c => req.unapplyCourse(c))
+            req.satisfiedBy(sshCourses)
+            req.updateViewWeb()
+        }
+
+        const writReq = allDegreeReqs.find(r => r.toString().startsWith("Writing"))!
+        updateGlobalReq(writReq)
+        const depthReq = allDegreeReqs.find(r => r.toString() == SshDepthTag)!
+        updateGlobalReq(depthReq)
+    }
+
+    $(".droppable").delay(100).droppable({
+        accept: ".course",
+        tolerance: "fit",
+        // runs once when the req is created, binding a DegreeRequirement object to its HTML element
+        create: function(event, _) {
+            // console.log("creating droppable: " + $(this).attr("id"))
+            const myReq = allDegreeReqs.find(req => req.uuid == $(this).attr("id"))!
+            $(this).data(DroppableDataGetDegreeRequirement, myReq)
+        },
+        // for every requirement, this is called when a course is picked up
+        activate: function(event, ui) {
+            const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
+            const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
+            // console.log(`activate ${course}`)
+            // detach course from its current req
+            if (course.consumedBy != undefined) {
+                course.consumedBy.unapplyCourse(course)
+            }
+            // try to apply course to req, and then undo it so req stays incomplete and course stays unattached
+            if (req.coursesApplied.length == 0) {
+                const result = req.satisfiedBy([course])
+                if (result != undefined) {
+                    req.updateViewWeb(true)
+                    req.unapplyCourse(course)
                 }
             }
-
-            setDoubleCount()
-
-            // update writing and SSH Depth requirements which are "global", i.e., they interact with other reqs
-            const updateGlobalReqs = function() {
-                setRemainingCUs(countRemainingCUs(allDegreeReqs))
-                setDoubleCount()
-
-                if (ugradDegreeReqs.length == 0) {
-                    return
-                }
-                const sshCourses: CourseTaken[] = coursesTaken
-                    .filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
-                // console.log(`updateGlobal SSH courses: ${sshCourses.map(c => c.code())}`)
-
-                const updateGlobalReq = function(req: DegreeRequirement) {
-                    req.coursesApplied.slice().forEach(c => req.unapplyCourse(c))
-                    req.satisfiedBy(sshCourses)
-                    req.updateViewWeb()
-                }
-
-                const writReq = allDegreeReqs.find(r => r.toString().startsWith("Writing"))!
-                updateGlobalReq(writReq)
-                const depthReq = allDegreeReqs.find(r => r.toString() == SshDepthTag)!
-                updateGlobalReq(depthReq)
+        },
+        // for every requirement, this is called when a course is dropped
+        deactivate: function(event, ui) {
+            if ($(this).hasClass("requirementCouldBeSatisfied")) {
+                const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
+                req.updateViewWeb()
             }
+        },
+        // when a course is released over a requirement. NB: course was already bound to the req at over()
+        drop: function(event, ui) {
+            const destReq: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
+            const realCourse: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
+            // console.log(`drop ${realCourse} onto ${destReq}`)
+            if (destReq.coursesApplied.includes(realCourse)) {
+                snapCourseIntoPlace(realCourse, destReq)
 
-            $(".droppable").delay(100).droppable({
-                accept: ".course",
-                tolerance: "fit",
-                // runs once when the req is created, binding a DegreeRequirement object to its HTML element
-                create: function(event, _) {
-                    // console.log("creating droppable: " + $(this).attr("id"))
-                    const myReq = allDegreeReqs.find(req => req.uuid == $(this).attr("id"))!
-                    $(this).data(DroppableDataGetDegreeRequirement, myReq)
-                },
-                // for every requirement, this is called when a course is picked up
-                activate: function(event, ui) {
-                    const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
-                    const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    // console.log(`activate ${course}`)
-                    // detach course from its current req
-                    if (course.consumedBy != undefined) {
-                        course.consumedBy.unapplyCourse(course)
-                    }
-                    // try to apply course to req, and then undo it so req stays incomplete and course stays unattached
-                    if (req.coursesApplied.length == 0) {
-                        const result = req.satisfiedBy([course])
-                        if (result != undefined) {
-                            req.updateViewWeb(true)
-                            req.unapplyCourse(course)
-                        }
-                    }
-                },
-                // for every requirement, this is called when a course is dropped
-                deactivate: function(event, ui) {
-                    if ($(this).hasClass("requirementCouldBeSatisfied")) {
-                        const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
-                        req.updateViewWeb()
-                    }
-                },
-                // when a course is released over a requirement. NB: course was already bound to the req at over()
-                drop: function(event, ui) {
-                    const destReq: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
-                    const realCourse: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    // console.log(`drop ${realCourse} onto ${destReq}`)
-                    if (destReq.coursesApplied.includes(realCourse)) {
-                        snapCourseIntoPlace(realCourse, destReq)
+                // if moving a course across degrees, try to double-count it
+                const originReq: DegreeRequirement = ui.draggable.data(DraggableOriginalRequirement)
+                const crossDegree =
+                    (ugradDegreeReqs.includes(originReq) && mastersDegreeReqs.includes(destReq)) ||
+                    (mastersDegreeReqs.includes(originReq) && ugradDegreeReqs.includes(destReq))
+                // console.log(`JLD ${doubleCountedCourses.length} ${originReq} ${crossDegree}`)
+                if (doubleCountedCourses.length < 3 && !doubleCountedCourses.includes(realCourse) && crossDegree) {
+                    // console.log(`double-counting ${realCourse.code()} with ${originReq} and ${destReq}`)
+                    doubleCountedCourses.push(realCourse)
 
-                        // if moving a course across degrees, try to double-count it
-                        const originReq: DegreeRequirement = ui.draggable.data(DraggableOriginalRequirement)
-                        const crossDegree =
-                            (ugradDegreeReqs.includes(originReq) && mastersDegreeReqs.includes(destReq)) ||
-                            (mastersDegreeReqs.includes(originReq) && ugradDegreeReqs.includes(destReq))
-                        // console.log(`JLD ${doubleCountedCourses.length} ${originReq} ${crossDegree}`)
-                        if (doubleCountedCourses.length < 3 && !doubleCountedCourses.includes(realCourse) && crossDegree) {
-                            // console.log(`double-counting ${realCourse.code()} with ${originReq} and ${destReq}`)
-                            doubleCountedCourses.push(realCourse)
-
-                            // create shadowCourse and place that in originReq
-                            const shadowCourse = realCourse.copy()
-                            const origReqElem = $("#" + originReq.uuid)
-                            origReqElem.append(`
+                    // create shadowCourse and place that in originReq
+                    const shadowCourse = realCourse.copy()
+                    const origReqElem = $("#" + originReq.uuid)
+                    origReqElem.append(`
 <span 
 class="course courseDoubleCountShadow myTooltip"  
 id="${shadowCourse.uuid}" 
@@ -2598,62 +2630,61 @@ ${realCourse.code()}
 <span class="myTooltipText">click to remove</span>
 </span>`)
 
-                            originReq.satisfiedBy([shadowCourse])
-                            originReq.updateViewWeb()
-                            realCourse.updateViewWeb(true)
-                            updateGlobalReqs()
-
-                            snapCourseIntoPlace(shadowCourse, originReq)
-                            // close shadowCourse on click
-                            $(`#${shadowCourse.uuid}`).on('click', function() {
-                                // console.log("removing double-count shadow course " + shadowCourse)
-
-                                originReq.unapplyCourse(shadowCourse)
-                                originReq.updateViewWeb()
-                                realCourse.updateViewWeb(false)
-
-                                // remove origin course from doubleCountedCourses
-                                const i = doubleCountedCourses.indexOf(realCourse)
-                                myAssert(i >= 0, `expected ${realCourse} in ${doubleCountedCourses}`)
-                                doubleCountedCourses.splice(i, 1)
-                                $(this).remove()
-                                updateGlobalReqs()
-                            })
-                        }
-                    }
-                },
-                // when a course is dragged over a requirement
-                over: function(event,ui) {
-                    const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
-                    const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    // console.log(`${course.code()} *over* ${req}, ${course.consumedBy?.uuid}`)
-
-                    // if req is already filled, ignore this course
-                    if (req.remainingCUs == 0) {
-                        return
-                    }
-
-                    req.satisfiedBy([course])
-                    // console.log(`jld0 ${course.code()} over ${req}: ${result}`)
-                    req.updateViewWeb()
+                    originReq.satisfiedBy([shadowCourse])
+                    originReq.updateViewWeb()
+                    realCourse.updateViewWeb(true)
                     updateGlobalReqs()
-                },
-                // when a course leaves a requirement
-                out: function(event, ui) {
-                    const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
-                    const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
-                    // console.log(`${course.code()} *left* ${req.uuid} ${req}`)
 
-                    // update model
-                    if (req.coursesApplied.includes(course)) {
-                        // console.log(`unapplying ${course.code()}`)
-                        req.unapplyCourse(course)
-                        req.updateViewWeb(true)
+                    snapCourseIntoPlace(shadowCourse, originReq)
+                    // close shadowCourse on click
+                    $(`#${shadowCourse.uuid}`).on('click', function() {
+                        // console.log("removing double-count shadow course " + shadowCourse)
+
+                        originReq.unapplyCourse(shadowCourse)
+                        originReq.updateViewWeb()
+                        realCourse.updateViewWeb(false)
+
+                        // remove origin course from doubleCountedCourses
+                        const i = doubleCountedCourses.indexOf(realCourse)
+                        myAssert(i >= 0, `expected ${realCourse} in ${doubleCountedCourses}`)
+                        doubleCountedCourses.splice(i, 1)
+                        $(this).remove()
                         updateGlobalReqs()
-                    }
+                    })
                 }
-            });
-        })
+            }
+        },
+        // when a course is dragged over a requirement
+        over: function(event,ui) {
+            const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
+            const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
+            // console.log(`${course.code()} *over* ${req}, ${course.consumedBy?.uuid}`)
+
+            // if req is already filled, ignore this course
+            if (req.remainingCUs == 0) {
+                return
+            }
+
+            req.satisfiedBy([course])
+            // console.log(`jld0 ${course.code()} over ${req}: ${result}`)
+            req.updateViewWeb()
+            updateGlobalReqs()
+        },
+        // when a course leaves a requirement
+        out: function(event, ui) {
+            const req: DegreeRequirement = $(this).data(DroppableDataGetDegreeRequirement)
+            const course: CourseTaken = ui.draggable.data(DraggableDataGetCourseTaken)
+            // console.log(`${course.code()} *left* ${req.uuid} ${req}`)
+
+            // update model
+            if (req.coursesApplied.includes(course)) {
+                // console.log(`unapplying ${course.code()}`)
+                req.unapplyCourse(course)
+                req.updateViewWeb(true)
+                updateGlobalReqs()
+            }
+        }
+    });
 }
 
 function renderRequirementOutcomesWeb(requirementOutcomes: RequirementOutcome[], column1Id: string, column2Id: string | undefined) {
@@ -2713,7 +2744,7 @@ function setRemainingCUs(n: number) {
 if (typeof window === 'undefined') {
     cliMain()
 }
-function cliMain(): void {
+async function cliMain(): Promise<void> {
     if (process.argv.length < 3) {
         console.log(`Usage: ${process.argv[1]} DW_WORKSHEETS...`)
         return
@@ -2728,7 +2759,7 @@ function cliMain(): void {
         const myWorksheetFiles = worksheets.filter((f: string): boolean => f.includes(pennid))
         if (myWorksheetFiles.length == 1) {
             const worksheetText: string = fs.readFileSync(worksheetFile, 'utf8');
-            runOneWorksheet(worksheetText, path.basename(worksheetFile))
+            await runOneWorksheet(worksheetText, path.basename(worksheetFile))
 
         } else {
             // aggregate multiple worksheets for the same student
@@ -2739,7 +2770,7 @@ function cliMain(): void {
                     ws.includes("Degree in Bachelor of Applied Science") ||
                     ws.includes("Degree in Master of Science in Engineering"))
                 .join("\n")
-            runOneWorksheet(allMyWorksheets, path.basename(worksheetFile))
+            await runOneWorksheet(allMyWorksheets, path.basename(worksheetFile))
         }
         i += myWorksheetFiles.length
     }
@@ -2749,34 +2780,32 @@ function cliMain(): void {
     }
 }
 
-function runOneWorksheet(worksheetText: string, analysisOutput: string): void {
+async function runOneWorksheet(worksheetText: string, analysisOutput: string): Promise<void> {
     const fs = require('fs');
     try {
         const parser = CourseParser.getParser(worksheetText)
-        let result
+        let parseResult
         try {
-            result = parser.parse(worksheetText, undefined)
+            parseResult = await parser.parse(worksheetText, undefined)
         } catch (Error) {
             return
         }
-        const coursesTaken = result.courses
-        const degrees = result.degrees
+        const coursesTaken = parseResult.courses
+        const degrees = parseResult.degrees
 
-        fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
-            .then(response => response.text())
-            .then(json => {
-                const telist = JSON.parse(json)
-                const result = run(telist, degrees!, coursesTaken)
+        const response = await fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
+        const telist = await response.json()
+        const result = run(telist, degrees!, coursesTaken)
 
-                const unsat = result.requirementOutcomes
-                    .filter(ro => ro.applyResult != RequirementApplyResult.Satisfied)
-                    .map(ro => "  " + ro.outcomeString())
-                    .join("\n")
-                const unconsumed = result.unconsumedCourses
-                    .sort()
-                    .map(c => "  " + c.toString())
-                    .join("\n")
-                    const summary = `
+        const unsat = result.requirementOutcomes
+            .filter(ro => ro.applyResult != RequirementApplyResult.Satisfied)
+            .map(ro => "  " + ro.outcomeString())
+            .join("\n")
+        const unconsumed = result.unconsumedCourses
+            .sort()
+            .map(c => "  " + c.toString())
+            .join("\n")
+            const summary = `
 ${result.cusRemaining} CUs remaining in ${degrees}
 
 unsatisfied requirements:
@@ -2786,13 +2815,12 @@ unused courses:
 ${unconsumed}
 
 `
-                // console.log(summary)
-                if (!fs.existsSync(AnalysisOutputDir)) {
-                    fs.mkdirSync(AnalysisOutputDir)
-                }
-                const outputFile = `${AnalysisOutputDir}${result.cusRemaining}left-${analysisOutput}.analysis.txt`
-                fs.writeFileSync(outputFile, summary + JSON.stringify(result, null, 2) + worksheetText)
-            })
+        // console.log(summary)
+        if (!fs.existsSync(AnalysisOutputDir)) {
+            fs.mkdirSync(AnalysisOutputDir)
+        }
+        const outputFile = `${AnalysisOutputDir}${result.cusRemaining}left-${analysisOutput}.analysis.txt`
+        fs.writeFileSync(outputFile, summary + JSON.stringify(result, null, 2) + worksheetText)
     } catch (err) {
         console.error(err + " when processing " + process.argv[2]);
     }
