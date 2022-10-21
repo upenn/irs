@@ -23,13 +23,21 @@
                 } else {
                     $('[name="ugrad_degree"]').attr("disabled", false)
                     $('[name="masters_degree"]').attr("disabled", false)
+                    if ($('[name="ugrad_degree"]:checked').length == 0) {
+                        $("#no_ugrad").attr("checked", true)
+                    }
+                    if ($('[name="masters_degree"]:checked').length == 0) {
+                        $("#no_masters").attr("checked", true)
+                    }
                 }
             })
 
             // run test input if requested
             const searchParams = new URLSearchParams(window.location.search)
-            if (searchParams.has("test")) {
-                runTestInput()
+            if (searchParams.has("testdr")) {
+                runTestInputDWDiagnosticsReport()
+            } else if (searchParams.has("testch")) {
+                runTestInputDWClassHistory()
             }
         })
     </script>

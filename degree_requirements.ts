@@ -1806,8 +1806,8 @@ abstract class CourseParser {
     public static getParser(text: string): CourseParser {
         if (text.includes("Degree Works Release")) {
             return new DegreeWorksDiagnosticsReportParser()
-        } else if (text.includes("END OF TRANSCRIPT")) {
-            return new UnofficialTranscriptParser()
+        } else if (text.includes("Courses Completed")) {
+            return new DegreeWorksClassHistoryParser()
         }
         throw new Error("cannot parse courses")
     }
@@ -1865,6 +1865,7 @@ abstract class CourseParser {
                 return calc && gradeOk
             })
             if (math1400Retro != undefined) {
+                myLog("Using retro credit for Math 1400, must visit Math Department to make it official!")
                 const math1400 = new CourseTaken(
                     "MATH",
                     "1400",
@@ -1904,17 +1905,53 @@ abstract class CourseParser {
     abstract parse(text: string, degrees: Degrees | undefined): CourseParserResult
 }
 
-class UnofficialTranscriptParser extends CourseParser {
+class DegreeWorksClassHistoryParser extends CourseParser {
     constructor() {
         super();
     }
 
     extractPennID(worksheetText: string): string | undefined {
-        const matches = worksheetText.match(/Penn ID:\s+(\d{8})/)
-        if (matches != null) {
-            return matches![1]
-        }
         return undefined
+    }
+
+    private parseDegrees(text: string): Degrees {
+        const deg = new Degrees()
+
+        if (text.includes("Bachelor of Sci in Engineering")) {
+            // there's an undergrad degree
+            if (text.includes("Major Computer ScienceProgram")) {
+                deg.undergrad = "40cu CSCI"
+            } else if (text.includes("Major Computer EngineeringProgram")) {
+                deg.undergrad = "40cu CMPE"
+            } else if (text.includes("Major Digital Media DesignProgram")) {
+                deg.undergrad = "40cu DMD"
+            } else if (text.includes("Major Networked And Social SystemsProgram")) {
+                deg.undergrad = "40cu NETS"
+            } else if (text.includes("Major Electrical EngineeringProgram")) {
+                deg.undergrad = "40cu EE"
+            } else if (text.includes("Major Systems Science & EngineeringProgram")) {
+                deg.undergrad = "40cu SSE"
+            }
+        } else if (text.includes("Program SEAS - Bachelor of Applied Science")) {
+            if (text.includes("Major Appl Science-Computer ScienceProgram")) {
+                deg.undergrad = "40cu ASCS"
+            } else if (text.includes("Major Appl Science In Comp & Cog.ScProgram")) {
+                deg.undergrad = "40cu ASCC"
+            }
+        }
+        if (text.includes("Master of Sci in Engineering")) {
+            // there's a masters degree
+            if (text.includes("ProfessionalMajor Computer & Information ScienceProgram")) {
+                deg.masters = "CIS-MSE"
+            } else if (text.includes("ProfessionalMajor RoboticsProgram")) {
+                deg.masters = "ROBO"
+            } else if (text.includes("ProfessionalMajor Data ScienceProgram")) {
+                deg.masters = "DATS"
+            } else if (text.includes("ProfessionalMajor Comp Graphics & Game TechProgram")) {
+                deg.masters = "CGGT"
+            }
+        }
+        return deg
     }
 
     parse(text: string, degrees: Degrees | undefined): CourseParserResult {
@@ -1922,34 +1959,55 @@ class UnofficialTranscriptParser extends CourseParser {
         if (degrees != undefined) {
             result.degrees = degrees
         } else {
-            // TODO: infer degrees
-            throw new Error("unimplemented")
+            result.degrees = this.parseDegrees(text)
         }
 
-        const coursePattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})(?<title>.*?)(?<cus>\d.\d\d) (?<grade>A\+|A|A\-|B\+|B|B\-|C\+|C|C\-|D\+|D|F|P|TR|GR|NR|IN PROGRESS|I)`, "g")
-        let numHits = 0
-        while (numHits < 100) {
-            let hits = coursePattern.exec(text)
-            if (hits == null) {
-                break
+        const coursePattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})\s+(?<title>.*?)\s+(?<grade>A\+|A|A-|B\+|B|B-|C\+|C|C-|D\+|D|F|P|TR|GR|NR|I|NA)\s+(?<cus>0\.5|1\.5|1|2)`)
+        const termPattern = new RegExp(String.raw`(?<season>Spring|Summer|Fall) (?<year>\d{4})`)
+
+        const courseText = text.substring(text.indexOf("Courses Completed"))
+        const courseLines = courseText.split(/\r?\n/)
+        let term:number = 0
+        courseLines.forEach(line => {
+            let hits = termPattern.exec(line)
+            if (hits != null) {
+                term = parseInt(hits.groups!["year"]) * 100
+                switch (hits.groups!["season"]) {
+                    case "Spring":
+                        term += 10
+                        break
+                    case "Summer":
+                        term += 20
+                        break
+                    case "Fall":
+                        term += 30
+                        break
+                    default:
+                        throw new Error(`invalid term ${line}`)
+                }
+                return
             }
-            let c = this.parseOneCourse(
-                hits.groups!["subject"],
-                hits.groups!["number"],
-                hits.groups!["title"],
-                hits.groups!["cus"],
-                hits.groups!["grade"])
-            if (c != null) {
-                result.courses.push(c)
+            hits = coursePattern.exec(line)
+            if (hits != null) {
+                let c = this.parseOneCourse(
+                    hits.groups!["subject"],
+                    hits.groups!["number"],
+                    hits.groups!["title"],
+                    hits.groups!["cus"],
+                    hits.groups!["grade"],
+                    term)
+                if (c != null) {
+                    result.courses.push(c)
+                }
+                return
             }
-            numHits++
-        }
+        })
 
         result.courses = this.postProcess(result.courses, result.degrees)
         return result
     }
 
-    private parseOneCourse(subject: string, number: string, title:string, cus: string, grade:string): CourseTaken {
+    private parseOneCourse(subject: string, number: string, title:string, cus: string, grade:string, term:number): CourseTaken {
         const gradeType = grade == "P" ? GradeType.PassFail : GradeType.ForCredit
         return new CourseTaken(
             subject,
@@ -1959,7 +2017,7 @@ class UnofficialTranscriptParser extends CourseParser {
             parseFloat(cus),
             gradeType,
             grade,
-            0, // TODO: need to figure out term to check for Covid P/F policy
+            term,
             "",
             grade != "IN PROGRESS")
     }
@@ -1983,7 +2041,7 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
         if (degrees != undefined) {
             result.degrees = degrees
         } else {
-            const deg = this.inferDegrees(text)
+            const deg = this.parseDegrees(text)
             myAssert(deg != undefined, "could not infer DegreeWorks degree")
             //console.log("inferred degrees as " + deg)
             result.degrees = deg!
@@ -2090,7 +2148,7 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
             !inProgress)
     }
 
-    private inferDegrees(worksheetText: string): Degrees | undefined {
+    private parseDegrees(worksheetText: string): Degrees | undefined {
         let d = new Degrees()
 
         // undergrad degrees
@@ -2184,8 +2242,8 @@ function snapCourseIntoPlace(course: CourseTaken, req: DegreeRequirement) {
     })
 }
 
-function runTestInput(): void {
-    const sampleDegreeWorks = `
+function runTestInputDWDiagnosticsReport(): void {
+    const sampleDegreeWorksDiagnosticsReport = `
 Diagnostics Report
 Student\t12345678
 Degree Works Release\t5.0.4.2
@@ -2220,9 +2278,9 @@ PHYS 150 E\tA \t1.5\t0011\t201930\t \t \t \t \t \t \t4\t4\t4\t1.5\tZ \t \t \t \t
 Attributes\tATTRIBUTE=WUNM; DWSISKEY=Z6359; ATTRIBUTE=ABBM; ATTRIBUTE=ABBN; ATTRIBUTE=AERH; ATTRIBUTE=AMOR; ATTRIBUTE=AUPW; ATTRIBUTE=AUQD; ATTRIBUTE=EUMS; ATTRIBUTE=EUNS; ATTRIBUTE=UNFF;
 ESE 112 E\tP \t1.5\t0024\t202010\t \t \t \t \tYPF\t \t0\t0\t0\t0\tZ \t \t \t \t \t \tEng Electromagnetics\t1.5\tPHL \tC\t \t \tA  \t[ESE 1120]  \tC\tAC \tAC  \t \t \tUG \t001
 Attributes\tDWSISKEY=Z3498; ATTRIBUTE=UNFF;
-CHEM 1101 E\tA \t0.5\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t0.5\tZ \t \t \t \t \t \tUnix/Linux Skills\t0.5\tPHL \tC\t \t \tA  \t[CHEM 1101]  \tC\tAC \tAC  \t \t \tUG \t002
+CHEM 1101 E\tA \t0.5\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t0.5\tZ \t \t \t \t \t \tGeneral Chemistry Lab I\t0.5\tPHL \tC\t \t \tA  \t[CHEM 1101]  \tC\tAC \tAC  \t \t \tUG \t002
 Attributes\tATTRIBUTE=EUNS;
-CHEM 1102 E\tA \t0.5\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t0.5\tZ \t \t \t \t \t \tPython\t0.5\tPHL \tC\t \t \tA  \t[CHEM 1102]  \tC\tAC \tAC  \t \t \tUG \t002
+CHEM 1102 E\tA \t0.5\t0007\t201930\t \t \t \t \t \t \t4\t4\t4\t0.5\tZ \t \t \t \t \t \tGeneral Chemistry Lab II\t0.5\tPHL \tC\t \t \tA  \t[CHEM 1102]  \tC\tAC \tAC  \t \t \tUG \t002
 Attributes\tATTRIBUTE=EUNS;
 
 EAS 203 E\tA \t1\t0081\t202130\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tEngineering Ethics\t1\tPHL \tC\t \t \tA  \t[EAS 2030]  \tC\tAC \tAC  \t \t \tUG \t001
@@ -2240,7 +2298,43 @@ Attributes\tDWSISKEY=Z6892; ATTRIBUTE=AHSM; ATTRIBUTE=AHST; ATTRIBUTE=ASTI; ATTR
 EAS 204 E\tA \t1\t0066\t202110\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tTech Innv&civil Discrse\t1\tONL \tC\t \t \tA  \t[EAS 2040]  \tC\tAC \tAC  \t \t \tUG \t001
 Attributes\tDWSISKEY=Z2255; ATTRIBUTE=EUTB; ATTRIBUTE=NURS; ATTRIBUTE=UNPP;
 `
-    $(NodeCoursesTaken).text(sampleDegreeWorks)
+    $(NodeCoursesTaken).text(sampleDegreeWorksDiagnosticsReport)
+    webMain()
+}
+
+function runTestInputDWClassHistory(): void {
+    const sampleDegreeWorksClassHistory = `
+Degree
+Bachelor of Sci in Engineering
+Level UndergraduateClassification SeniorMajor Computer EngineeringProgram SEAS - BSECollege SEAS Undergraduate
+
+Courses Completed
+Fall 2019
+Course\tTitle\tGrade\tCredits
+CIS 520\tMachine Learning\tA\t1
+MEAM 510 Design of Mechatronic Systems A 1
+CIS 580 Machine Perception A 1
+CIS 545 Big Data Analytics A 1
+
+
+Spring 2020
+PHYS 150\tPrinciples I\tA\t1.5
+ESE 112 Eng Electromagnetics P 1.5
+CHEM 1101 General Chemistry Lab I A 0.5
+CHEM 1102 General Chemistry Lab II A 0.5
+
+Fall 2020
+EAS 203 Engineering Ethics A 1
+WRIT 037 Decision Making A 1
+PHIL 157 Repairing the Climate A 1
+PHIL 001 Intro to Philosophy A 1
+
+Spring 2021
+STSC 168 Environment And Society NA 1
+STSC 160 Information Age NA 1
+EAS 204 Tech Innv&civil Discrse NA 1
+`
+    $(NodeCoursesTaken).text(sampleDegreeWorksClassHistory)
     webMain()
 }
 
