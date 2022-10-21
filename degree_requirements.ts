@@ -1575,6 +1575,10 @@ class CourseTaken {
             this.attributes.push(CourseAttribute.NetsFullTechElective)
         }
 
+        if (WritingSeminarSsHTbs.has(this.code()) && !this.attributes.includes(CourseAttribute.Writing)) {
+            this.attributes.push(CourseAttribute.Writing)
+        }
+
         if (this.suhSaysSS() && !this.attributes.includes(CourseAttribute.SocialScience)) {
             this.attributes.push(CourseAttribute.SocialScience)
             IncorrectCMAttributes.add(`${this.code()} missing ${CourseAttribute.SocialScience}`)
@@ -1952,13 +1956,13 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         }
         if (text.includes("Master of Sci in Engineering")) {
             // there's a masters degree
-            if (text.includes("ProfessionalMajor Computer & Information ScienceProgram")) {
+            if (text.includes("Major Computer & Information ScienceProgram")) {
                 deg.masters = "CIS-MSE"
-            } else if (text.includes("ProfessionalMajor RoboticsProgram")) {
+            } else if (text.includes("Major RoboticsProgram")) {
                 deg.masters = "ROBO"
-            } else if (text.includes("ProfessionalMajor Data ScienceProgram")) {
+            } else if (text.includes("Major Data ScienceProgram")) {
                 deg.masters = "DATS"
-            } else if (text.includes("ProfessionalMajor Comp Graphics & Game TechProgram")) {
+            } else if (text.includes("Major Comp Graphics & Game TechProgram")) {
                 deg.masters = "CGGT"
             }
         }
@@ -2328,7 +2332,7 @@ STSC 168 E\tA \t1\t0084\t202130\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t 
 Attributes\tDWSISKEY=Z6767; ATTRIBUTE=AEHH; ATTRIBUTE=AHPE; ATTRIBUTE=AHSM; ATTRIBUTE=ASTE; ATTRIBUTE=ASTL; ATTRIBUTE=AUHS; ATTRIBUTE=EUSS; ATTRIBUTE=UNFF; ATTRIBUTE=WUFG;
 STSC 160 E\tA \t1\t0051\t202110\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tInformation Age\t1\tONL \tC\t \t \tA  \t[STSC 1600]  \tC\tAC \tAC  \t \t \tUG \t401
 Attributes\tDWSISKEY=Z6892; ATTRIBUTE=AHSM; ATTRIBUTE=AHST; ATTRIBUTE=ASTI; ATTRIBUTE=ASTL; ATTRIBUTE=AUHS; ATTRIBUTE=EUSS; ATTRIBUTE=NUHT; ATTRIBUTE=UNFF; ATTRIBUTE=WUSS;
-EAS 204 E\tA \t1\t0066\t202110\t \t \t \t \t \t \t4\t4\t4\t1\tZ \t \t \t \t \t \tTech Innv&civil Discrse\t1\tONL \tC\t \t \tA  \t[EAS 2040]  \tC\tAC \tAC  \t \t \tUG \t001
+EAS 204 E\tNA \t1\t0066\t202110\t \t \tYIP\t \t \t \t0\t0\t0\t0\tZ \t \t \t \t \t \tTech Innv&civil Discrse\t1\tONL \tC\t \t \tA  \t[EAS 2040]  \tC\tAC \tAC  \t \t \tUG \t001
 Attributes\tDWSISKEY=Z2255; ATTRIBUTE=EUTB; ATTRIBUTE=NURS; ATTRIBUTE=UNPP;
 `
     $(NodeCoursesTaken).text(sampleDegreeWorksDiagnosticsReport)
@@ -2340,6 +2344,11 @@ function runTestInputDWClassHistory(): void {
 Degree
 Bachelor of Sci in Engineering
 Level UndergraduateClassification SeniorMajor Computer EngineeringProgram SEAS - BSECollege SEAS Undergraduate
+Name
+
+Degree
+Master of Sci in Engineering
+Level ProfessionalClassification {goal}Major RoboticsProgram SEAS - MSECollege SEAS Masters
 
 Courses Completed
 Fall 2019
@@ -2348,6 +2357,13 @@ CIS 520\tMachine Learning\tA\t1
 MEAM 510 Design of Mechatronic Systems A 1
 CIS 580 Machine Perception A 1
 CIS 545 Big Data Analytics A 1
+
+NETS 112 Networked Life A 1
+NETS 212 Cloud Computer A 1
+NETS 312 Algorithmic Game Theory A 1
+DSGN 100 Design 1 A 1
+DSGN 101 Design 2 A 1
+DSGN 102 Design 3 A 1
 
 
 Spring 2020
@@ -2359,12 +2375,12 @@ CHEM 1102 General Chemistry Lab II A 0.5
 Fall 2020
 EAS 203 Engineering Ethics A 1
 WRIT 037 Decision Making A 1
-PHIL 157 Repairing the Climate A 1
-PHIL 001 Intro to Philosophy A 1
+ENGL 003 Repairing the Climate A 1
+ENGL 005 Intro to Philosophy A 1
+STSC 168 Environment And Society A 1
+STSC 160 Information Age A 1
 
 Spring 2021
-STSC 168 Environment And Society NA 1
-STSC 160 Information Age NA 1
 EAS 204 Tech Innv&civil Discrse NA 1
 `
     $(NodeCoursesTaken).text(sampleDegreeWorksClassHistory)
