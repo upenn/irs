@@ -2550,9 +2550,9 @@ async function webMain(): Promise<void> {
         const dcAvail = 3 - doubleCountedCourses.length
         $(NodeDoubleCounts).empty()
         if (doubleCountedCourses.length == 0) {
-            $(NodeDoubleCounts).append(`<div class="alert alert-secondary" role="alert">Not using any of ${dcAvail} double-counts</div>`)
+            $(NodeDoubleCounts).append(`<div class="alert alert-secondary" role="alert">Drag a course across degrees to double-count it. None of the ${dcAvail} available double-counts are currently used.</div>`)
         } else {
-            $(NodeDoubleCounts).append(`<div class="alert alert-success" role="alert">Double-counting ${dcc} (${dcAvail} more available)</div>`)
+            $(NodeDoubleCounts).append(`<div class="alert alert-success" role="alert">Drag a course across degrees to double-count it. Double-counting ${dcc} (${dcAvail} more available)</div>`)
         }
     }
 
@@ -2666,6 +2666,11 @@ ${realCourse.code()}
                         doubleCountedCourses.splice(i, 1)
                         $(this).remove()
                         updateGlobalReqs()
+
+                        allDegreeReqs.forEach(r => {
+                            if (r.doesntConsume) { return }
+                            r.coursesApplied.forEach(c => snapCourseIntoPlace(c, r))
+                        })
                     })
                 }
             }
