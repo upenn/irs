@@ -3,11 +3,15 @@
   "version": "1.0.0",
   "devDependencies": {
     "@types/jquery": "^3.5.14",
-    "@types/node": "^18.7.17"
+    "@types/node": "^18.7.17",
+    "ts-jest": "^29.0.3"
   },
   "dependencies": {
     "@types/jqueryui": "^1.12.16",
     "bootstrap": "^5.2.1",
     "jquery": "^3.6.1"
+  },
+  "scripts": {
+    "test": "jest"
   }
 }

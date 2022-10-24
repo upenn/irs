@@ -8,7 +8,7 @@ const DraggableDataGetCourseTaken = "CourseTaken"
 const DraggableOriginalRequirement = "OriginalDegreeRequirement"
 const DroppableDataGetDegreeRequirement = "DegreeRequirement"
 
-const SsHTbsTag = "SS/H/TBS"
+export const SsHTbsTag = "SS/H/TBS"
 const SshDepthTag = "SSH Depth Requirement"
 
 /** grades indicating a completed course, as opposed to I, NR, GR or 'IN PROGRESS' which indicate non-completion */
@@ -687,12 +687,12 @@ function myAssertEquals(a: any, b: any, message: string = "") {
     }
 }
 
-enum GradeType {
+export enum GradeType {
     PassFail = "PassFail",
     ForCredit = "ForCredit",
 }
 
-interface TechElectiveDecision {
+export interface TechElectiveDecision {
     course4d: string,
     course3d: string,
     title: string,
@@ -826,6 +826,10 @@ abstract class DegreeRequirement {
             const ro = new RequirementOutcome(dontCare, this, RequirementApplyResult.Unsatisfied, [])
             myElem.find("span.outcome").text(ro.outcomeString())
         }
+    }
+
+    public getStatus(): string {
+        return `${this.toString()} has ${this.remainingCUs}/${this.cus} CUs remaining, ${this.coursesApplied} applied`
     }
 }
 
@@ -1464,7 +1468,7 @@ function byLowestLevelFirst(a: CourseTaken, b: CourseTaken): number {
 }
 
 /** Records a course that was taken and passed, so it can conceivably count towards some requirement */
-class CourseTaken {
+export class CourseTaken {
     private static NextUuid: number = 0
     readonly uuid: string
     readonly subject: string
@@ -2247,7 +2251,7 @@ const NodeUnusedCoursesList = "#unusedCoursesList"
 const NodeMessages = "#messages"
 const NodeAllCourses = "#allCourses"
 
-class Degrees {
+export class Degrees {
     undergrad: UndergradDegree = "none"
     masters: MastersDegree = "none"
 
@@ -2863,7 +2867,7 @@ function myLog(msg: string): void {
     }
 }
 
-enum RequirementApplyResult {
+export enum RequirementApplyResult {
     Unsatisfied, PartiallySatisfied, Satisfied
 }
 class RequirementOutcome {
@@ -2910,7 +2914,8 @@ class RunResult {
     }
 }
 
-function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, coursesTaken: CourseTaken[]): RunResult {
+// TODO: if we want to have integration tests, they should use this run() function
+export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, coursesTaken: CourseTaken[]): RunResult {
     csci37techElectiveList
         .filter((te: TechElectiveDecision): boolean => te.status == "yes")
         .forEach((te: TechElectiveDecision) => {
