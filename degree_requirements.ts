@@ -2008,11 +2008,22 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         const response = await fetch(window.location.origin + "/3d_to_4d_course_translation.json")
         const _324 = <_3digitTo4DigitMap>await response.json()
 
-        const coursePattern = new RegExp(String.raw`(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})\s+(?<title>.*?)\s+(?<grade>A\+|A|A-|B\+|B|B-|C\+|C|C-|D\+|D|F|P|TR|GR|NR|I|NA)\s+(?<cus>0?\.5|1\.5|1|2)`)
-        const termPattern = new RegExp(String.raw`(?<season>Spring|Summer|Fall) (?<year>\d{4})`)
-
         const courseText = text.substring(text.indexOf("Courses Completed"))
         const courseLines = courseText.split(/\r?\n/)
+
+        let minorCourses: string[] = []
+        const minorPattern = /Minor in (?<subject>[\w ]*)(IN-PROGRESS|COMPLETED)(?<courses>.*?)(Elective Coursework|In-progress|Over The Limit|Exceptions|Courses Not Applied)/s
+        const minorCourseText = text.match(minorPattern)
+        if (minorCourseText != null) {
+            const allMinors = text.match(/^Minor in .*[a-z]/mg)
+            myLog("Found " + allMinors!.map((v,i,a) => v).join(", "))
+            const courses = minorCourseText.groups!["courses"].match(/[A-Z]{2,4} \d{3,4}/g)
+            minorCourses = courses!.map((v,i,all) => v)
+        }
+
+        const coursePattern = /(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})\s+(?<title>.*?)\s+(?<grade>A\+|A|A-|B\+|B|B-|C\+|C|C-|D\+|D|F|P|TR|GR|NR|I|NA)\s+(?<cus>0?\.5|1\.5|1|2)/
+        const termPattern = /(?<season>Spring|Summer|Fall) (?<year>\d{4})/
+
         let term:number = 0
         courseLines.forEach(line => {
             let hits = termPattern.exec(line)
@@ -2052,6 +2063,9 @@ class DegreeWorksClassHistoryParser extends CourseParser {
                     hits.groups!["grade"],
                     term)
                 if (c != null) {
+                    if (minorCourses.includes(_3dCode)) {
+                        c.partOfMinor = true
+                    }
                     result.courses.push(c)
                 }
                 return
