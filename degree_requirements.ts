@@ -1126,7 +1126,15 @@ class RequirementCsci40TechElective extends DegreeRequirement {
         const specialTEList = ["LING 0500", "PHIL 2620", "PHIL 2640", "OIDD 2200", "OIDD 3210", "OIDD 3250"]
 
         return courses.slice()
-            .sort(byHighestCUsFirst)
+            .sort((a,b): number => {
+                const sshAttrs = [CourseAttribute.SocialScience,CourseAttribute.Humanities,CourseAttribute.TBS]
+                const aIsSsh = sshAttrs.some(ssh => a.attributes.includes(ssh))
+                const bIsSsh = sshAttrs.some(ssh => b.attributes.includes(ssh))
+                if (!aIsSsh && bIsSsh) { return -1 } else
+                if (aIsSsh && !bIsSsh) { return 1 }
+                // both, or neither, are SS/H/TBS
+                return 0
+            })
             .find((c: CourseTaken): boolean => {
             return c.grading == GradeType.ForCredit &&
                 (c.attributes.includes(CourseAttribute.MathNatSciEngr) ||
