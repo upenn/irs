@@ -1822,7 +1822,11 @@ abstract class CourseParser {
     public static getParser(text: string): CourseParser {
         if (text.includes("Degree Works Release")) {
             return new DegreeWorksDiagnosticsReportParser()
-        } else if (text.includes("Courses Completed")) {
+        } else if (text.includes("Courses Completed") &&
+            (text.includes("Master of Sci in Engineering") ||
+                text.includes("Program SEAS - Bachelor of Applied Science") ||
+                text.includes("Bachelor of Sci in Engineering"))
+        ) {
             return new DegreeWorksClassHistoryParser()
         }
         throw new Error("cannot parse courses")
@@ -1985,6 +1989,10 @@ class DegreeWorksClassHistoryParser extends CourseParser {
             } else if (text.includes("Major Comp Graphics & Game TechProgram")) {
                 deg.masters = "CGGT"
             }
+        }
+
+        if (deg.undergrad == "none" && deg.masters == "none") {
+            throw new Error("couldn't parse any degrees")
         }
         return deg
     }
@@ -2422,7 +2430,13 @@ async function webMain(): Promise<void> {
     $(NodeMessages).append("<h3>Notes</h3>")
 
     const worksheetText = $(NodeCoursesTaken).val() as string
-    const parser = CourseParser.getParser(worksheetText)
+    let parser
+    try {
+        parser = CourseParser.getParser(worksheetText)
+    } catch (e) {
+        alert("Error parsing courses. Did you copy+paste the entire page (not just the \"Courses Completed\" table)?")
+        return
+    }
     const pennid = parser.extractPennID(worksheetText)
     if (pennid != undefined) {
         $(NodeStudentInfo).append(`<div class="alert alert-secondary" role="alert">PennID: ${pennid}</div>`)
