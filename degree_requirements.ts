@@ -2960,6 +2960,13 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
                 new RequirementAttributes(5, "Math", [CourseAttribute.Math]),
                 new RequirementAttributes(6, "Math", [CourseAttribute.Math]),
 
+                new RequirementTechElectiveEngineering(25),
+                new RequirementTechElectiveEngineering(26),
+                new RequirementCsci40TechElective(27),
+                new RequirementCsci40TechElective(28),
+                new RequirementCsci40TechElective(29),
+                new RequirementCsci40TechElective(30),
+
                 new RequirementSsh(31, [CourseAttribute.SocialScience]),
                 new RequirementSsh(32, [CourseAttribute.SocialScience]),
                 new RequirementSsh(33, [CourseAttribute.Humanities]),
@@ -2967,13 +2974,6 @@ function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, c
                 new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-
-                new RequirementTechElectiveEngineering(25),
-                new RequirementTechElectiveEngineering(26),
-                new RequirementCsci40TechElective(27),
-                new RequirementCsci40TechElective(28),
-                new RequirementCsci40TechElective(29),
-                new RequirementCsci40TechElective(30),
 
                 // NB: Writing, Ethics, SSH Depth are [40,42]
 
