@@ -1861,9 +1861,9 @@ abstract class CourseParser {
             ["PHYS 0050", "PHYS 0150"],
             ["PHYS 0094", "PHYS 0151"],
             ["PHYS 0051", "PHYS 0151"],
-            ["PHYS 0093", "PHYS 0170"],
+            ["PHYS 093", "PHYS 0170"],
             ["PHYS 0050", "PHYS 0170"],
-            ["PHYS 0094", "PHYS 0171"],
+            ["PHYS 094", "PHYS 0171"],
             ["PHYS 0051", "PHYS 0171"],
         ]
         equivalentCourses.forEach((forbidden: [string,string]) => {
