@@ -1958,23 +1958,23 @@ class DegreeWorksClassHistoryParser extends CourseParser {
 
         if (text.includes("Bachelor of Sci in Engineering")) {
             // there's an undergrad degree
-            if (text.includes("Major Computer ScienceProgram")) {
+            if (text.includes("Major Computer Science")) {
                 deg.undergrad = "40cu CSCI"
-            } else if (text.includes("Major Computer EngineeringProgram")) {
+            } else if (text.includes("Major Computer Engineering")) {
                 deg.undergrad = "40cu CMPE"
-            } else if (text.includes("Major Digital Media DesignProgram")) {
+            } else if (text.includes("Major Digital Media Design")) {
                 deg.undergrad = "40cu DMD"
-            } else if (text.includes("Major Networked And Social SystemsProgram")) {
+            } else if (text.includes("Major Networked And Social Systems")) {
                 deg.undergrad = "40cu NETS"
-            } else if (text.includes("Major Electrical EngineeringProgram")) {
+            } else if (text.includes("Major Electrical Engineering")) {
                 deg.undergrad = "40cu EE"
-            } else if (text.includes("Major Systems Science & EngineeringProgram")) {
+            } else if (text.includes("Major Systems Science & Engineering")) {
                 deg.undergrad = "40cu SSE"
             }
         } else if (text.includes("Program SEAS - Bachelor of Applied Science")) {
-            if (text.includes("Major Appl Science-Computer ScienceProgram")) {
+            if (text.includes("Major Appl Science-Computer Science")) {
                 deg.undergrad = "40cu ASCS"
-            } else if (text.includes("Major Appl Science In Comp & Cog.ScProgram")) {
+            } else if (text.includes("Major Appl Science In Comp & Cog.Sc")) {
                 deg.undergrad = "40cu ASCC"
             }
         }
