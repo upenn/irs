@@ -1853,6 +1853,14 @@ abstract class CourseParser {
             ["ESE 1120", "PHYS 0151"],
             ["MEAM 1100", "PHYS 0150"],
             ["MEAM 1470", "PHYS 0150"],
+            ["PHYS 0093", "PHYS 0150"],
+            ["PHYS 0050", "PHYS 0150"],
+            ["PHYS 0094", "PHYS 0151"],
+            ["PHYS 0051", "PHYS 0151"],
+            ["PHYS 0093", "PHYS 0170"],
+            ["PHYS 0050", "PHYS 0170"],
+            ["PHYS 0094", "PHYS 0171"],
+            ["PHYS 0051", "PHYS 0171"],
         ]
         equivalentCourses.forEach((forbidden: [string,string]) => {
             if (courses.some((c: CourseTaken) => c.code() == forbidden[0]) &&
