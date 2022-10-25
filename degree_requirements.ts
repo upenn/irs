@@ -1823,9 +1823,9 @@ abstract class CourseParser {
         if (text.includes("Degree Works Release")) {
             return new DegreeWorksDiagnosticsReportParser()
         } else if (text.includes("Courses Completed") &&
-            (text.includes("Master of Sci in Engineering") ||
-                text.includes("Program SEAS - Bachelor of Applied Science") ||
-                text.includes("Bachelor of Sci in Engineering"))
+            (text.includes("Degree in Master of Science in Engineering") ||
+                text.includes("Degree in Bachelor of Applied Science") ||
+                text.includes("Degree in Bachelor of Science in Engineering"))
         ) {
             return new DegreeWorksClassHistoryParser()
         }
@@ -1956,37 +1956,37 @@ class DegreeWorksClassHistoryParser extends CourseParser {
     private parseDegrees(text: string): Degrees {
         const deg = new Degrees()
 
-        if (text.includes("Bachelor of Sci in Engineering")) {
+        if (text.includes("Degree in Bachelor of Science in Engineering")) {
             // there's an undergrad degree
-            if (text.includes("Major Computer Science")) {
+            if (text.match(/Majors? Computer Science/) != null) {
                 deg.undergrad = "40cu CSCI"
-            } else if (text.includes("Major Computer Engineering")) {
+            } else if (text.match(/Majors? Computer Engineering/) != null) {
                 deg.undergrad = "40cu CMPE"
-            } else if (text.includes("Major Digital Media Design")) {
+            } else if (text.match(/Majors? Digital Media Design/) != null) {
                 deg.undergrad = "40cu DMD"
-            } else if (text.includes("Major Networked And Social Systems")) {
+            } else if (text.match(/Majors? Networked And Social Systems/) != null) {
                 deg.undergrad = "40cu NETS"
-            } else if (text.includes("Major Electrical Engineering")) {
+            } else if (text.match(/Majors? Electrical Engineering/) != null) {
                 deg.undergrad = "40cu EE"
-            } else if (text.includes("Major Systems Science & Engineering")) {
+            } else if (text.match(/Majors? Systems Science & Engineering/) != null) {
                 deg.undergrad = "40cu SSE"
             }
-        } else if (text.includes("Program SEAS - Bachelor of Applied Science")) {
-            if (text.includes("Major Appl Science-Computer Science")) {
+        } else if (text.includes("Degree in Bachelor of Applied Science")) {
+            if (text.match(/Majors? Appl Science-Computer Science/) != null) {
                 deg.undergrad = "40cu ASCS"
-            } else if (text.includes("Major Appl Science In Comp & Cog.Sc")) {
+            } else if (text.match(/Majors? Appl Science In Comp & Cog.Sc/) != null) {
                 deg.undergrad = "40cu ASCC"
             }
         }
-        if (text.includes("Master of Sci in Engineering")) {
+        if (text.includes("Degree in Master of Science in Engineering")) {
             // there's a masters degree
-            if (text.includes("Major Computer & Information ScienceProgram")) {
+            if (text.match(/Majors? Computer & Information Science/) != null) {
                 deg.masters = "CIS-MSE"
-            } else if (text.includes("Major RoboticsProgram")) {
+            } else if (text.match(/Majors? Robotics/) != null) {
                 deg.masters = "ROBO"
-            } else if (text.includes("Major Data ScienceProgram")) {
+            } else if (text.match(/Majors? Data Science/) != null) {
                 deg.masters = "DATS"
-            } else if (text.includes("Major Comp Graphics & Game TechProgram")) {
+            } else if (text.match(/Majors? Comp Graphics & Game Tech/) != null) {
                 deg.masters = "CGGT"
             }
         }
@@ -2448,6 +2448,7 @@ async function webMain(): Promise<void> {
     try {
         parser = CourseParser.getParser(worksheetText)
     } catch (e) {
+        console.log(e)
         alert("Error parsing courses. Did you copy+paste the entire page (not just the \"Courses Completed\" table)?")
         return
     }
