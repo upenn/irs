@@ -1100,16 +1100,23 @@ class RequirementCisElective extends DegreeRequirement {
 }
 
 class RequirementTechElectiveEngineering extends DegreeRequirement {
+    readonly allowLinkingCourses: boolean
+
+    constructor(displayIndex: number, allowLinking: boolean) {
+        super(displayIndex)
+        this.allowLinkingCourses = allowLinking
+    }
 
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         return courses.slice()
             .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
-            return (c.suhSaysEngr() || EngrLinkingCourses.includes(c.code())) &&
-                c.grading == GradeType.ForCredit &&
-                c.courseNumberInt >= this.minLevel &&
-                this.applyCourse(c)
-        })
+                const linking = this.allowLinkingCourses && EngrLinkingCourses.includes(c.code())
+                return (c.suhSaysEngr() || linking) &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c)
+            })
     }
 
     public toString(): string {
@@ -3010,8 +3017,8 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementAttributes(5, "Math", [CourseAttribute.Math]),
                 new RequirementAttributes(6, "Math", [CourseAttribute.Math]),
 
-                new RequirementTechElectiveEngineering(25),
-                new RequirementTechElectiveEngineering(26),
+                new RequirementTechElectiveEngineering(25, false),
+                new RequirementTechElectiveEngineering(26, false),
                 new RequirementCsci40TechElective(27),
                 new RequirementCsci40TechElective(28),
                 new RequirementCsci40TechElective(29),
@@ -3060,8 +3067,8 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementAttributes(5, "Math", [CourseAttribute.Math]),
                 new RequirementAttributes(6, "Math", [CourseAttribute.Math]),
 
-                new RequirementTechElectiveEngineering(20),
-                new RequirementTechElectiveEngineering(21),
+                new RequirementTechElectiveEngineering(20, true),
+                new RequirementTechElectiveEngineering(21, true),
 
                 new RequirementAscs40TechElective(23),
                 new RequirementAscs40TechElective(24),
@@ -3114,8 +3121,8 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementAttributes(5, "Math", [CourseAttribute.Math]),
                 new RequirementAttributes(6, "Math", [CourseAttribute.Math]),
 
-                new RequirementTechElectiveEngineering(20),
-                new RequirementTechElectiveEngineering(21),
+                new RequirementTechElectiveEngineering(20, true),
+                new RequirementTechElectiveEngineering(21, true),
 
                 new RequirementAscs40TechElective(23),
                 new RequirementAscs40TechElective(24),
