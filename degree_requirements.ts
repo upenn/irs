@@ -61,7 +61,7 @@ const EngrLinkingCourses = [
     "STAT 4350",
 ]
 
-const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060"]
+const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060", "VIPR 1200", "VIPR 1210"]
 const CsciProjectElectives = [
     "NETS 2120","CIS 3410","CIS 3500",
     "CIS 4410","CIS 5410",
@@ -746,9 +746,13 @@ abstract class DegreeRequirement {
     /** internal method for actually applying `c` to this requirement, decrementing CUs for both `c` and `this` */
     protected applyCourse(c: CourseTaken): boolean {
         if (this.doesntConsume) {
-            this.coursesApplied.push(c)
-            this.remainingCUs = 0
-            return true
+            if (this.remainingCUs > 0 && !this.coursesApplied.includes(c)) {
+                this.coursesApplied.push(c)
+                this.remainingCUs -= c.getCUs()
+                myAssert(this.remainingCUs >= 0, this.toString())
+                return true
+            }
+            return false
         }
         // don't split a 1cu course to try to fill our last 0.5cu
         if (c.courseUnitsRemaining > 0 && !(c.courseUnitsRemaining == 1 && this.remainingCUs == 0.5)) {
@@ -3582,11 +3586,19 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         }
         { // ethics requirement: NB doesn't have to come from SSH block!
             const ethicsReq = new RequirementNamedCourses(42, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
-            const matched = ethicsReq.satisfiedBy(coursesTaken)
-            if (matched == undefined) {
+            const match1 = ethicsReq.satisfiedBy(coursesTaken)
+            if (match1 == undefined) {
                 reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Unsatisfied, []])
+            } else if (ethicsReq.remainingCUs == 0) {
+                reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Satisfied, [match1]])
             } else {
-                reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Satisfied, [matched]])
+                // match VIPR 1200 & 1201
+                const match2 = ethicsReq.satisfiedBy(coursesTaken)
+                if (match2 == undefined) {
+                    reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.PartiallySatisfied, [match1]])
+                } else {
+                    reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Satisfied, [match1,match2]])
+                }
             }
         }
     }
