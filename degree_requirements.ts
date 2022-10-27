@@ -593,9 +593,9 @@ const RoboGeneralElectives = new Set<string>([
 ])
 
 // CGGT imported on 18 Oct 2022 from https://www.cis.upenn.edu/graduate/program-offerings/mse-in-computer-graphics-and-game-technology/requirements/
-const CggtGraphicsElectives = ["CIS 5610", "CIS 5630", "CIS 5650", "FNAR 5670", "FNAR 6610", "FNAR 6650"]
+const CggtGraphicsElectives = ["CIS 4610", "CIS 5610", "CIS 5630", "CIS 5650", "FNAR 5670", "FNAR 6610", "FNAR 6650"]
 const CggtTechnicalElectives = [
-    "CIS 5190", "CIS 5200", "CIS 5550", "CIS 5610", "CIS 5630", "CIS 5640", "CIS 5800", "CIS 5810", "CIS 5990",
+    "CIS 4190", "CIS 5190", "CIS 5200", "CIS 4550", "CIS 5550", "CIS 4610", "CIS 5610", "CIS 5630", "CIS 5640", "CIS 5800", "CIS 5810", "CIS 5990",
     "ESE 5050", "ESE 6190"]
 const CggtBusiness = ["EAS 5450", "IPD 5150"]
 
@@ -619,8 +619,10 @@ const DatsNetworkScience = [
 ]
 const DatsProgramming = [
     "CIS 5050",
+    "CIS 4500",
     "CIS 5500",
     "CIS 5520",
+    "CIS 4550",
     "CIS 5550",
     "CIS 5590",
     "CIS 5730",
@@ -637,6 +639,7 @@ const DatsStats = [
     "STAT 9740",
 ]
 const DatsAI = [
+    "CIS 4210",
     "CIS 5210",
     "CIS 5220",
     "CIS 5300",
@@ -3431,38 +3434,39 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
 
     switch (degrees.masters) {
         case "CIS-MSE":
+            const cisCrossListNumbers = [4190, 4210, 4230, 4360, 4410, 4500, 4550, 4600, 4610, 4620, 4710]
             mastersDegreeRequirements = [
-                new RequirementNamedCourses(1, "Systems", ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710"]),
+                new RequirementNamedCourses(1, "Systems", ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 4550", "CIS 5550", "CIS 4710", "CIS 5710"]),
                 new RequirementNamedCourses(2, "Theory", ["CIS 5020", "CIS 5110"]),
                 new RequirementNamedCourses(3, "Core non-ML",
-                    ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710", "CIS 5020", "CIS 5110", "CIS 5000"]),
+                    ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 4550", "CIS 5550", "CIS 4710", "CIS 5710", "CIS 5020", "CIS 5110", "CIS 5000"]),
                 new RequirementNamedCourses(4, "Core",
-                    ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 5550", "CIS 5710", "CIS 5020", "CIS 5110", "CIS 5000", "CIS 5190", "CIS 5200", "CIS 5210"]),
+                    ["CIS 5050", "CIS 5480", "CIS 5530", "CIS 4550", "CIS 5550", "CIS 4710", "CIS 5710", "CIS 5020", "CIS 5110", "CIS 5000", "CIS 4190", "CIS 5190", "CIS 5200", "CIS 4210", "CIS 5210"]),
                 new RequirementNumbered(5, "CIS Elective [5000,7000]", "CIS",
-                    function(x: number) { return x >= 5000 && x <= 7000}),
+                    function(x: number) { return cisCrossListNumbers.includes(x) || (x >= 5000 && x <= 7000)}),
                 new RequirementNumbered(6, "CIS Elective [5000,6999]", "CIS",
-                    function(x: number) { return x >= 5000 && x < 7000}),
+                    function(x: number) { return cisCrossListNumbers.includes(x) || (x >= 5000 && x < 7000)}),
                 new RequirementNumbered(7, "CIS Elective [5000,6999]", "CIS",
-                    function(x: number) { return x >= 5000 && x < 7000}),
+                    function(x: number) { return cisCrossListNumbers.includes(x) || (x >= 5000 && x < 7000)}),
                 new RequirementNumbered(8, "Elective + Restriction 1", "CIS",
-                    function(x: number) { return x >= 5000 && x < 8000},
+                    function(x: number) { return cisCrossListNumbers.includes(x) || (x >= 5000 && x < 8000)},
                     new Set<string>([...CisMseNonCisElectives, ...CisMseNonCisElectivesRestrictions1])),
                 new RequirementNumbered(9, "Elective + Restriction 2", "CIS",
-                    function(x: number) { return x >= 5000 && x < 8000},
+                    function(x: number) { return cisCrossListNumbers.includes(x) || (x >= 5000 && x < 8000)},
                     new Set<string>([...CisMseNonCisElectives, ...CisMseNonCisElectivesRestrictions2])),
                 new RequirementNumbered(10, "Elective", "CIS",
-                    function(x: number) { return x >= 5000 && x < 8000},
+                    function(x: number) { return cisCrossListNumbers.includes(x) || (x >= 5000 && x < 8000)},
                     new Set<string>([...CisMseNonCisElectives])),
             ]
             break
         case "CGGT":
             mastersDegreeRequirements = [
                 new RequirementNamedCourses(1, "Creative Arts & Design", ["DSGN 5005"]),
-                new RequirementNamedCourses(2, "Interactive Computer Graphics", ["CIS 5600"]),
-                new RequirementNamedCourses(3, "Computer Animation", ["CIS 5620"]),
+                new RequirementNamedCourses(2, "Interactive Computer Graphics", ["CIS 4600", "CIS 5600"]),
+                new RequirementNamedCourses(3, "Computer Animation", ["CIS 4620", "CIS 5620"]),
                 new RequirementNamedCourses(4, "Advanced Topics in Graphics", ["CIS 6600"]),
                 new RequirementNamedCourses(5, "Math",
-                    ["CIS 5190", "CIS 5200", "CIS 5610", "CIS 5630", "CIS 5800", "CIS 5810", "ENM 5030"]),
+                    ["CIS 4190", "CIS 5190", "CIS 5200", "CIS 4610", "CIS 5610", "CIS 5630", "CIS 5800", "CIS 5810", "ENM 5030"]),
                 new RequirementNamedCourses(6, "Business & Entrepreneurship", CggtBusiness),
                 new RequirementNamedCourses(7, "Graphics Elective",CggtGraphicsElectives),
                 new RequirementNamedCourses(8, "Technical Elective", CggtTechnicalElectives),
@@ -3476,7 +3480,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
             const roboFoundation = "roboFoundation"
             mastersDegreeRequirements = [
                 new RequirementLabel(0, "<b>Take courses in at least 3 of the 4 buckets below:</b>"),
-                new RequireBucketNamedCourses(1, "Artificial Intelligence Bucket", ["CIS 5190","CIS 5200","CIS 5210","ESE 6500"], roboFoundation),
+                new RequireBucketNamedCourses(1, "Artificial Intelligence Bucket", ["CIS 4190","CIS 5190","CIS 5200","CIS 4210","CIS 5210","ESE 6500"], roboFoundation),
                 new RequireBucketNamedCourses(2, "Robot Design & Analysis Bucket", ["MEAM 5100","MEAM 5200","MEAM 6200"], roboFoundation),
                 new RequireBucketNamedCourses(3, "Control Bucket", ["ESE 5000","ESE 5050","ESE 6190","MEAM 5130","MEAM 5170"], roboFoundation),
                 new RequireBucketNamedCourses(4, "Perception Bucket", ["CIS 5800","CIS 5810","CIS 6800"], roboFoundation),
@@ -3499,7 +3503,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(2, "Statistics", ["ESE 5420"]),
                 new RequirementNamedCourses(3, "Big Data Analytics", ["CIS 5450"]),
                 new RequirementNamedCourses(4, "Linear Algebra", ["CIS 5150", "MATH 5130"]),
-                new RequirementNamedCourses(5, "Machine Learning", ["CIS 5190", "CIS 5200", "ENM 5310", "ESE 5450", "STAT 5710"]),
+                new RequirementNamedCourses(5, "Machine Learning", ["CIS 4190", "CIS 5190", "CIS 5200", "ENM 5310", "ESE 5450", "STAT 5710"]),
                 new RequirementLabel(6, "<b>Take courses in at least 3 of the 8 buckets below</b>"),
                 new RequireBucketNamedCourses(7, "Thesis Bucket", DatsThesis, datsTE),
                 new RequireBucketNamedCourses(8, "Biomedicine Bucket", DatsBiomedicine, datsTE),
