@@ -71,7 +71,7 @@ const CsciProjectElectives = [
     "CIS 5050","CIS 5530",
     "ESE 3500"
 ]
-const AscsProjectElectives = CsciProjectElectives.concat(["CIS 4710","CIS 5710","CIS 3800"])
+const AscsProjectElectives = CsciProjectElectives.concat(["CIS 4710","CIS 5710","CIS 3800","CIS 5480"])
 const SseIseElectives = [
     "CIS 2400", "CIS 4500", "CIS 5500",
     "ESE 3050", "ESE 3250", "ESE 4070", "ESE 4200", "ESE 5000", "ESE 5040", "ESE 5050", "ESE 5120",
@@ -3663,7 +3663,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         .filter(c => c.suhSaysMath() || c.suhSaysNatSci())
         .reduce((sum,c) => sum + c.getGpaCUs(), 0)
     const gpaMnsPoints = coursesTaken
-        .filter(c => c.suhSaysMath() || c.suhSaysNatSci() || c.suhSaysEngr())
+        .filter(c => c.suhSaysMath() || c.suhSaysNatSci())
         .reduce((sum,c) => sum + c.getGpaPoints(), 0)
     const gpaMns = gpaMnsPoints / gpaMnsCUs
 
