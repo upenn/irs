@@ -1876,8 +1876,9 @@ abstract class CourseParser {
 
     /** Updates `degrees` IN-PLACE, using heuristic to identify students declared as CSCI but following ASCS instead.
      * Check for and disable equivalent courses, add MATH retroactive credit, and split lab courses. */
-    protected postProcess(courses: CourseTaken[], degrees: Degrees): CourseTaken[] {
-        if (degrees.undergrad == "40cu CSCI" &&
+    protected postProcess(courses: CourseTaken[], degrees: Degrees, autoDegree: boolean): CourseTaken[] {
+        if (autoDegree &&
+            degrees.undergrad == "40cu CSCI" &&
             !courses.some(c => c.code() == "CIS 4710") &&
             !courses.some(c => c.code() == "CIS 5710") &&
             // !courses.some(c => c.code() == "CIS 3800") &&
@@ -2114,7 +2115,7 @@ class DegreeWorksClassHistoryParser extends CourseParser {
             }
         })
 
-        result.courses = this.postProcess(result.courses, result.degrees)
+        result.courses = this.postProcess(result.courses, result.degrees, degrees == undefined)
         return result
     }
 
@@ -2167,7 +2168,7 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
             //console.log("inferred degrees as " + deg)
             result.degrees = deg!
         }
-        result.courses = this.postProcess(result.courses, result.degrees)
+        result.courses = this.postProcess(result.courses, result.degrees, degrees == undefined)
         return result
     }
 
