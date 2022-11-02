@@ -1745,7 +1745,8 @@ export class CourseTaken {
             // 4-digit MATH courses
             1100, 1510, 1234, 1248, 1300, 1700, 2100, 2800
         ]
-        return mathCourses.includes(this.code()) ||
+        return this.subject == "ENM" ||
+            mathCourses.includes(this.code()) ||
             (this.subject == "MATH" && !prohibitedMathCourseNumbers.includes(this.courseNumberInt))
     }
 
@@ -3011,7 +3012,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(15, "Major", ["CIS 2620","CIS 5110"]),
                 new RequirementNamedCourses(16, "Major", ["CIS 3200","CIS 5020"]),
                 new RequirementNamedCourses(17, "Major", ["CIS 4710","CIS 5710"]),
-                new RequirementNamedCourses(18, "Major", ["CIS 3800"]),
+                new RequirementNamedCourses(18, "Major", ["CIS 3800", "CIS 5480"]),
                 new RequirementNamedCourses(19, "Senior Design", SeniorDesign1stSem),
                 new RequirementNamedCourses(20, "Senior Design", SeniorDesign2ndSem),
 
@@ -3176,7 +3177,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(17, "Major", ["CIS 3500","CIS 4600","CIS 5600"]),
                 new RequirementNamedCourses(18, "Major", ["ESE 3700"]),
                 new RequirementNamedCourses(19, "Major", ["CIS 4710","CIS 5710"]),
-                new RequirementNamedCourses(20, "Major", ["CIS 3800"]),
+                new RequirementNamedCourses(20, "Major", ["CIS 3800", "CIS 5480"]),
                 new RequirementNamedCourses(21, "Major", ["CIS 4410","CIS 5410"]),
                 new RequirementNamedCourses(22, "Networking", ["ESE 4070","CIS 5530"]),
                 new RequirementNamedCourses(23, "Concurrency Lab", ["CIS 4550","CIS 5550","CIS 5050","ESE 5320","CIS 5650"]),
