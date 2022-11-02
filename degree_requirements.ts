@@ -1669,6 +1669,33 @@ export class CourseTaken {
         this.courseUnitsRemaining = 0
     }
 
+    private countsTowardsGpa(): boolean {
+        return (this.grading != GradeType.PassFail) && CompletedGrades.includes(this.letterGrade) && this.letterGrade != "TR"
+    }
+    public getGpaCUs(): number {
+        return this.countsTowardsGpa() ? this.courseUnits : 0
+    }
+    public getGpaPoints(): number {
+        if (!this.countsTowardsGpa()) {
+            return 0
+        }
+        const gpaTable = new Map<string,number>([
+            ["A+", 4.0],
+            ["A",  4.0],
+            ["A-", 3.7],
+            ["B+", 3.3],
+            ["B",  3.0],
+            ["B-", 2.7],
+            ["C+", 2.3],
+            ["C",  2.0],
+            ["C-", 1.7],
+            ["D+", 1.3],
+            ["D",  1.0],
+        ])
+        myAssert(gpaTable.has(this.letterGrade), this.toString())
+        return gpaTable.get(this.letterGrade)! * this.courseUnits
+    }
+
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Social Science.
      * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
     private suhSaysSS(): boolean {
@@ -1731,7 +1758,7 @@ export class CourseTaken {
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Math.
      * NB: this IS intended to be a definitive classification */
-    private suhSaysMath(): boolean {
+    public suhSaysMath(): boolean {
         const mathCourses = [
             "CIS 1600", "CIS 2610",
             "EAS 205",
@@ -1752,7 +1779,7 @@ export class CourseTaken {
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Natural Science.
      * NB: this IS intended to be a definitive classification */
-    private suhSaysNatSci(): boolean {
+    public suhSaysNatSci(): boolean {
         const nsCourses = [
             "ASTR 1211", "ASTR 1212","ASTR 1250","ASTR 3392",
             "BE 3050", "CIS 3980", "ESE 1120", "MSE 2210",
@@ -1777,7 +1804,7 @@ export class CourseTaken {
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Engineering.
      * NB: this IS intended to be a definitive classification */
-    suhSaysEngr(): boolean {
+    public suhSaysEngr(): boolean {
         if (["VIPR 1200","VIPR 1210","NSCI 3010"].includes(this.code())) {
             return true
         }
@@ -1787,7 +1814,7 @@ export class CourseTaken {
             "CIS 1050", "CIS 1070", "CIS 1250", "CIS 1600", "CIS 2610", "CIS 4230", "CIS 5230", "CIS 7980",
             "ESE 3010", "ESE 4020",
             // IPD courses cross listed with ARCH, EAS or FNAR do not count as Engineering
-            // TODO: these IPD cross-lists are hard-code, look them up automatically instead
+            // TODO: these IPD cross-lists are hard-coded, look them up automatically instead
             "IPD 5090", "IPD 5210", "IPD 5270", "IPD 5280", "IPD 5440", "IPD 5450", "IPD 5720",
             "MEAM 1100", "MEAM 1470",
             "MSE 2210",
@@ -2290,6 +2317,7 @@ const NodeColumn3Reqs = "#col3Reqs"
 const NodeRemainingCUs = "#remainingCUs"
 const NodeDoubleCounts = "#doubleCounts"
 const NodeStudentInfo = "#studentInfo"
+const NodeGpa = "#gpa"
 const NodeUnusedCoursesHeader = "#unusedCoursesHeader"
 const NodeCoursesList = "#usedCoursesList"
 const NodeUnusedCoursesList = "#unusedCoursesList"
@@ -2449,6 +2477,7 @@ async function webMain(): Promise<void> {
     $(".requirementsList").empty()
     $(NodeRemainingCUs).empty()
     $(NodeStudentInfo).empty()
+    $(NodeGpa).empty()
     $(NodeUnusedCoursesHeader).empty()
     $(NodeUnusedCoursesList).empty()
     $(NodeCoursesList).empty()
@@ -2509,6 +2538,11 @@ async function webMain(): Promise<void> {
 
     const result = run(telist, degrees, coursesTaken)
     setRemainingCUs(result.cusRemaining)
+    $(NodeGpa).append(`<div class="alert alert-secondary" role="alert">
+GPAs Overall = ${result.gpaOverall.toFixed(2)} 
+STEM = ${result.gpaStem.toFixed(2)} 
+Math+Natural Science = ${result.gpaMathNatSci.toFixed(2)}
+</div>`)
 
     if (IncorrectCMAttributes.size > 0 && parser instanceof DegreeWorksDiagnosticsReportParser) {
         let wrongAttrsMsg = `<div>found ${IncorrectCMAttributes.size} incorrect/missing attributes in CM:<ul>`
@@ -2956,17 +2990,27 @@ class RequirementOutcome {
 
 class RunResult {
     readonly requirementOutcomes: RequirementOutcome[]
+    readonly gpaOverall: number
+    readonly gpaStem: number
+    readonly gpaMathNatSci: number
     readonly cusRemaining: number
     readonly unconsumedCourses: CourseTaken[]
 
-    constructor(requirementOutcomes: RequirementOutcome[], cusRemaining: number, unconsumedCourses: CourseTaken[]) {
+    constructor(requirementOutcomes: RequirementOutcome[],
+                cusRemaining: number,
+                unconsumedCourses: CourseTaken[],
+                overallGpa: number,
+                stemGpa: number,
+                mathNatSciGpa: number) {
         this.requirementOutcomes = requirementOutcomes
         this.cusRemaining = cusRemaining
         this.unconsumedCourses = unconsumedCourses
+        this.gpaOverall = overallGpa
+        this.gpaStem = stemGpa
+        this.gpaMathNatSci = mathNatSciGpa
     }
 }
 
-// TODO: if we want to have integration tests, they should use this run() function
 export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, coursesTaken: CourseTaken[]): RunResult {
     csci37techElectiveList
         .filter((te: TechElectiveDecision): boolean => te.status == "yes")
@@ -3604,6 +3648,25 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         }
     }
 
+    // calculate GPAs
+    const gpaOverallCUs = coursesTaken.reduce((sum,c) => sum + c.getGpaCUs(), 0)
+    const gpaOverallPoints = coursesTaken.reduce((sum,c) => sum + c.getGpaPoints(), 0)
+    const gpaOverall = gpaOverallPoints / gpaOverallCUs
+    const gpaStemCUs = coursesTaken
+        .filter(c => c.suhSaysMath() || c.suhSaysNatSci() || c.suhSaysEngr())
+        .reduce((sum,c) => sum + c.getGpaCUs(), 0)
+    const gpaStemPoints = coursesTaken
+        .filter(c => c.suhSaysMath() || c.suhSaysNatSci() || c.suhSaysEngr())
+        .reduce((sum,c) => sum + c.getGpaPoints(), 0)
+    const gpaStem = gpaStemPoints / gpaStemCUs
+    const gpaMnsCUs = coursesTaken
+        .filter(c => c.suhSaysMath() || c.suhSaysNatSci())
+        .reduce((sum,c) => sum + c.getGpaCUs(), 0)
+    const gpaMnsPoints = coursesTaken
+        .filter(c => c.suhSaysMath() || c.suhSaysNatSci() || c.suhSaysEngr())
+        .reduce((sum,c) => sum + c.getGpaPoints(), 0)
+    const gpaMns = gpaMnsPoints / gpaMnsCUs
+
     // sort by displayIndex
     reqOutcomes.sort((a,b) => a[0] - b[0])
     return new RunResult(
@@ -3611,6 +3674,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
             return new RequirementOutcome(!mastersDegreeRequirements.includes(o[1]), o[1], o[2], o[3])
         }),
         totalRemainingCUs,
-        coursesTaken.filter(c => c.courseUnitsRemaining > 0)
+        coursesTaken.filter(c => c.courseUnitsRemaining > 0),
+        gpaOverall, gpaStem, gpaMns
     )
 }
