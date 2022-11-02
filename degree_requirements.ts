@@ -2,6 +2,7 @@
 // DW analysis files go here
 import {makeArray} from "jquery";
 import DroppableEventUIParam = JQueryUI.DroppableEventUIParam;
+import exp from "constants";
 
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 const DraggableDataGetCourseTaken = "CourseTaken"
@@ -702,7 +703,8 @@ export interface TechElectiveDecision {
     status: "yes" | "no" | "ask"
 }
 
-type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" | "none"
+type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" |
+    "37cu ASCS" | "none"
 type MastersDegree = "CIS-MSE" | "DATS" | "ROBO" | "CGGT" | "none"
 
 let IncorrectCMAttributes = new Set<string>()
@@ -2342,6 +2344,15 @@ export class Degrees {
         }
         return s
     }
+
+    public getUndergradCUs(): number {
+        myAssert(this.undergrad != "none")
+        if (this.undergrad.startsWith("40cu")) {
+            return 40
+        }
+        myAssert(this.undergrad.startsWith("37cu"))
+        return 37
+    }
 }
 
 function snapCourseIntoPlace(course: CourseTaken, req: DegreeRequirement) {
@@ -3023,14 +3034,16 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
 
     let ugradDegreeRequirements: DegreeRequirement[] = []
 
-    const ascsNSCourses = ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100","PHYS 093","PHYS 094",
+    const _40cuAscsNSCourses = ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100","PHYS 093","PHYS 094",
         "PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120",
         "EAS 0091","CHEM 1012","BIOL 1101","BIOL 1121"]
-    const ascsNSElectives = ["LING 2500", "LING 2300", "LING 5310", "LING 5320",
+    const _40cuAscsNSElectives = ["LING 2500", "LING 2300", "LING 5310", "LING 5320",
         "LING 5510", "LING 5520", "LING 6300", "LING 6400",
         "PHIL 4840",
         "PSYC 1210", "PSYC 1340", "PSYC 1310", "PSYC 2310", "PSYC 2737",
     ]
+    const _37cuAscsNSCourses = ["PHYS 0140","PHYS 0150","PHYS 0170", "PHYS 0141","PHYS 0151","PHYS 0171",
+        "EAS 0091","CHEM 1012","BIOL 1101","BIOL 1121"]
 
     // NB: below, requirements are listed from highest => lowest priority. Display order is orthogonal.
     switch (degrees.undergrad) {
@@ -3099,10 +3112,10 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
                 new RequirementNamedCourses(4, "Math", ["CIS 2620","CIS 5110"]),
 
-                new RequirementNamedCourses(7, "Natural Science", ascsNSCourses),
-                new RequirementNamedCourses(8, "Natural Science",ascsNSCourses).withConcise(),
-                new RequirementNamedCoursesOrAttributes(9, "Natural Science Elective", ascsNSElectives, [CourseAttribute.NatSci]),
-                new RequirementNamedCoursesOrAttributes(10, "Natural Science Elective", ascsNSElectives, [CourseAttribute.NatSci])
+                new RequirementNamedCourses(7, "Natural Science", _40cuAscsNSCourses),
+                new RequirementNamedCourses(8, "Natural Science",_40cuAscsNSCourses).withConcise(),
+                new RequirementNamedCoursesOrAttributes(9, "Natural Science Elective", _40cuAscsNSElectives, [CourseAttribute.NatSci]),
+                new RequirementNamedCoursesOrAttributes(10, "Natural Science Elective", _40cuAscsNSElectives, [CourseAttribute.NatSci])
                     .withConcise(),
 
                 new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
@@ -3153,10 +3166,10 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
                 new RequirementNamedCourses(4, "Math", ["CIS 2620"]),
 
-                new RequirementNamedCourses(7, "Natural Science", ascsNSCourses),
-                new RequirementNamedCourses(8, "Natural Science",ascsNSCourses).withConcise(),
-                new RequirementNamedCoursesOrAttributes(9, "Natural Science Elective", ascsNSElectives, [CourseAttribute.NatSci]),
-                new RequirementNamedCoursesOrAttributes(10, "Natural Science Elective", ascsNSElectives, [CourseAttribute.NatSci])
+                new RequirementNamedCourses(7, "Natural Science", _40cuAscsNSCourses),
+                new RequirementNamedCourses(8, "Natural Science",_40cuAscsNSCourses).withConcise(),
+                new RequirementNamedCoursesOrAttributes(9, "Natural Science Elective", _40cuAscsNSElectives, [CourseAttribute.NatSci]),
+                new RequirementNamedCoursesOrAttributes(10, "Natural Science Elective", _40cuAscsNSElectives, [CourseAttribute.NatSci])
                     .withConcise(),
 
                 new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
@@ -3468,6 +3481,54 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementFreeElective(45),
             ]
             break
+        case "37cu ASCS":
+            ugradDegreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
+                new RequirementNamedCourses(4, "Natural Science", _37cuAscsNSCourses),
+                new RequirementNamedCourses(5, "Natural Science",_37cuAscsNSCourses).withConcise(),
+                new RequirementAttributes(6, "Math/Natural Science Elective", [CourseAttribute.NatSci, CourseAttribute.Math]),
+                new RequirementAttributes(7, "Math/Natural Science Elective", [CourseAttribute.NatSci, CourseAttribute.Math]).withConcise(),
+                new RequirementAttributes(8, "Math/Natural Science Elective", [CourseAttribute.NatSci, CourseAttribute.Math]).withConcise(),
+
+                new RequirementNamedCourses(9, "Major", ["CIS 1100"]),
+                new RequirementNamedCourses(10, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(11, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 2400"]),
+                new RequirementNamedCourses(13, "Math", ["CIS 2620","CIS 5110"]),
+                new RequirementNamedCourses(14, "Major", ["CIS 3200","CIS 5020"]),
+                new RequirementNamedCourses(15, "Project Elective", AscsProjectElectives),
+                new RequirementNamedCourses(16, "Project Elective", AscsProjectElectives).withConcise(),
+                new RequirementNamedCourses(17, "Senior Capstone", ["EAS 4990","CIS 4980"].concat(SeniorDesign2ndSem)),
+
+                new RequirementCisElective(18),
+                new RequirementCisElective(19).withMinLevel(2000),
+
+                new RequirementTechElectiveEngineering(20, false),
+                new RequirementTechElectiveEngineering(21, false),
+
+                new RequirementAscs40TechElective(22),
+                new RequirementAscs40TechElective(23),
+                new RequirementAscs40TechElective(24),
+                new RequirementAscs40TechElective(25),
+                new RequirementAscs40TechElective(26),
+                new RequirementAscs40TechElective(27),
+                new RequirementAscs40TechElective(28),
+                new RequirementAscs40TechElective(29),
+
+                new RequirementNamedCourses(36, "Ethics", CsciEthicsCourses),
+                new RequirementSsh(30, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(31, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(32, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing requirement is @ index 40
+
+                new RequirementFreeElective(41),
+            ]
+            break
         case "none":
             break
         default:
@@ -3477,7 +3538,8 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         const displayIndices = new Set<number>(ugradDegreeRequirements.map(r => r.displayIndex))
         myAssertEquals(displayIndices.size, ugradDegreeRequirements.length, "duplicate ugrad displayIndex")
         const degreeCUs = ugradDegreeRequirements.map(r => r.remainingCUs).reduce((sum, e) => sum + e, 0)
-        myAssertEquals(40, degreeCUs, `${degrees.undergrad} degree should be 40 CUs but was ${degreeCUs}`)
+        const expectedCUs = degrees.getUndergradCUs()
+        myAssertEquals(expectedCUs, degreeCUs, `${degrees.undergrad} degree should be ${expectedCUs} CUs but was ${degreeCUs}`)
     }
 
     let mastersDegreeRequirements: DegreeRequirement[] = []
@@ -3622,7 +3684,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Satisfied, [matched]])
             }
         }
-        { // SS/H Depth requirement
+        if (degrees.getUndergradCUs() == 40) { // SS/H Depth requirement
             const depthReq = new RequirementSshDepth(41).withNoConsume()
             if (depthReq.satisfiedBy(sshCourses) != undefined) {
                 reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, depthReq.coursesApplied])
@@ -3630,7 +3692,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 reqOutcomes.push([42, depthReq, RequirementApplyResult.Unsatisfied, []])
             }
         }
-        { // ethics requirement: NB doesn't have to come from SSH block!
+        if (degrees.getUndergradCUs() == 40) { // ethics requirement: NB doesn't have to come from SSH block!
             const ethicsReq = new RequirementNamedCourses(42, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
             const match1 = ethicsReq.satisfiedBy(coursesTaken)
             if (match1 == undefined) {
