@@ -1672,7 +1672,9 @@ export class CourseTaken {
     }
 
     private countsTowardsGpa(): boolean {
-        return (this.grading != GradeType.PassFail) && CompletedGrades.includes(this.letterGrade) && this.letterGrade != "TR"
+        return (this.grading != GradeType.PassFail) &&
+            CompletedGrades.includes(this.letterGrade) &&
+            !["TR","P"].includes(this.letterGrade)
     }
     public getGpaCUs(): number {
         return this.countsTowardsGpa() ? this.courseUnits : 0
