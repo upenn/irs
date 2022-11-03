@@ -691,6 +691,9 @@ function myAssertEquals(a: any, b: any, message: string = "") {
         throw new Error(`expected ${a} == ${b} ${message}`)
     }
 }
+function myAssertUnreachable(x: never): never {
+    throw new Error("Didn't expect to get here");
+}
 
 export enum GradeType {
     PassFail = "PassFail",
@@ -705,7 +708,7 @@ export interface TechElectiveDecision {
 }
 
 type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" |
-    "37cu ASCS" | "37cu CSCI" | "none"
+    "37cu ASCS" | "37cu CSCI" | "37cu CMPE" | "none"
 type MastersDegree = "CIS-MSE" | "DATS" | "ROBO" | "CGGT" | "none"
 
 let IncorrectCMAttributes = new Set<string>()
@@ -1994,10 +1997,11 @@ abstract class CourseParser {
         // "For the Class of 2025 and earlier, if you pass Math 2410 at Penn with at least a grade of B, you may come to
         // the math office and receive retroactive credit for (and only one) Math 1400, Math 1410, or Math 2400"
 
-        let labs: CourseTaken[] = []
+        // heuristics to split some physics courses into 1.0 lecture + 0.5 lab pieces, based on major
+        const labs: CourseTaken[] = []
         courses.forEach(c => {
             const nosplit =
-                (["PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) && degrees.undergrad == "40cu CMPE") ||
+                (["PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) && ["40cu CMPE","37cu CMPE"].includes(degrees.undergrad)) ||
                 (["PHYS 0150","PHYS 0170","PHYS 0151","PHYS 0171"].includes(c.code()) && degrees.undergrad == "40cu NETS") ||
                 (["PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) && degrees.undergrad == "40cu EE") ||
                 (["PHYS 0150","PHYS 0170","PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) && degrees.undergrad == "37cu CSCI")
@@ -3632,10 +3636,61 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementFreeElective(42),
             ]
             break
+        case "37cu CMPE":
+            ugradDegreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["MATH 2400", "MATH 2600"]),
+                new RequirementNamedCourses(4, "Probability", ["CIS 2610", "ESE 3010", "ENM 321", "STAT 4300"]),
+                new RequirementNamedCourses(5, "Math", ["CIS 1600"]),
+
+                new RequirementNamedCourses(6, "Physics", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
+                new RequirementNamedCourses(7, "Physics", ["ESE 1120"]).withCUs(1.5),
+                new RequirementNamedCourses(8, "Natural Science", ["CHEM 1011","EAS 0091","BIOL 1101","BIOL 1121","PHYS 1240"]),
+                new RequirementAttributes(9, "Math/Natural Science Elective", [CourseAttribute.Math, CourseAttribute.NatSci]),
+                new RequirementNaturalScienceLab(10, "Natural Science Lab").withCUs(0.5),
+
+                new RequirementNamedCourses(11, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(13, "Major", ["ESE 1500"]),
+                new RequirementNamedCourses(14, "Major", ["ESE 2150"]).withCUs(1.5),
+                new RequirementNamedCourses(15, "Major", ["CIS 2400"]),
+                new RequirementNamedCourses(16, "Major", ["ESE 3500"]).withCUs(1.5),
+                new RequirementNamedCourses(17, "Major", ["CIS 3500","CIS 4600","CIS 5600"]),
+                new RequirementNamedCourses(18, "Major", ["ESE 3700"]),
+                new RequirementNamedCourses(19, "Major", ["CIS 3800","CIS 5480"]),
+                new RequirementNamedCourses(20, "Major", ["CIS 4410","CIS 5410","CIS 5470"]),
+                new RequirementNamedCourses(21, "Major", ["CIS 4710","CIS 5710"]),
+                new RequirementNamedCourses(22, "Networking", ["ESE 4070","ESE 5070","CIS 5530"]),
+                new RequirementNamedCourses(23, "Concurrency Lab",
+                    ["CIS 4550","CIS 5550","CIS 5050","ESE 5320","CIS 5650"]),
+                new RequirementNamedCourses(24, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(25, "Senior Design", SeniorDesign2ndSem),
+
+                new RequirementAttributes(26, "Professional Elective",
+                    [CourseAttribute.Math,CourseAttribute.NatSci,CourseAttribute.MathNatSciEngr]).withMinLevel(2000),
+                new RequirementNamedCoursesOrAttributes(27, "Professional Elective",
+                    ["ESE 4000","EAS 5450","EAS 5950","MGMT 2370","OIDD 2360"],
+                    [CourseAttribute.Math,CourseAttribute.NatSci,CourseAttribute.MathNatSciEngr]).withMinLevel(2000),
+                new RequirementAttributes(28, "Professional Elective",
+                    [CourseAttribute.Math,CourseAttribute.NatSci,CourseAttribute.MathNatSciEngr]),
+                new RequirementAttributes(29, "Professional Elective",
+                    [CourseAttribute.Math,CourseAttribute.NatSci,CourseAttribute.MathNatSciEngr]),
+
+                new RequirementNamedCourses(30, "Ethics", CsciEthicsCourses),
+                new RequirementSsh(31, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(32, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing requirement is @ index 41
+            ]
+            break
         case "none":
             break
         default:
-            throw new Error(`unsupported degree: ${degrees.undergrad}`)
+            myAssertUnreachable(degrees.undergrad)
     }
     if (ugradDegreeRequirements.length > 0) {
         const displayIndices = new Set<number>(ugradDegreeRequirements.map(r => r.displayIndex))
@@ -3738,7 +3793,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         case "none":
             break
         default:
-            throw new Error(`unsupported degree: ${degrees.masters}`)
+            myAssertUnreachable(degrees.masters)
     }
     if (mastersDegreeRequirements.length > 0) {
         const displayIndices = new Set<number>(mastersDegreeRequirements.map(r => r.displayIndex))
