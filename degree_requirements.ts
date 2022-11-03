@@ -3,6 +3,7 @@
 import {makeArray} from "jquery";
 import DroppableEventUIParam = JQueryUI.DroppableEventUIParam;
 import exp from "constants";
+import {isBooleanObject} from "util/types";
 
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 const DraggableDataGetCourseTaken = "CourseTaken"
@@ -1082,6 +1083,40 @@ class RequirementNaturalScienceLab extends RequirementNamedCourses {
 
     public toString(): string {
         return this.tag
+    }
+}
+
+/** Require CIS 1100, or a CIS/NETS Engineering course */
+class RequireCis1100 extends DegreeRequirement {
+    constructor(displayIndex: number) {
+        super(displayIndex)
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        const found1100 = courses.find((c: CourseTaken): boolean => {
+            return c.code() == "CIS 1100" &&
+                c.grading == GradeType.ForCredit &&
+                this.applyCourse(c)
+        })
+        if (found1100 != undefined) {
+            return found1100
+        }
+
+        // they didn't take CIS 1100, use a CIS/NETS Engineering course instead
+        return courses.slice() // NB: have to use slice since sort() is in-place
+            // try lower-number courses first
+            .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
+            .find((c: CourseTaken): boolean => {
+                const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes(CourseAttribute.NonEngr)
+                return foundMatch &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c)
+            })
+    }
+
+    public toString(): string {
+        return "Major: CIS 1100"
     }
 }
 
@@ -3069,7 +3104,6 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                     ["LING 2500","PSYC 1340","PSYC 121"],
                     [CourseAttribute.NatSci]),
 
-                new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
                 new RequirementNamedCourses(13, "Major", ["CIS 1210"]),
                 new RequirementNamedCourses(14, "Major", ["CIS 2400"]),
@@ -3082,6 +3116,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
 
                 new RequirementNamedCourses(21, "Project Elective", CsciProjectElectives),
 
+                new RequireCis1100(11),
                 new RequirementCisElective(23).withMinLevel(2000),
                 new RequirementCisElective(24).withMinLevel(2000),
                 new RequirementCisElective(22),
@@ -3124,7 +3159,6 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCoursesOrAttributes(10, "Natural Science Elective", _40cuAscsNSElectives, [CourseAttribute.NatSci])
                     .withConcise(),
 
-                new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
                 new RequirementNamedCourses(13, "Major", ["CIS 1210"]),
                 new RequirementNamedCourses(14, "Major", ["CIS 2400"]),
@@ -3133,6 +3167,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(19, "Project Elective", AscsProjectElectives).withConcise(),
                 new RequirementNamedCourses(22, "Senior Capstone", ["EAS 4990","CIS 4980"].concat(SeniorDesign2ndSem)),
 
+                new RequireCis1100(11),
                 new RequirementCisElective(17).withMinLevel(2000),
                 new RequirementCisElective(16),
 
@@ -3178,7 +3213,6 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCoursesOrAttributes(10, "Natural Science Elective", _40cuAscsNSElectives, [CourseAttribute.NatSci])
                     .withConcise(),
 
-                new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
                 new RequirementNamedCourses(13, "Major", ["CIS 1210"]),
                 new RequirementNamedCourses(13, "Major", ["CIS 1400","COGS 1001"]),
@@ -3187,6 +3221,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(15, "Major", ["CIS 4210","CIS 5210"]),
                 new RequirementNamedCourses(22, "Senior Capstone", ["EAS 4990","CIS 4980"].concat(SeniorDesign2ndSem)),
 
+                new RequireCis1100(11),
                 new RequirementCisElective(16),
                 new RequirementCisElective(17),
 
@@ -3286,7 +3321,6 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(7, "Physics", ["PHYS 0150","PHYS 0170"]).withCUs(1.5),
                 new RequirementNamedCourses(8, "Physics", ["PHYS 0151","PHYS 0171"]).withCUs(1.5),
 
-                new RequirementNamedCourses(10, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(11, "Major", ["CIS 1200"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1210"]),
                 new RequirementNamedCourses(13, "Major", ["CIS 3200","CIS 5020"]),
@@ -3300,6 +3334,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(21, "Major", ["NETS 4120"]),
                 new RequirementNamedCourses(22, "Senior Design", SeniorDesign1stSem),
                 new RequirementNamedCourses(23, "Senior Design", SeniorDesign2ndSem),
+                new RequireCis1100(10),
 
                 new RequirementNamedCourses(30, SsHTbsTag, ["ECON 2100"]),
                 new RequirementNamedCourses(31, SsHTbsTag, ["ECON 4100","ECON 4101","ECON 6110"]),
@@ -3337,7 +3372,6 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(7, "Physics", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100","PHYS 093"]),
                 new RequirementNamedCourses(8, "Physics", ["PHYS 0141","PHYS 0151","PHYS 0171","ESE 1120","PHYS 094"]),
 
-                new RequirementNamedCourses(11, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 1200"]),
                 new RequirementNamedCourses(13, "Major", ["CIS 1210"]),
                 new RequirementNamedCourses(14, "Major", ["CIS 2400"]),
@@ -3347,6 +3381,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(18, "Major", ["CIS 4610","CIS 5610","CIS 4620","CIS 5620","CIS 4550","CIS 5550"]),
                 new RequirementNamedCourses(19, "Major", ["CIS 4970"]),
 
+                new RequireCis1100(11),
                 new RequirementCisElective(20).withMinLevel(2000),
                 new RequirementCisElective(21).withMinLevel(2000),
                 new RequirementCisElective(22).withMinLevel(2000),
@@ -3499,7 +3534,6 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(7, "Physics", ["PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
                 new RequirementAttributes(8, "Math/Natural Science Elective", [CourseAttribute.Math, CourseAttribute.NatSci]),
 
-                new RequirementNamedCourses(9, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(10, "Major", ["CIS 1200"]),
                 new RequirementNamedCourses(11, "Major", ["CIS 1210"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 2400"]),
@@ -3510,10 +3544,11 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(17, "Senior Design", SeniorDesign1stSem),
                 new RequirementNamedCourses(18, "Senior Design", SeniorDesign2ndSem),
 
-                new RequirementCisElective(19),
+                new RequireCis1100(9),
                 new RequirementCisElective(20).withMinLevel(2000),
                 new RequirementCisElective(21).withMinLevel(2000),
                 new RequirementCisElective(22).withMinLevel(2000),
+                new RequirementCisElective(19),
 
                 new RequirementNamedCourses(23, "Technical Elective", csci37TechElectives).withConcise(),
                 new RequirementNamedCourses(24, "Technical Elective", csci37TechElectives).withConcise(),
@@ -3558,7 +3593,6 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementAttributes(7, "Math/Natural Science Elective", [CourseAttribute.NatSci, CourseAttribute.Math]).withConcise(),
                 new RequirementAttributes(8, "Math/Natural Science Elective", [CourseAttribute.NatSci, CourseAttribute.Math]).withConcise(),
 
-                new RequirementNamedCourses(9, "Major", ["CIS 1100"]),
                 new RequirementNamedCourses(10, "Major", ["CIS 1200"]),
                 new RequirementNamedCourses(11, "Major", ["CIS 1210"]),
                 new RequirementNamedCourses(12, "Major", ["CIS 2400"]),
@@ -3568,8 +3602,9 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(16, "Project Elective", AscsProjectElectives).withConcise(),
                 new RequirementNamedCourses(17, "Senior Capstone", ["EAS 4990","CIS 4980"].concat(SeniorDesign2ndSem)),
 
-                new RequirementCisElective(18),
+                new RequireCis1100(9),
                 new RequirementCisElective(19).withMinLevel(2000),
+                new RequirementCisElective(18),
 
                 new RequirementTechElectiveEngineering(20, false),
                 new RequirementTechElectiveEngineering(21, false),
