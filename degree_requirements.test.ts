@@ -34,6 +34,7 @@ describe('description', function () {
         const courses: CourseTaken[] = [
             makeCourse("LGST", "1000", 1), // can count as TE or EUSS
             // CIS minicourses fill in 1000-level CIS Elective and 6 TEs
+            makeCourse("CIS", "1100", 1.0),
             makeCourse("CIS", "1880", .5),
             makeCourse("CIS", "1890", .5),
             makeCourse("CIS", "1900", .5),
