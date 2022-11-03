@@ -2726,8 +2726,10 @@ Math+Natural Science = ${result.gpaMathNatSci.toFixed(2)}
 
         const writReq = allDegreeReqs.find(r => r.toString().startsWith("Writing"))!
         updateGlobalReq(writReq)
-        const depthReq = allDegreeReqs.find(r => r.toString() == SshDepthTag)!
-        updateGlobalReq(depthReq)
+        const depthReq = allDegreeReqs.find(r => r.toString() == SshDepthTag)
+        if (depthReq != undefined) {
+            updateGlobalReq(depthReq)
+        }
     }
 
     $(".droppable").delay(100).droppable({
