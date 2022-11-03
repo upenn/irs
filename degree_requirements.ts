@@ -708,7 +708,7 @@ export interface TechElectiveDecision {
 }
 
 type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" |
-    "37cu ASCS" | "37cu CSCI" | "37cu CMPE" | "37cu NETS" | "none"
+    "37cu ASCS" | "37cu CSCI" | "37cu CMPE" | "37cu NETS" | "37cu DMD" | "none"
 type MastersDegree = "CIS-MSE" | "DATS" | "ROBO" | "CGGT" | "none"
 
 let IncorrectCMAttributes = new Set<string>()
@@ -2006,7 +2006,8 @@ abstract class CourseParser {
                 (["PHYS 0150","PHYS 0170","PHYS 0151","PHYS 0171"].includes(c.code()) &&
                     degrees.undergrad == "40cu NETS") ||
                 (["PHYS 0150","PHYS 0170","PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) &&
-                    ["37cu CSCI","37cu NETS"].includes(degrees.undergrad))
+                    ["37cu CSCI","37cu NETS"].includes(degrees.undergrad)) ||
+                "37cu DMD" == degrees.undergrad
             if (CoursesWithLab15CUs.includes(c.code()) && !nosplit) {
                 c.setCUs(c.getCUs() - 0.5)
                 const lab = c.split(0.5, c.courseNumber + "lab")
@@ -3726,6 +3727,54 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(29, "Ethics", CsciEthicsCourses),
                 new RequirementNamedCourses(30, "Microeconomics", ["ECON 2100"]),
                 new RequirementNamedCourses(31, "Game Theory", ["ECON 4100","ECON 6110"]),
+                new RequirementSsh(32, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing requirement is @ index 41
+
+                new RequirementFreeElective(42),
+            ]
+            break
+        case "37cu DMD":
+            const dmdAdvancedGraphics = ["CIS 4610","CIS 5610","CIS 4620","CIS 5620","CIS 4550","CIS 5550"]
+            ugradDegreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
+                new RequirementNamedCourses(4, "Probability", ["CIS 2610", "ESE 3010", "ENM 321", "STAT 4300"]),
+                new RequirementNamedCourses(5, "Linear Algebra", ["MATH 2400", "MATH 2600", "MATH 3120", "MATH 3130", "MATH 3140"]),
+                new RequirementNamedCourses(6, "Physics", ["PHYS 0150","PHYS 0170","MEAM 1100","MEAM 1470"]).withCUs(1.5),
+                new RequirementNamedCourses(7, "Natural Science",
+                    ["BIOL 1101","BIOL 1121","BIOL 1124","CHEM 1011","CHEM 1101","PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
+                new RequirementAttributes(8, "Math/Natural Science Elective", [CourseAttribute.Math, CourseAttribute.NatSci]),
+
+                new RequirementNamedCourses(10, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(11, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 2400"]),
+                new RequirementNamedCourses(13, "Math", ["CIS 2620","CIS 5110"]),
+                new RequirementNamedCourses(14, "Major", ["CIS 3200","CIS 5020"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 4600","CIS 5600"]),
+                new RequirementNamedCourses(16, "Major", dmdAdvancedGraphics),
+                new RequirementNamedCourses(17, "Major", dmdAdvancedGraphics),
+                new RequirementNamedCourses(18, "Major", ["CIS 4670","CIS 5670"]),
+                new RequirementNamedCourses(19, "DMD Senior Project", ["CIS 4970"]),
+                new RequireCis1100(9),
+
+                new RequirementCisElective(21).withMinLevel(2000),
+                new RequirementCisElective(22).withMinLevel(2000),
+                new RequirementCisElective(20),
+
+                new RequirementNamedCourses(23, "Drawing", ["FNAR 0010","FNAR 2200","FNAR 1080"]),
+                new RequirementNamedCourses(24, "3D Modeling", ["DSGN 1030","DSGN 2010"]),
+                new RequirementDmdElective(25),
+                new RequirementDmdElective(26),
+                new RequirementDmdElective(27),
+                new RequirementDmdElective(28),
+
+                new RequirementSsh(29, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(30, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(31, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(32, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
