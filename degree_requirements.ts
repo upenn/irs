@@ -704,7 +704,7 @@ export interface TechElectiveDecision {
 }
 
 type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" |
-    "37cu ASCS" | "none"
+    "37cu ASCS" | "37cu CSCI" | "none"
 type MastersDegree = "CIS-MSE" | "DATS" | "ROBO" | "CGGT" | "none"
 
 let IncorrectCMAttributes = new Set<string>()
@@ -1964,7 +1964,8 @@ abstract class CourseParser {
             const nosplit =
                 (["PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) && degrees.undergrad == "40cu CMPE") ||
                 (["PHYS 0150","PHYS 0170","PHYS 0151","PHYS 0171"].includes(c.code()) && degrees.undergrad == "40cu NETS") ||
-                (["PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) && degrees.undergrad == "40cu EE")
+                (["PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) && degrees.undergrad == "40cu EE") ||
+                (["PHYS 0150","PHYS 0170","PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) && degrees.undergrad == "37cu CSCI")
             if (CoursesWithLab15CUs.includes(c.code()) && !nosplit) {
                 c.setCUs(c.getCUs() - 0.5)
                 const lab = c.split(0.5, c.courseNumber + "lab")
@@ -3031,6 +3032,9 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         .forEach((te: TechElectiveDecision) => {
             RequirementCsci40TechElective.techElectives.add(te.course4d)
         })
+    const csci37TechElectives: string[] = csci37techElectiveList
+        .filter((te: TechElectiveDecision): boolean => te.status == "yes")
+        .map(te => te.course4d)
     const bothLightAndFull = [...NetsFullTechElectives].filter(full => NetsLightTechElectives.has(full))
     myAssertEquals(bothLightAndFull.length, 0, `Uh-oh, some NETS TEs are both light AND full: ${bothLightAndFull}`)
 
@@ -3100,11 +3104,11 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
 
-                // NB: Writing, Ethics, SSH Depth are [40,42]
+                // NB: Writing, Ethics, SSH Depth are [41,43]
 
-                new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
                 new RequirementFreeElective(45),
+                new RequirementFreeElective(46),
             ]
             break
         case "40cu ASCS":
@@ -3154,11 +3158,11 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing, SSH Depth, Ethics are [40,42]
+                // NB: Writing, SSH Depth, Ethics are [41,43]
 
-                new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
                 new RequirementFreeElective(45),
+                new RequirementFreeElective(46),
             ]
             break
         case "40cu ASCC":
@@ -3208,11 +3212,11 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing, Ethics, SSH Depth are [40,42]
+                // NB: Writing, Ethics, SSH Depth are [41,43]
 
-                new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
                 new RequirementFreeElective(45),
+                new RequirementFreeElective(46),
             ]
             break
         case "40cu CMPE":
@@ -3253,7 +3257,6 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing, Ethics, SSH Depth are always [40,42]
 
                 new RequirementAttributes(28, "Tech Elective", [CourseAttribute.MathNatSciEngr]).withMinLevel(2000),
                 new RequirementNamedCoursesOrAttributes(29,
@@ -3264,9 +3267,11 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementAttributes(26, "Tech Elective", [CourseAttribute.MathNatSciEngr]),
                 new RequirementAttributes(27, "Tech Elective", [CourseAttribute.MathNatSciEngr]),
 
-                new RequirementFreeElective(43),
+                // NB: Writing, Ethics, SSH Depth are [41,43]
+
                 new RequirementFreeElective(44),
                 new RequirementFreeElective(45),
+                new RequirementFreeElective(46),
             ]
             break
         case "40cu NETS":
@@ -3306,7 +3311,6 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing, Ethics, SSH Depth are [40,42]
 
                 new RequirementAttributes(24, "Tech Elective (Light)",
                     [CourseAttribute.NetsLightTechElective, CourseAttribute.NetsFullTechElective]),
@@ -3316,9 +3320,10 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementAttributes(28, "Tech Elective", [CourseAttribute.NetsFullTechElective]),
                 new RequirementAttributes(29, "Tech Elective", [CourseAttribute.NetsFullTechElective]),
 
-                new RequirementFreeElective(43),
+                // NB: Writing, Ethics, SSH Depth are [41,43]
                 new RequirementFreeElective(44),
                 new RequirementFreeElective(45),
+                new RequirementFreeElective(46),
             ]
             break
         case "40cu DMD":
@@ -3367,10 +3372,10 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(37, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(38, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing, Ethics, SSH Depth are [40,42]
+                // NB: Writing, Ethics, SSH Depth are [41,43]
 
-                new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
+                new RequirementFreeElective(45),
             ]
             break
         case "40cu EE":
@@ -3421,11 +3426,11 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing, Ethics, SSH Depth are [40,42]
+                // NB: Writing, Ethics, SSH Depth are [41,43]
 
-                new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
                 new RequirementFreeElective(45),
+                new RequirementFreeElective(46),
             ]
             break
         case "40cu SSE":
@@ -3476,11 +3481,70 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing, Ethics, SSH Depth are [40,42]
+                // NB: Writing, Ethics, SSH Depth are [41,43]
 
-                new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
                 new RequirementFreeElective(45),
+                new RequirementFreeElective(46),
+            ]
+            break
+        case "37cu CSCI":
+            ugradDegreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
+                new RequirementNamedCourses(4, "Probability", ["CIS 2610", "ESE 3010", "ENM 321", "STAT 4300"]),
+                new RequirementNamedCourses(5, "Linear Algebra", ["MATH 2400", "MATH 2600", "MATH 3120", "MATH 3130", "MATH 3140"]),
+                new RequirementNamedCourses(6, "Physics", ["PHYS 0150","PHYS 0170","MEAM 1100","MEAM 1470"]).withCUs(1.5),
+                new RequirementNamedCourses(7, "Physics", ["PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
+                new RequirementAttributes(8, "Math/Natural Science Elective", [CourseAttribute.Math, CourseAttribute.NatSci]),
+
+                new RequirementNamedCourses(9, "Major", ["CIS 1100"]),
+                new RequirementNamedCourses(10, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(11, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 2400"]),
+                new RequirementNamedCourses(13, "Math", ["CIS 2620","CIS 5110"]),
+                new RequirementNamedCourses(14, "Major", ["CIS 3200","CIS 5020"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 3800","CIS 5480"]),
+                new RequirementNamedCourses(16, "Major", ["CIS 4710","CIS 5710"]),
+                new RequirementNamedCourses(17, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(18, "Senior Design", SeniorDesign2ndSem),
+
+                new RequirementCisElective(19),
+                new RequirementCisElective(20).withMinLevel(2000),
+                new RequirementCisElective(21).withMinLevel(2000),
+                new RequirementCisElective(22).withMinLevel(2000),
+
+                new RequirementNamedCourses(23, "Technical Elective", csci37TechElectives).withConcise(),
+                new RequirementNamedCourses(24, "Technical Elective", csci37TechElectives).withConcise(),
+                new RequirementNamedCourses(25, "Technical Elective", csci37TechElectives).withConcise(),
+                new RequirementNamedCourses(26, "Technical Elective", csci37TechElectives).withConcise(),
+                new RequirementNamedCourses(27, "Technical Elective", csci37TechElectives).withConcise(),
+                new RequirementNamedCourses(28, "Technical Elective", csci37TechElectives).withConcise(),
+
+                // elective "breadth" requirements
+                new RequirementNamedCourses(29, "Networking Elective",
+                    ["NETS 1500", "NETS 2120", "CIS 3310", "CIS 4550", "CIS 5550", "CIS 5050", "CIS 5530"]).withNoConsume(),
+                new RequirementNamedCourses(30, "Database Elective",
+                    ["CIS 4500", "CIS 5500", "CIS 4550", "CIS 5550", "CIS 5450"]).withNoConsume(),
+                new RequirementNamedCourses(31, "Distributed Systems Elective",
+                    ["NETS 2120", "CIS 4410", "CIS 5410", "CIS 4500", "CIS 5500", "CIS 5050", "CIS 5450"]).withNoConsume(),
+                new RequirementNamedCourses(32, "Machine Learning/AI Elective",
+                    ["CIS 4190", "CIS 5190", "CIS 4210", "CIS 5210", "CIS 5200", "CIS 5450", "CIS 6200"]).withNoConsume(),
+                new RequirementNamedCourses(33, "Project Elective",
+                    ["NETS 2120", "CIS 3410", "CIS 3500", "CIS 4410", "CIS 5410", "CIS 4500", "CIS 5500",
+                        "CIS 4550", "CIS 5550", "CIS 4600", "CIS 5600", "CIS 5050", "CIS 5530", "ESE 3500"]).withNoConsume(),
+
+                new RequirementNamedCourses(34, "Ethics", CsciEthicsCourses),
+                new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(37, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(38, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(39, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(40, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing requirement is @ index 41
+
+                new RequirementFreeElective(42),
             ]
             break
         case "37cu ASCS":
@@ -3526,9 +3590,9 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing requirement is @ index 40
+                // NB: Writing requirement is @ index 41
 
-                new RequirementFreeElective(41),
+                new RequirementFreeElective(42),
             ]
             break
         case "none":
@@ -3539,7 +3603,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
     if (ugradDegreeRequirements.length > 0) {
         const displayIndices = new Set<number>(ugradDegreeRequirements.map(r => r.displayIndex))
         myAssertEquals(displayIndices.size, ugradDegreeRequirements.length, "duplicate ugrad displayIndex")
-        const degreeCUs = ugradDegreeRequirements.map(r => r.remainingCUs).reduce((sum, e) => sum + e, 0)
+        const degreeCUs = ugradDegreeRequirements.map(r => r.doesntConsume ? 0 : r.cus).reduce((sum, e) => sum + e, 0)
         const expectedCUs = degrees.getUndergradCUs()
         myAssertEquals(expectedCUs, degreeCUs, `${degrees.undergrad} degree should be ${expectedCUs} CUs but was ${degreeCUs}`)
     }
@@ -3678,7 +3742,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
 
         { // Writing requirement
-            const writingReq = new RequirementAttributes(40, "Writing", [CourseAttribute.Writing]).withNoConsume()
+            const writingReq = new RequirementAttributes(41, "Writing", [CourseAttribute.Writing]).withNoConsume()
             const matched = writingReq.satisfiedBy(sshCourses)
             if (matched == undefined) {
                 reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Unsatisfied, []])
@@ -3687,7 +3751,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
             }
         }
         if (degrees.getUndergradCUs() == 40) { // SS/H Depth requirement
-            const depthReq = new RequirementSshDepth(41).withNoConsume()
+            const depthReq = new RequirementSshDepth(42).withNoConsume()
             if (depthReq.satisfiedBy(sshCourses) != undefined) {
                 reqOutcomes.push([42, depthReq, RequirementApplyResult.Satisfied, depthReq.coursesApplied])
             } else {
@@ -3695,7 +3759,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
             }
         }
         if (degrees.getUndergradCUs() == 40) { // ethics requirement: NB doesn't have to come from SSH block!
-            const ethicsReq = new RequirementNamedCourses(42, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
+            const ethicsReq = new RequirementNamedCourses(43, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
             const match1 = ethicsReq.satisfiedBy(coursesTaken)
             if (match1 == undefined) {
                 reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Unsatisfied, []])
