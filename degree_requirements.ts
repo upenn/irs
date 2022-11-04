@@ -49,6 +49,9 @@ const StandaloneLabCourses05CUs = [
     "PHYS 0050", "PHYS 0051",
     "MEAM 1470",
 ]
+const CoursesWith15CUsToSplit = [
+    "MUSC 2700", "MUSC 2710"
+]
 
 // only allowed for 40cu students: https://ugrad.seas.upenn.edu/student-handbook/courses-requirements/engineering-courses/
 const EngrLinkingCourses = [
@@ -1996,8 +1999,8 @@ abstract class CourseParser {
         // "For the Class of 2025 and earlier, if you pass Math 2410 at Penn with at least a grade of B, you may come to
         // the math office and receive retroactive credit for (and only one) Math 1400, Math 1410, or Math 2400"
 
-        // heuristics to split some physics courses into 1.0 lecture + 0.5 lab pieces, based on major
-        const labs: CourseTaken[] = []
+        // heuristics to split some courses (like physics courses with labs) into 1.0 + 0.5 CU pieces
+        const halfCuCourses: CourseTaken[] = []
         courses.forEach(c => {
             const nosplit =
                 (["PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) &&
@@ -2010,11 +2013,16 @@ abstract class CourseParser {
             if (CoursesWithLab15CUs.includes(c.code()) && !nosplit) {
                 c.setCUs(c.getCUs() - 0.5)
                 const lab = c.split(0.5, c.courseNumber + "lab")
-                labs.push(lab)
+                halfCuCourses.push(lab)
+            }
+            if (CoursesWith15CUsToSplit.includes(c.code())) {
+                c.setCUs(c.getCUs() - 0.5)
+                const half = c.split(0.5, c.courseNumber + "half")
+                halfCuCourses.push(half)
             }
         })
 
-        return newCourses.concat(labs)
+        return newCourses.concat(halfCuCourses)
             .sort((a, b) => a.code().localeCompare(b.code()))
     }
 
