@@ -3841,10 +3841,11 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(15, "Major", ["CIS 4600","CIS 5600"]),
                 new RequirementNamedCourses(16, "Major", dmdAdvancedGraphics),
                 new RequirementNamedCourses(17, "Major", dmdAdvancedGraphics),
-                new RequirementNamedCourses(18, "Major", ["CIS 4670","CIS 5670"]),
+                //new RequirementNamedCourses(18, "Major", ["CIS 4670","CIS 5670"]), // CIS 467/567 is retired
                 new RequirementNamedCourses(19, "DMD Senior Project", ["CIS 4970"]),
                 new RequireCis1100(9),
 
+                new RequirementCisElective(18).withMinLevel(3000),
                 new RequirementCisElective(21).withMinLevel(2000),
                 new RequirementCisElective(22).withMinLevel(2000),
                 new RequirementCisElective(20),
