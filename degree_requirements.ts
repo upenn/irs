@@ -2614,15 +2614,7 @@ EAS 204 Tech Innv&civil Discrse NA 1
 async function webMain(): Promise<void> {
     // reset output
     $(".requirementsList").empty()
-    $(NodeAlerts).empty()
-    $(NodeRemainingCUs).empty()
-    $(NodeStudentInfo).empty()
-    $(NodeGpa).empty()
-    $(NodeUnusedCoursesHeader).empty()
-    $(NodeUnusedCoursesList).empty()
-    $(NodeCoursesList).empty()
-    $(NodeMessages).empty()
-    $(NodeAllCourses).empty()
+    $(".clear-on-init").empty()
 
     let autoDegrees = $("#auto_degree").is(":checked")
     $(NodeMessages).append("<h3>Notes</h3>")
