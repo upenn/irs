@@ -1907,9 +1907,8 @@ abstract class CourseParser {
         if (text.includes("Degree Works Release")) {
             return new DegreeWorksDiagnosticsReportParser()
         } else if (text.includes("Courses Completed") &&
-            (text.includes("Master of Sci in Engineering") ||
-                text.includes("Bachelor of Applied Science") ||
-                text.includes("Bachelor of Sci in Engineering"))
+            (text.match(/(Master|Bachelor) of Sci(ence)? in Engineering/) != null ||
+                text.includes("Bachelor of Applied Science"))
         ) {
             return new DegreeWorksClassHistoryParser()
         }
@@ -2050,7 +2049,7 @@ class DegreeWorksClassHistoryParser extends CourseParser {
     private parseDegrees(text: string): Degrees {
         const deg = new Degrees()
 
-        if (text.includes("Bachelor of Sci in Engineering")) {
+        if (text.match(/Bachelor of Sci(ence)? in Engineering/) != null) {
             // there's an undergrad degree
             if (text.match(/Majors? Computer Science/) != null) {
                 deg.undergrad = "40cu CSCI"
@@ -2072,7 +2071,7 @@ class DegreeWorksClassHistoryParser extends CourseParser {
                 deg.undergrad = "40cu ASCC"
             }
         }
-        if (text.includes("Master of Sci in Engineering")) {
+        if (text.match(/Master of Sci(ence)? in Engineering/) != null) {
             // there's a masters degree
             if (text.match(/Majors? Computer & Information Science/) != null) {
                 deg.masters = "CIS-MSE"
