@@ -12,6 +12,7 @@ const DroppableDataGetDegreeRequirement = "DegreeRequirement"
 
 export const SsHTbsTag = "SS/H/TBS"
 const SshDepthTag = "SSH Depth Requirement"
+const Math1400RetroTitle = "Calculus 1 retro credit"
 
 /** grades indicating a completed course, as opposed to I, NR, GR or 'IN PROGRESS' which indicate non-completion */
 const CompletedGrades = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","P","TR"]
@@ -1919,13 +1920,27 @@ abstract class CourseParser {
         throw new Error("cannot parse courses")
     }
 
-    /** Updates `degrees` and `courses` IN-PLACE, using heuristics to identify students declared as CSCI but following
+    /** Updates `degrees` IN-PLACE, using heuristics to identify students declared as CSCI but following
      * ASCS instead. Infer 37-vs-40 CU worksheet, disable equivalent courses, add MATH retroactive credit,
-     * split 1.5cu courses. */
+     * split 1.5cu courses. Returns updated list of courses. */
     protected postProcess(courses: CourseTaken[], degrees: Degrees, autoDegree: boolean): CourseTaken[] {
 
-        if (autoDegree) {
+        // determine 37 vs 40 CUs
+        const cusPerTerm = new Map<number, number>()
+        courses.filter(c => c.letterGrade != "TR")
+            .forEach(c => {
+                if (cusPerTerm.has(c.term)) {
+                    cusPerTerm.set(c.term, cusPerTerm.get(c.term)! + c.getCUs())
+                } else {
+                    cusPerTerm.set(c.term, c.getCUs())
+                }
+            })
+        // find first term with at least 3 CUs
+        degrees.firstTerm = Array.from(cusPerTerm.keys())
+            .filter(t => cusPerTerm.get(t)! >= 3)
+            .sort((a, b) => a - b)[0]
 
+        if (autoDegree) {
             // is CSCI declared but courses are more like ASCS?
             const nonCsci = !courses.some(c => c.code() == "CIS 4710") &&
                 !courses.some(c => c.code() == "CIS 5710") &&
@@ -1936,21 +1951,7 @@ abstract class CourseParser {
                 degrees.undergrad = "40cu ASCS"
             }
 
-            // determine 37 vs 40 CUs
-            const cusPerTerm = new Map<number, number>()
-            courses.filter(c => c.letterGrade != "TR")
-                .forEach(c => {
-                    if (cusPerTerm.has(c.term)) {
-                        cusPerTerm.set(c.term, cusPerTerm.get(c.term)! + c.getCUs())
-                    } else {
-                        cusPerTerm.set(c.term, c.getCUs())
-                    }
-                })
-            // find first term with at least 3 CUs
-            const firstTerm = Array.from(cusPerTerm.keys())
-                .filter(t => cusPerTerm.get(t)! >= 3)
-                .sort((a, b) => a - b)[0]
-            if (firstTerm >= 202030) { // 37cu began in Fall 2020
+            if (degrees.firstTerm! >= 202030) { // 37cu began in Fall 2020
                 // degree inference always chooses 40cu, so switch some folks to 37cu
                 switch (degrees.undergrad) {
                     case "40cu CSCI":
@@ -2022,11 +2023,12 @@ abstract class CourseParser {
                 return calc && gradeOk
             })
             if (math1400Retro != undefined) {
-                myLog("Using retro credit for Math 1400, must visit Math Department to make it official!")
+                const msg = "Using retro credit for Math 1400, must contact Math Department to make it official!"
+                myLog(msg)
                 const math1400 = new CourseTaken(
                     "MATH",
                     "1400",
-                    "Calculus 1 retro credit",
+                    Math1400RetroTitle,
                     "MATH 104",
                     1.0,
                     GradeType.ForCredit,
@@ -2281,6 +2283,12 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
             result.degrees = deg!
         }
         result.courses = this.postProcess(result.courses, result.degrees, degrees == undefined)
+        // get catalog year from Goal Data, check if it is right
+        // MAJOR	NETS	2023	Networked And Social Systems
+        const catalogYear = text.match(/MAJOR\s+(CSCI|ASCS|NETS|DMD|CMPE|SSE|EE)\s+(?<catalogYear>\d{4})\s+/)
+        if (catalogYear != null) {
+            result.degrees.undergradMajorCatalogYear = parseInt(catalogYear.groups!["catalogYear"])
+        }
         return result
     }
 
@@ -2430,6 +2438,7 @@ const NodeColumn3Reqs = "#col3Reqs"
 const NodeRemainingCUs = "#remainingCUs"
 const NodeDoubleCounts = "#doubleCounts"
 const NodeStudentInfo = "#studentInfo"
+const NodeAlerts = "#alerts"
 const NodeGpa = "#gpa"
 const NodeUnusedCoursesHeader = "#unusedCoursesHeader"
 const NodeCoursesList = "#usedCoursesList"
@@ -2440,6 +2449,9 @@ const NodeAllCourses = "#allCourses"
 export class Degrees {
     undergrad: UndergradDegree = "none"
     masters: MastersDegree = "none"
+    firstTerm: number|undefined = undefined
+    /** DW Diagnostics Report's catalog year, 2023 means 2022-2023 AY */
+    undergradMajorCatalogYear: number|undefined = undefined
 
     public toString(): string {
         let s = ""
@@ -2462,6 +2474,11 @@ export class Degrees {
         }
         myAssert(this.undergrad.startsWith("37cu"))
         return 37
+    }
+
+    public hasWrongDwCatalogYear(): boolean {
+        return this.firstTerm != undefined && this.undergradMajorCatalogYear != undefined &&
+            this.firstTerm < 202030 && this.undergradMajorCatalogYear >= 2021
     }
 }
 
@@ -2597,6 +2614,7 @@ EAS 204 Tech Innv&civil Discrse NA 1
 async function webMain(): Promise<void> {
     // reset output
     $(".requirementsList").empty()
+    $(NodeAlerts).empty()
     $(NodeRemainingCUs).empty()
     $(NodeStudentInfo).empty()
     $(NodeGpa).empty()
@@ -2615,7 +2633,7 @@ async function webMain(): Promise<void> {
         parser = CourseParser.getParser(worksheetText)
     } catch (e) {
         console.log(e)
-        alert("Error parsing courses. Did you copy+paste the entire page (not just the \"Courses Completed\" table)?")
+        alert("Error parsing courses. Please copy+paste the entire page (not only the \"Courses Completed\" table).")
         return
     }
     const pennid = parser.extractPennID(worksheetText)
@@ -2633,6 +2651,15 @@ async function webMain(): Promise<void> {
         parseResults = await parser.parse(worksheetText, degrees)
     }
     const coursesTaken = parseResults.courses
+
+    if (parseResults.degrees.hasWrongDwCatalogYear()) {
+        const dwCatalogYear = parseResults.degrees.undergradMajorCatalogYear!
+        const cyString = `${dwCatalogYear-1}-${dwCatalogYear}`
+        $(NodeAlerts).append(`<div class="alert alert-danger" role="alert">Student entered in ${parseResults.degrees.firstTerm} but DegreeWorks major catalog year is ${cyString}</div>`)
+    }
+    if (coursesTaken.some(c => c.title == Math1400RetroTitle)) {
+        $(NodeAlerts).append(`<div class="alert alert-danger" role="alert">Using retro credit for Math 1400, must contact Math Department to make it official</div>`)
+    }
 
     $(NodeMessages).append(`<div>${coursesTaken.length} courses taken</div>`)
     const allCourses = coursesTaken.slice()
