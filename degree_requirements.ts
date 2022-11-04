@@ -1418,9 +1418,9 @@ class RequirementSsh extends RequirementAttributes {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         // count by subject for SS/H courses for the Depth Requirement
         let counts = countBySubjectSshDepth(courses)
-        const mostPopularSubjectFirst = Object.keys(counts)
-            .sort((a,b) => counts[b] - counts[a])
-            .filter((s: string): boolean => counts[s] >= 2)
+        const mostPopularSubjectFirst = Array.from(counts.keys())
+            .sort((a,b) => counts.get(b)! - counts.get(a)!)
+            .filter((s: string): boolean => counts.get(s)! >= 2)
 
         // prioritize writing+ethics courses and satisfying the Depth Requirement
         return courses.slice()
@@ -1455,7 +1455,7 @@ class RequirementSsh extends RequirementAttributes {
 class RequirementSshDepth extends DegreeRequirement {
     satisfiedBy(sshCourses: CourseTaken[]): CourseTaken | undefined {
         const counts = countBySubjectSshDepth(sshCourses)
-        const depthKeys = Object.keys(counts).filter(k => counts[k] >= 2)
+        const depthKeys = Array.from(counts.keys()).filter(k => counts.get(k)! >= 2)
         if (depthKeys.length > 0) {
             const depthCourses = sshCourses.filter(c => c.subject == depthKeys[0])
             this.coursesApplied = depthCourses.slice(0, 2)
@@ -1495,23 +1495,23 @@ class RequirementFreeElective extends DegreeRequirement {
     }
 }
 
-/** A map from Subject => number of courses from that subject */
-interface CountMap {
-    [index: string]: number
-}
-/** Compute a CountMap of SS+H courses for the given `courses`. Used for the SSH Depth Requirement */
-function countBySubjectSshDepth(courses: CourseTaken[]): CountMap {
-    // TODO: use a Map<string,number> instead
-    const counts: CountMap = {}
+/** Compute a map of SS+H courses for the given `courses`. Used for the SSH Depth Requirement.
+ * @return a map from Subject => number of courses from that subject */
+function countBySubjectSshDepth(courses: CourseTaken[]): Map<string,number> {
+    const counts = new Map<string,number>()
     courses
         .filter((c: CourseTaken): boolean =>
             // SSH Depth courses need to be SS or H, though EAS 5450 + 5460 is (sometimes?) allowed via petition
             c.attributes.includes(CourseAttribute.Humanities) ||
             (c.attributes.includes(CourseAttribute.SocialScience) && c.code() != "EAS 2030") ||
             c.code() == "EAS 5450" || c.code() == "EAS 5460")
-        .forEach(c =>
-            counts[c.subject] = counts[c.subject] ? counts[c.subject] + 1 : 1
-        )
+        .forEach(c => {
+            if (counts.has(c.subject)) {
+                counts.set(c.subject, 1 + counts.get(c.subject)!)
+            } else {
+                counts.set(c.subject, 1)
+            }
+        })
     return counts
 }
 
