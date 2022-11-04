@@ -1918,18 +1918,59 @@ abstract class CourseParser {
         throw new Error("cannot parse courses")
     }
 
-    /** Updates `degrees` IN-PLACE, using heuristic to identify students declared as CSCI but following ASCS instead.
-     * Check for and disable equivalent courses, add MATH retroactive credit, and split lab courses. */
+    /** Updates `degrees` and `courses` IN-PLACE, using heuristics to identify students declared as CSCI but following
+     * ASCS instead. Infer 37-vs-40 CU worksheet, disable equivalent courses, add MATH retroactive credit,
+     * split 1.5cu courses. */
     protected postProcess(courses: CourseTaken[], degrees: Degrees, autoDegree: boolean): CourseTaken[] {
-        if (autoDegree &&
-            degrees.undergrad == "40cu CSCI" &&
-            !courses.some(c => c.code() == "CIS 4710") &&
-            !courses.some(c => c.code() == "CIS 5710") &&
-            // !courses.some(c => c.code() == "CIS 3800") &&
-            !courses.some(c => c.code() == "CIS 4000")
-        ) {
-            myLog("CSCI declared, but coursework is closer to ASCS so using ASCS requirements instead")
-            degrees.undergrad = "40cu ASCS"
+
+        if (autoDegree) {
+
+            // is CSCI declared but courses are more like ASCS?
+            const nonCsci = !courses.some(c => c.code() == "CIS 4710") &&
+                !courses.some(c => c.code() == "CIS 5710") &&
+                // !courses.some(c => c.code() == "CIS 3800") && // a fair number of ASCS students take 3800
+                !courses.some(c => c.code() == "CIS 4000")
+            if (nonCsci && degrees.undergrad == "40cu CSCI") {
+                myLog("CSCI declared, but coursework is closer to ASCS so using ASCS requirements instead")
+                degrees.undergrad = "40cu ASCS"
+            }
+
+            // determine 37 vs 40 CUs
+            const cusPerTerm = new Map<number, number>()
+            courses.filter(c => c.letterGrade != "TR")
+                .forEach(c => {
+                    if (cusPerTerm.has(c.term)) {
+                        cusPerTerm.set(c.term, cusPerTerm.get(c.term)! + c.getCUs())
+                    } else {
+                        cusPerTerm.set(c.term, c.getCUs())
+                    }
+                })
+            // find first term with at least 3 CUs
+            const firstTerm = Array.from(cusPerTerm.keys())
+                .filter(t => cusPerTerm.get(t)! >= 3)
+                .sort((a, b) => a - b)[0]
+            if (firstTerm >= 202030) { // 37cu began in Fall 2020
+                // degree inference always chooses 40cu, so switch some folks to 37cu
+                switch (degrees.undergrad) {
+                    case "40cu CSCI":
+                        degrees.undergrad = "37cu CSCI"
+                        break
+                    case "40cu ASCS":
+                        degrees.undergrad = "37cu ASCS"
+                        break
+                    case "40cu CMPE":
+                        degrees.undergrad = "37cu CMPE"
+                        break
+                    case "40cu NETS":
+                        degrees.undergrad = "37cu NETS"
+                        break
+                    case "40cu DMD":
+                        degrees.undergrad = "37cu DMD"
+                        break
+                    default:
+                        break
+                }
+            }
         }
 
         const newCourses = courses.slice()
