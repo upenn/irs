@@ -1907,9 +1907,9 @@ abstract class CourseParser {
         if (text.includes("Degree Works Release")) {
             return new DegreeWorksDiagnosticsReportParser()
         } else if (text.includes("Courses Completed") &&
-            (text.includes("Degree in Master of Science in Engineering") ||
-                text.includes("Degree in Bachelor of Applied Science") ||
-                text.includes("Degree in Bachelor of Science in Engineering"))
+            (text.includes("Master of Sci in Engineering") ||
+                text.includes("Bachelor of Applied Science") ||
+                text.includes("Bachelor of Sci in Engineering"))
         ) {
             return new DegreeWorksClassHistoryParser()
         }
@@ -2040,13 +2040,17 @@ class DegreeWorksClassHistoryParser extends CourseParser {
     }
 
     extractPennID(worksheetText: string): string | undefined {
+        const pidMatch = worksheetText.match(/^Student ID\s+^(?<pid>\d{8})/m)
+        if (pidMatch != undefined) {
+            return pidMatch.groups!["pid"]
+        }
         return undefined
     }
 
     private parseDegrees(text: string): Degrees {
         const deg = new Degrees()
 
-        if (text.includes("Degree in Bachelor of Science in Engineering")) {
+        if (text.includes("Bachelor of Sci in Engineering")) {
             // there's an undergrad degree
             if (text.match(/Majors? Computer Science/) != null) {
                 deg.undergrad = "40cu CSCI"
@@ -2061,14 +2065,14 @@ class DegreeWorksClassHistoryParser extends CourseParser {
             } else if (text.match(/Majors? Systems Science & Engineering/) != null) {
                 deg.undergrad = "40cu SSE"
             }
-        } else if (text.includes("Degree in Bachelor of Applied Science")) {
+        } else if (text.includes("Bachelor of Applied Science")) {
             if (text.match(/Majors? Appl Science-Computer Science/) != null) {
                 deg.undergrad = "40cu ASCS"
             } else if (text.match(/Majors? Appl Science In Comp & Cog.Sc/) != null) {
                 deg.undergrad = "40cu ASCC"
             }
         }
-        if (text.includes("Degree in Master of Science in Engineering")) {
+        if (text.includes("Master of Sci in Engineering")) {
             // there's a masters degree
             if (text.match(/Majors? Computer & Information Science/) != null) {
                 deg.masters = "CIS-MSE"
@@ -2102,13 +2106,29 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         const courseLines = courseText.split(/\r?\n/)
 
         let minorCourses: string[] = []
-        const minorPattern = /Minor in (?<subject>[\w ]*)(IN-PROGRESS|COMPLETED)(?<courses>.*?)(Elective Coursework|In-progress|Over The Limit|Exceptions|Courses Not Applied)/s
+        const minorPattern = /Minor in (?<subject>[\w ]+)(COMPLETE|INCOMPLETE|IN-PROGRESS|COMPLETED)(?<courses>.*?)(Elective Coursework|In-progress|Over The Limit|Exceptions|Courses Not Applied)/s
         const minorCourseText = text.match(minorPattern)
         if (minorCourseText != null) {
             const allMinors = text.match(/^Minor in .*[a-z]/mg)
             myLog("Found " + allMinors!.map((v,i,a) => v).join(", "))
             const courses = minorCourseText.groups!["courses"].match(/[A-Z]{2,4} \d{3,4}/g)
             minorCourses = courses!.map((v,i,all) => v)
+
+        } else {
+            // copy+paste from Chrome is slightly different
+            // minor block starts with `Linguistics Minor Requirements`, and ends with one of:
+            // Course	Title	Grade	Credits	Term	Repeated
+            // Type	Description	Created on	Created by	Block	Enforced
+            const minorPattern = /^(?<subject>[\w ]+) +Minor Requirements$(?<courses>.*?)(Course\s+Title|Type\s+Description)/sm
+            const minorCourseText = text.match(minorPattern)
+            if (minorCourseText != null) {
+                // TODO: find names of all minors, not just first one
+                const allMinors = text.match(/^(?<subject>[\w ]+) +Minor Requirements$/mg)
+                myLog("Found " + allMinors!.map((v,i,a) => v).join(", "))
+                //myLog("Found minor in " + minorCourseText.groups!["subject"])
+                const courses = minorCourseText.groups!["courses"].match(/[A-Z]{2,4} \d{3,4}/g)
+                minorCourses = courses!.map((v,i,all) => v)
+            }
         }
 
         const coursePattern = /(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})\s+(?<title>.*?)\s+(?<grade>A\+|A|A-|B\+|B|B-|C\+|C|C-|D\+|D|F|P|TR|GR|NR|I|NA)\s+(?<cus>0?\.5|1\.5|1|2)/
