@@ -1501,6 +1501,7 @@ interface CountMap {
 }
 /** Compute a CountMap of SS+H courses for the given `courses`. Used for the SSH Depth Requirement */
 function countBySubjectSshDepth(courses: CourseTaken[]): CountMap {
+    // TODO: use a Map<string,number> instead
     const counts: CountMap = {}
     courses
         .filter((c: CourseTaken): boolean =>
@@ -2154,29 +2155,25 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         const courseLines = courseText.split(/\r?\n/)
 
         let minorCourses: string[] = []
-        const minorPattern = /Minor in (?<subject>[\w ]+)(COMPLETE|INCOMPLETE|IN-PROGRESS|COMPLETED)(?<courses>.*?)(Elective Coursework|In-progress|Over The Limit|Exceptions|Courses Not Applied)/s
+        const minorPattern = /Minor in (?<subject>[\w ]+)(COMPLETE|INCOMPLETE|IN-PROGRESS|COMPLETED|SEE ADVISOR)(?<courses>.*?)(Elective Coursework|In-progress|Over The Limit|Exceptions|Courses Not Applied)/s
         const minorCourseText = text.match(minorPattern)
         if (minorCourseText != null) {
             const allMinors = text.match(/^Minor in .*[a-z]/mg)
-            myLog("Found " + allMinors!.map((v,i,a) => v).join(", "))
+            const minorNames = Array.from(new Set<string>(allMinors!.map((v,i,a) => v)))
+            myLog("Found " + minorNames.join(", "))
             const courses = minorCourseText.groups!["courses"].match(/[A-Z]{2,4} \d{3,4}/g)
             minorCourses = courses!.map((v,i,all) => v)
 
         } else {
-            // copy+paste from Chrome is slightly different
-            // minor block starts with `Linguistics Minor Requirements`, and ends with one of:
-            // Course	Title	Grade	Credits	Term	Repeated
-            // Type	Description	Created on	Created by	Block	Enforced
-            const minorPattern = /^(?<subject>[\w ]+) +Minor Requirements$(?<courses>.*?)(Course\s+Title|Type\s+Description)/sm
-            const minorCourseText = text.match(minorPattern)
-            if (minorCourseText != null) {
-                // TODO: find names of all minors, not just first one
-                const allMinors = text.match(/^(?<subject>[\w ]+) +Minor Requirements$/mg)
-                myLog("Found " + allMinors!.map((v,i,a) => v).join(", "))
-                //myLog("Found minor in " + minorCourseText.groups!["subject"])
-                const courses = minorCourseText.groups!["courses"].match(/[A-Z]{2,4} \d{3,4}/g)
-                minorCourses = courses!.map((v,i,all) => v)
-            }
+            // TODO: minor detection is broken due to lack of section headers in Chrome/Firefox
+            // const minorPattern = /^(?<subject>[\w ]+) +Minor Requirements$(?<courses>.*?)(Course\s+Title|Type\s+Description)/sm
+            // const minorCourseText = text.match(minorPattern)
+            // if (minorCourseText != null) {
+            //     const allMinors = text.match(/^(?<subject>[\w ]+) +Minor Requirements$/mg)
+            //     myLog("Found " + allMinors!.map((v,i,a) => v).join(", "))
+            //     const courses = minorCourseText.groups!["courses"].match(/[A-Z]{2,4} \d{3,4}/g)
+            //     minorCourses = courses!.map((v,i,all) => v)
+            // }
         }
 
         const coursePattern = /(?<subject>[A-Z]{2,4}) (?<number>\d{3,4})\s+(?<title>.*?)\s+(?<grade>A\+|A|A-|B\+|B|B-|C\+|C|C-|D\+|D|F|P|TR|GR|NR|I|NA)\s+(?<cus>0?\.5|1\.5|1|2)/
