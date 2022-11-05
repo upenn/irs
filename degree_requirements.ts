@@ -15,7 +15,7 @@ const SshDepthTag = "SSH Depth Requirement"
 const Math1400RetroTitle = "Calculus 1 retro credit"
 
 /** grades indicating a completed course, as opposed to I, NR, GR or 'IN PROGRESS' which indicate non-completion */
-const CompletedGrades = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","P","TR"]
+const CompletedGrades = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","F","P","TR"]
 /** academic terms during which students could take unlimited P/F courses */
 const CovidTerms = [202010, 202020, 202030, 202110]
 
@@ -1715,7 +1715,8 @@ export class CourseTaken {
     }
 
     private countsTowardsGpa(): boolean {
-        return (this.grading != GradeType.PassFail) &&
+        // failed P/F courses do count towards GPA
+        return (this.grading != GradeType.PassFail || this.letterGrade == "F") &&
             CompletedGrades.includes(this.letterGrade) &&
             !["TR","P"].includes(this.letterGrade)
     }
@@ -1738,6 +1739,7 @@ export class CourseTaken {
             ["C-", 1.7],
             ["D+", 1.3],
             ["D",  1.0],
+            ["F", 0]
         ])
         myAssert(gpaTable.has(this.letterGrade), this.toString())
         return gpaTable.get(this.letterGrade)! * this.courseUnits
