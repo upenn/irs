@@ -2888,7 +2888,7 @@ class="course courseDoubleCountShadow myTooltip"
 id="${shadowCourse.uuid}" 
 >
 ${realCourse.code()}
-<span class="myTooltipText">click to remove</span>
+<span class="myTooltipText">click to remove double-count</span>
 </span>`)
 
                     originReq.satisfiedBy([shadowCourse])
