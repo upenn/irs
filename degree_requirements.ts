@@ -2348,7 +2348,7 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
         const creditUnits = parseFloat(parts[2])
         const term = parseInt(parts[4])
         const inProgress = parts[7] == "YIP"
-        const passFail = parts[9] == "YFP"
+        const passFail = parts[9] == "YPF"
         let gradingType = passFail ? GradeType.PassFail : GradeType.ForCredit
         // const numericGrade = parseFloat(parts[12])
         const title = parts[21].trim()
