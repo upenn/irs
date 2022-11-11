@@ -2058,12 +2058,12 @@ abstract class CourseParser {
                 (["PHYS 0150","PHYS 0170","PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) &&
                     ["37cu CSCI","37cu NETS"].includes(degrees.undergrad)) ||
                 "37cu DMD" == degrees.undergrad
-            if (CoursesWithLab15CUs.includes(c.code()) && !nosplit) {
+            if (c.getCUs() > 0 && CoursesWithLab15CUs.includes(c.code()) && !nosplit) {
                 c.setCUs(c.getCUs() - 0.5)
                 const lab = c.split(0.5, c.courseNumber + "lab")
                 halfCuCourses.push(lab)
             }
-            if (CoursesWith15CUsToSplit.includes(c.code())) {
+            if (c.getCUs() > 0 && CoursesWith15CUsToSplit.includes(c.code())) {
                 c.setCUs(c.getCUs() - 0.5)
                 const half = c.split(0.5, c.courseNumber + "half")
                 halfCuCourses.push(half)
