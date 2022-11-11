@@ -1775,7 +1775,7 @@ export class CourseTaken {
             "SWAH"
         ]
         const humCourses = [
-            "DSGN 1020","DSGN 1030","DSGN 2010","DSGN 1040","DSGN 2030","DSGN 2040","DSGN 5001","DSGN 2510","DSGN 1050",
+            "DSGN 0010","DSGN 1020","DSGN 1030","DSGN 1040","DSGN 1050","DSGN 2010","DSGN 2030","DSGN 2040","DSGN 2510","DSGN 5001",
             "ARCH 1010","ARCH 2010","ARCH 2020","ARCH 3010","ARCH 3020","ARCH 4010","ARCH 4110","ARCH 4120",
             "CIS 1060","IPD 5090"
         ]
