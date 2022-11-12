@@ -1715,7 +1715,7 @@ export class CourseTaken {
     }
 
     private countsTowardsGpa(): boolean {
-        // failed P/F courses do count towards GPA
+        // failed P/F courses do count towards GPA, as do disabled equivalent courses
         return (this.grading != GradeType.PassFail || this.letterGrade == "F") &&
             CompletedGrades.includes(this.letterGrade) &&
             !["TR","P"].includes(this.letterGrade)
@@ -1982,6 +1982,9 @@ abstract class CourseParser {
         // Check for equivalent courses. If two are found, the first element of the pair is disabled
         const equivalentCourses: [string,string][] = [
             ["EAS 0091", "CHEM 1012"],
+            ["EAS 0091", "CHEM 1151"],
+            ["CHEM 1012", "CHEM 1151"],
+            ["CHEM 1022", "CHEM 1161"],
             ["ESE 3010", "STAT 4300"],
             // NB: only STAT 4310 will be retained out of STAT 4310, ESE 4020, ENM 3750
             ["ESE 4020", "STAT 4310"], ["ENM 3750", "STAT 4310"],
