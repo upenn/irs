@@ -1772,7 +1772,7 @@ export class CourseTaken {
             "ANTH","ANCH","ANEL","ARTH","ASLD","CLST","LATN","GREK","COML","EALC","ENGL","FNAR",
             "FOLK","GRMN","DTCH","SCND","HIST","HSSC","JWST","LALS","MUSC","NELC","RELS","FREN",
             "ITAL","PRTG","ROML","SPAN","CZCH","REES","PLSH","QUEC","RUSS","SARS","SAST","THAR",
-            "SWAH"
+            "SWAH","CHIN","JPAN","KORN","ARAB", "HEBR", "TURK", "PERS",
         ]
         const humCourses = [
             "DSGN 0010","DSGN 1020","DSGN 1030","DSGN 1040","DSGN 1050","DSGN 2010","DSGN 2030","DSGN 2040","DSGN 2510","DSGN 5001",
