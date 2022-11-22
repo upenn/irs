@@ -1763,7 +1763,7 @@ export class CourseTaken {
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Social Science.
      * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
     private suhSaysSS(): boolean {
-        // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SAST
+        // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SAST. NB: in 37cu CIS majors, SS-vs-H distinction is moot
         // TODO: ECON except statistics, probability, and math courses, [ECON 104 is not allowed]. Xlist not helpful
         // TODO: PSYC, SOCI except statistics, probability, and math courses. Xlist not helpful
         const ssSubjects = ["COMM","CRIM","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
@@ -1781,7 +1781,7 @@ export class CourseTaken {
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Humanities.
      * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
     private suhSaysHum(): boolean {
-        // TODO: ASAM cross-listed with AMES, ENGL, FNAR, HIST, and SARS only
+        // TODO: ASAM cross-listed with AMES, ENGL, FNAR, HIST, and SARS only. NB: in 37cu CIS majors, SS-vs-H distinction is moot
         // TODO: PHIL except 005, 006, and all other logic courses. Does "logic" mean LGIC courses?
         const humSubjects = [
             "ANTH","ANCH","ANEL","ARTH","ASLD","CLST","LATN","GREK","COML","EALC","ENGL","FNAR",
