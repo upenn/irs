@@ -4,6 +4,7 @@ import {makeArray} from "jquery";
 import DroppableEventUIParam = JQueryUI.DroppableEventUIParam;
 import exp from "constants";
 import {isBooleanObject} from "util/types";
+import fs from "fs";
 
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 const DraggableDataGetCourseTaken = "CourseTaken"
@@ -3063,6 +3064,8 @@ async function cliMain(): Promise<void> {
     }
 }
 
+let wrongCatalogYearHeaderWritten = false
+
 async function runOneWorksheet(worksheetText: string, analysisOutput: string): Promise<void> {
     const fs = require('fs');
     try {
@@ -3073,8 +3076,20 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string): P
         } catch (Error) {
             return
         }
+        let pennid = parser.extractPennID(worksheetText)!
+
         const coursesTaken = parseResult.courses
         const degrees = parseResult.degrees
+        let wrongDwCatalogYear = ''
+        if (degrees.hasWrongDwCatalogYear()) {
+            wrongDwCatalogYear = `wrong catalog year, DW says ${parseResult.degrees.undergradMajorCatalogYear} but first term was ${parseResult.degrees.firstTerm}\n`
+            const outputFile = `${AnalysisOutputDir}wrong-catalog-years.csv`
+            if (!wrongCatalogYearHeaderWritten) {
+                fs.writeFileSync(outputFile, 'pennid,degreeWorksCatalogYear,firstTermAtPenn\n')
+                wrongCatalogYearHeaderWritten = true
+            }
+            fs.appendFileSync(outputFile, `${pennid},${parseResult.degrees.undergradMajorCatalogYear},${parseResult.degrees.firstTerm}\n`)
+        }
 
         const response = await fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
         const telist = await response.json()
@@ -3089,6 +3104,8 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string): P
             .map(c => "  " + c.toString())
             .join("\n")
             const summary = `
+${wrongDwCatalogYear}
+${degrees.undergrad} ${degrees.masters}
 ${result.cusRemaining} CUs remaining in ${degrees}
 
 unsatisfied requirements:
