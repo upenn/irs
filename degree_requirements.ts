@@ -1869,7 +1869,8 @@ export class CourseTaken {
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Engineering.
      * NB: this IS intended to be a definitive classification */
     public suhSaysEngr(): boolean {
-        if (["VIPR 1200","VIPR 1210","NSCI 3010"].includes(this.code())) {
+        // OIDD courses are cross-listed with MEAM
+        if (["VIPR 1200","VIPR 1210","NSCI 3010","OIDD 4110","OIDD 4150"].includes(this.code())) {
             return true
         }
 
