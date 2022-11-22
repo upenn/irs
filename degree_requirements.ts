@@ -2366,7 +2366,7 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
         const letterGrade = parts[1].trim()
         const creditUnits = parseFloat(parts[2])
         const term = parseInt(parts[4])
-        const inProgress = parts[7] == "YIP"
+        const inProgress = (parts[7] == "YIP" || parts[7] == "YPR")
         const passFail = parts[9] == "YPF"
         let gradingType = passFail ? GradeType.PassFail : GradeType.ForCredit
         // const numericGrade = parseFloat(parts[12])
@@ -3121,7 +3121,7 @@ ${unconsumed}
             fs.mkdirSync(AnalysisOutputDir)
         }
         const outputFile = `${AnalysisOutputDir}${result.cusRemaining}left-${analysisOutput}.analysis.txt`
-        fs.writeFileSync(outputFile, summary + JSON.stringify(result, null, 2) + worksheetText)
+        fs.writeFileSync(outputFile, summary /*+ JSON.stringify(result, null, 2)*/ + worksheetText)
     } catch (err) {
         console.error(err + " when processing " + process.argv[2]);
     }
