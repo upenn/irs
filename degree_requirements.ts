@@ -1463,11 +1463,25 @@ class RequirementSshDepth extends DegreeRequirement {
             this.remainingCUs = 0
             return this.coursesApplied[0]
         } else {
-            const eentCourses = [sshCourses.find(c => c.code() == "EAS 5450"), sshCourses.find(c => c.code() == "EAS 5460")]
-            if (eentCourses.every(c => c != undefined)) {
-                this.coursesApplied = eentCourses.map(c => c!)
-                this.remainingCUs = 0
-                return this.coursesApplied[0]
+            {
+                const eentCourses = [sshCourses.find(c => c.code() == "EAS 5450"), sshCourses.find(c => c.code() == "EAS 5460")]
+                if (eentCourses.every(c => c != undefined)) {
+                    this.coursesApplied = eentCourses.map(c => c!)
+                    this.remainingCUs = 0
+                    return this.coursesApplied[0]
+                }
+            }
+            {
+                // "BEPP 2500 may be used as SS Depth along with ECON 0110 (ECON 010)"
+                const beppEconDepth = [
+                    sshCourses.find(c => c.code() == "BEPP 2500"),
+                    sshCourses.find(c => c.code() == "ECON 0110" || c.code() == "ECON 010")
+                ]
+                if (beppEconDepth.every(c => c != undefined)) {
+                    this.coursesApplied = beppEconDepth.map(c => c!)
+                    this.remainingCUs = 0
+                    return this.coursesApplied[0]
+                }
             }
         }
         return undefined
