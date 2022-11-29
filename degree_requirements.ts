@@ -2418,20 +2418,23 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
         let d = new Degrees()
 
         // undergrad degrees
-        if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CSCI\s+`, "m")) != -1) {
-            d.undergrad =  "40cu CSCI"
-        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+ASCS\s+`, "m")) != -1) {
-            d.undergrad =  "40cu ASCS"
-        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CMPE\s+`, "m")) != -1) {
-            d.undergrad =  "40cu CMPE"
-        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+NETS\s+`, "m")) != -1) {
-            d.undergrad =  "40cu NETS"
-        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+DMD\s+`, "m")) != -1) {
-            d.undergrad =  "40cu DMD"
-        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+EE\s+`, "m")) != -1) {
-            d.undergrad =  "40cu EE"
-        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+SSE\s+`, "m")) != -1) {
-            d.undergrad =  "40cu SSE"
+        if (worksheetText.includes('Degree in Bachelor of Science in Engineering') ||
+            worksheetText.includes('Degree in Bachelor of Applied Science')) {
+            if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CSCI\s+`, "m")) != -1) {
+                d.undergrad = "40cu CSCI"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+ASCS\s+`, "m")) != -1) {
+                d.undergrad = "40cu ASCS"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CMPE\s+`, "m")) != -1) {
+                d.undergrad = "40cu CMPE"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+NETS\s+`, "m")) != -1) {
+                d.undergrad = "40cu NETS"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+DMD\s+`, "m")) != -1) {
+                d.undergrad = "40cu DMD"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+EE\s+`, "m")) != -1) {
+                d.undergrad = "40cu EE"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+SSE\s+`, "m")) != -1) {
+                d.undergrad = "40cu SSE"
+            }
         }
 
         // masters degrees
