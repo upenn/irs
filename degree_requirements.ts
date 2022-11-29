@@ -1138,7 +1138,7 @@ class RequirementCisElective extends DegreeRequirement {
             // try to pull in CIS 19x courses
             .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
             .find((c: CourseTaken): boolean => {
-            const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes(CourseAttribute.NonEngr)
+            const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && c.suhSaysEngr()
             return foundMatch &&
                 c.grading == GradeType.ForCredit &&
                 c.courseNumberInt >= this.minLevel &&
