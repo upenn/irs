@@ -1931,7 +1931,8 @@ abstract class CourseParser {
             return new DegreeWorksDiagnosticsReportParser()
         } else if (text.includes("Courses Completed") &&
             (text.match(/(Master|Bachelor) of Sci(ence)? in Engineering/) != null ||
-                text.includes("Bachelor of Applied Science"))
+                text.includes("Bachelor of Applied Science") ||
+                text.includes("College SEAS Undergraduate")/*Firefox on Windows*/)
         ) {
             return new DegreeWorksClassHistoryParser()
         }
