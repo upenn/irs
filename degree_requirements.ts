@@ -1214,7 +1214,7 @@ class RequirementCsci40TechElective extends DegreeRequirement {
     }
 }
 
-class RequirementAscs40TechElective extends RequirementCsci40TechElective {
+class RequirementAscs40Concentration extends RequirementCsci40TechElective {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         // PHIL 411 & PSYC 413 also listed on 40cu ASCS in PiT as valid TEs, but I think they got cancelled.
         const csciTE = super.satisfiedBy(courses)
@@ -1235,6 +1235,16 @@ class RequirementAscs40TechElective extends RequirementCsci40TechElective {
 
     public toString(): string {
         return "Concentration"
+    }
+}
+
+class RequirementAscs37TechElective extends RequirementAscs40Concentration {
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        return super.satisfiedBy(courses)
+    }
+
+    public toString(): string {
+        return "Technical Elective"
     }
 }
 
@@ -3309,14 +3319,14 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementTechElectiveEngineering(20, true),
                 new RequirementTechElectiveEngineering(21, true),
 
-                new RequirementAscs40TechElective(23),
-                new RequirementAscs40TechElective(24),
-                new RequirementAscs40TechElective(25),
-                new RequirementAscs40TechElective(26),
-                new RequirementAscs40TechElective(27),
-                new RequirementAscs40TechElective(28),
-                new RequirementAscs40TechElective(29),
-                new RequirementAscs40TechElective(30),
+                new RequirementAscs40Concentration(23),
+                new RequirementAscs40Concentration(24),
+                new RequirementAscs40Concentration(25),
+                new RequirementAscs40Concentration(26),
+                new RequirementAscs40Concentration(27),
+                new RequirementAscs40Concentration(28),
+                new RequirementAscs40Concentration(29),
+                new RequirementAscs40Concentration(30),
 
                 new RequirementSsh(31, [CourseAttribute.SocialScience]),
                 new RequirementSsh(32, [CourseAttribute.SocialScience]),
@@ -3363,14 +3373,14 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementTechElectiveEngineering(20, true),
                 new RequirementTechElectiveEngineering(21, true),
 
-                new RequirementAscs40TechElective(23),
-                new RequirementAscs40TechElective(24),
-                new RequirementAscs40TechElective(25),
-                new RequirementAscs40TechElective(26),
-                new RequirementAscs40TechElective(27),
-                new RequirementAscs40TechElective(28),
-                new RequirementAscs40TechElective(29),
-                new RequirementAscs40TechElective(30),
+                new RequirementAscs40Concentration(23),
+                new RequirementAscs40Concentration(24),
+                new RequirementAscs40Concentration(25),
+                new RequirementAscs40Concentration(26),
+                new RequirementAscs40Concentration(27),
+                new RequirementAscs40Concentration(28),
+                new RequirementAscs40Concentration(29),
+                new RequirementAscs40Concentration(30),
 
                 new RequirementSsh(31, [CourseAttribute.SocialScience]),
                 new RequirementSsh(32, [CourseAttribute.SocialScience]),
@@ -3741,14 +3751,14 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementTechElectiveEngineering(20, false),
                 new RequirementTechElectiveEngineering(21, false),
 
-                new RequirementAscs40TechElective(22),
-                new RequirementAscs40TechElective(23),
-                new RequirementAscs40TechElective(24),
-                new RequirementAscs40TechElective(25),
-                new RequirementAscs40TechElective(26),
-                new RequirementAscs40TechElective(27),
-                new RequirementAscs40TechElective(28),
-                new RequirementAscs40TechElective(29),
+                new RequirementAscs37TechElective(22),
+                new RequirementAscs37TechElective(23),
+                new RequirementAscs37TechElective(24),
+                new RequirementAscs37TechElective(25),
+                new RequirementAscs37TechElective(26),
+                new RequirementAscs37TechElective(27),
+                new RequirementAscs37TechElective(28),
+                new RequirementAscs37TechElective(29),
 
                 new RequirementNamedCourses(36, "Ethics", CsciEthicsCourses),
                 new RequirementSsh(30, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
