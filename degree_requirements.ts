@@ -1929,11 +1929,7 @@ abstract class CourseParser {
     public static getParser(text: string): CourseParser {
         if (text.includes("Degree Works Release")) {
             return new DegreeWorksDiagnosticsReportParser()
-        } else if (text.includes("Courses Completed") &&
-            (text.match(/(Master|Bachelor) of Sci(ence)? in Engineering/) != null ||
-                text.includes("Bachelor of Applied Science") ||
-                text.includes("College SEAS Undergraduate")/*Firefox on Windows*/)
-        ) {
+        } else if (text.includes("Courses Completed") && text.includes("College SEAS Undergraduate")) {
             return new DegreeWorksClassHistoryParser()
         }
         throw new Error("cannot parse courses")
@@ -2125,7 +2121,7 @@ class DegreeWorksClassHistoryParser extends CourseParser {
     private parseDegrees(text: string): Degrees {
         const deg = new Degrees()
 
-        if (text.match(/Bachelor of Sci(ence)? in Engineering/) != null) {
+        if (text.includes("Program SEAS - BSE") || text.match(/Program.*BSE - SEAS/) != null) {
             // there's an undergrad degree
             if (text.match(/Majors? Computer Science/) != null) {
                 deg.undergrad = "40cu CSCI"
@@ -2140,14 +2136,14 @@ class DegreeWorksClassHistoryParser extends CourseParser {
             } else if (text.match(/Majors? Systems Science & Engineering/) != null) {
                 deg.undergrad = "40cu SSE"
             }
-        } else if (text.includes("Bachelor of Applied Science")) {
+        } else if (text.includes("Program SEAS - Bachelor of Applied Science") || text.match(/Program.*BAS - SEAS/) != null) {
             if (text.match(/Majors? Appl Science-Computer Science/) != null) {
                 deg.undergrad = "40cu ASCS"
             } else if (text.match(/Majors? Appl Science In Comp & Cog.Sc/) != null) {
                 deg.undergrad = "40cu ASCC"
             }
         }
-        if (text.match(/Master of Sci(ence)? in Engineering/) != null) {
+        if (text.match(/Program SEAS - MSE/) != null) {
             // there's a masters degree
             if (text.match(/Majors? Computer & Information Science/) != null) {
                 deg.masters = "CIS-MSE"
