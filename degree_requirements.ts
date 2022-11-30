@@ -820,6 +820,9 @@ abstract class DegreeRequirement {
     }
 
     public updateViewWeb(potential: boolean = false) {
+        if (typeof window === 'undefined') {
+            return
+        }
         const myElem = $(`#${this.uuid}`)
         myElem.removeClass("requirementSatisfied")
         myElem.removeClass("requirementUnsatisfied")
@@ -1942,7 +1945,7 @@ abstract class CourseParser {
         } else if (text.includes("Courses Completed") && text.includes("College SEAS Undergraduate")) {
             return new DegreeWorksClassHistoryParser()
         }
-        throw new Error("cannot parse courses")
+        throw new Error("cannot parse courses: '" + text + "'")
     }
 
     /** Updates `degrees` IN-PLACE, using heuristics to identify students declared as CSCI but following
@@ -3071,11 +3074,13 @@ async function cliMain(): Promise<void> {
     }
     if (IncorrectCMAttributes.size > 0) {
         console.log(`found ${IncorrectCMAttributes.size} incorrect/missing attributes in CM`)
-        console.log(IncorrectCMAttributes.keys())
+        const attrProblemFile = `${AnalysisOutputDir}course-attribute-problems.txt`
+        fs.writeFileSync(attrProblemFile, [...IncorrectCMAttributes.keys()].sort().join("\n"))
     }
 }
 
 let wrongCatalogYearHeaderWritten = false
+let cusRemainingHeaderWritten = false
 
 async function runOneWorksheet(worksheetText: string, analysisOutput: string): Promise<void> {
     const fs = require('fs');
@@ -3108,7 +3113,7 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string): P
 
         const unsat = result.requirementOutcomes
             .filter(ro => ro.applyResult != RequirementApplyResult.Satisfied)
-            .map(ro => "  " + ro.outcomeString())
+            .map(ro => "  " + ro.outcomeString() + " " + ro.coursesApplied.map(c => c.code()).join(','))
             .join("\n")
         const unconsumed = result.unconsumedCourses
             .sort()
@@ -3130,10 +3135,23 @@ ${unconsumed}
         if (!fs.existsSync(AnalysisOutputDir)) {
             fs.mkdirSync(AnalysisOutputDir)
         }
-        const outputFile = `${AnalysisOutputDir}${result.cusRemaining}left-${analysisOutput}.analysis.txt`
+        const cusRemainingFormatted = result.cusRemaining.toLocaleString(undefined,
+            { maximumFractionDigits: 1, minimumFractionDigits: 1, minimumIntegerDigits: 2 });
+        const outputFile = `${AnalysisOutputDir}${cusRemainingFormatted}-cusLeft-${analysisOutput}.analysis.txt`
+        // TODO: print out JSON version of worksheet here
         fs.writeFileSync(outputFile, summary /*+ JSON.stringify(result, null, 2)*/ + worksheetText)
+
+        const cusRemainingFile = `${AnalysisOutputDir}cus-remaining.csv`
+        if (!cusRemainingHeaderWritten) {
+            fs.writeFileSync(cusRemainingFile, "PennID,CUs remaining\n")
+            cusRemainingHeaderWritten = true
+        }
+        fs.appendFileSync(cusRemainingFile, `${pennid},${result.cusRemaining}\n`)
+
     } catch (err) {
         console.error(err + " when processing " + process.argv[2]);
+        // @ts-ignore
+        console.error(err.stack);
     }
 }
 
