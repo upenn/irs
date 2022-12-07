@@ -3063,10 +3063,6 @@ async function cliMain(): Promise<void> {
             // aggregate multiple worksheets for the same student
             const allMyWorksheets: string = myWorksheetFiles
                 .map((f: string): string => fs.readFileSync(f, 'utf8'))
-                .filter((ws: string): boolean =>
-                    ws.includes("Degree in Bachelor of Science in Engineering") ||
-                    ws.includes("Degree in Bachelor of Applied Science") ||
-                    ws.includes("Degree in Master of Science in Engineering"))
                 .join("\n")
             await runOneWorksheet(allMyWorksheets, path.basename(worksheetFile))
         }
