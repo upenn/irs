@@ -3707,11 +3707,16 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementCisElective(19),
 
                 new RequirementNamedCourses(23, "Technical Elective", csci37TechElectives).withConcise(),
-                new RequirementNamedCourses(24, "Technical Elective", csci37TechElectives).withConcise(),
-                new RequirementNamedCourses(25, "Technical Elective", csci37TechElectives).withConcise(),
-                new RequirementNamedCourses(26, "Technical Elective", csci37TechElectives).withConcise(),
-                new RequirementNamedCourses(27, "Technical Elective", csci37TechElectives).withConcise(),
-                new RequirementNamedCourses(28, "Technical Elective", csci37TechElectives).withConcise(),
+                new RequirementNamedCourses(24, "Technical Elective", csci37TechElectives)
+                    .withConcise().withMinLevel(2000),
+                new RequirementNamedCourses(25, "Technical Elective", csci37TechElectives)
+                    .withConcise().withMinLevel(2000),
+                new RequirementNamedCourses(26, "Technical Elective", csci37TechElectives)
+                    .withConcise().withMinLevel(2000),
+                new RequirementNamedCourses(27, "Technical Elective", csci37TechElectives)
+                    .withConcise().withMinLevel(2000),
+                new RequirementNamedCourses(28, "Technical Elective", csci37TechElectives)
+                    .withConcise().withMinLevel(2000),
 
                 // elective "breadth" requirements
                 new RequirementNamedCourses(29, "Networking Elective",
