@@ -713,7 +713,8 @@ export interface TechElectiveDecision {
 }
 
 type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" |
-    "37cu ASCS" | "37cu CSCI" | "37cu CMPE" | "37cu NETS" | "37cu DMD" | "none"
+    "37cu ASCS" | "37cu CSCI" | "37cu CMPE" | "37cu NETS" | "37cu DMD" | "37cu BE" | "37cu ASBS" | "none" |
+    "CIS minor" | "DATS minor" // TODO: handle minors properly as their own kind of degree
 type MastersDegree = "CIS-MSE" | "DATS" | "ROBO" | "CGGT" | "none"
 
 let IncorrectCMAttributes = new Set<string>()
@@ -2463,6 +2464,13 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
             }
         }
 
+        if (worksheetText.includes("MINOR = DATS")) {
+            d.undergrad = "DATS minor"
+        }
+        if (worksheetText.includes("MINOR = CSCI")) {
+            d.undergrad = "CIS minor"
+        }
+
         // masters degrees
         if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CIS\s+`, "m")) != -1) {
             d.masters = "CIS-MSE"
@@ -3954,6 +3962,40 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementFreeElective(42),
             ]
             break
+        case "DATS minor":
+            const datsMinorElectives = "DATS minor electives"
+            ugradDegreeRequirements = [
+                new RequirementNamedCourses(1, "Programming", ["CIS 1200"]),
+                new RequirementNamedCourses(2, "ML", ["CIS 4190","CIS 5190","CIS 5200","STAT 4710",]),
+                new RequirementNamedCourses(3, "Scalability", ["NETS 2120","CIS 5450"]),
+                new RequireBucketNamedCourses(7, "Statistics Bucket", // prefer STAT 4300/ESE 3010 here over Stats core req
+                    ["BIOL 2510","CIS 2610","ESE 3010","STAT 4300","STAT 4760"], datsMinorElectives),
+                new RequirementNamedCourses(4, "Statistics", ["ESE 3010","ESE 4020","STAT 4300","STAT 4310"]),
+                new RequirementLabel(5, "<b>Take courses in 2 of the 5 buckets below:</b>"),
+                new RequireBucketNamedCourses(8, "Data Management Bucket",
+                    ["CIS 4500","CIS 5500","CIS 4550","CIS 5550","NETS 2130","OIDD 1050","STAT 4750"], datsMinorElectives),
+                new RequireBucketNamedCourses(10, "Modeling Bucket",
+                    ["NETS 3120","MKTG 2710","OIDD 3250","OIDD 3530","STAT 4330"], datsMinorElectives),
+                // put these last since they allow 0.5cu courses STAT 4050 & STAT 4220, which is a bit broken atm
+                new RequireBucketNamedCourses(6, "Data-Centric Programming Bucket",
+                    ["CIS 1050","ENGR 1050","ESE 3050","OIDD 3110","STAT 4050","STAT 4700"], datsMinorElectives),
+                new RequireBucketNamedCourses(9, "Data Analysis Bucket",
+                    ["CIS 4190","CIS 5190","CIS 4210","CIS 5210","CIS 5300","MKTG 2120","MKTG 3090","OIDD 4100",
+                        "STAT 4220","STAT 4710","STAT 4740","STAT 5200"], datsMinorElectives),
+            ]
+            const datsBuckets = <RequireBucketNamedCourses>ugradDegreeRequirements[6]
+            datsBuckets.connectBucketGroup(2, ugradDegreeRequirements)
+            break
+        case "CIS minor":
+            ugradDegreeRequirements = [
+                new RequireCis1100(1),
+                new RequirementNamedCourses(2, "Core course", ["CIS 1200"]),
+                new RequirementNamedCourses(3, "Core course", ["CIS 1600"]),
+                new RequirementNamedCourses(4, "Core course", ["CIS 1210"]),
+                new RequirementCisElective(5),
+                new RequirementCisElective(6).withMinLevel(2000),
+            ]
+            break
         case "none":
             break
         default:
@@ -3964,7 +4006,9 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         myAssertEquals(displayIndices.size, ugradDegreeRequirements.length, "duplicate ugrad displayIndex")
         const degreeCUs = ugradDegreeRequirements.map(r => r.doesntConsume ? 0 : r.cus).reduce((sum, e) => sum + e, 0)
         const expectedCUs = degrees.getUndergradCUs()
-        myAssertEquals(expectedCUs, degreeCUs, `${degrees.undergrad} degree should be ${expectedCUs} CUs but was ${degreeCUs}`)
+        if (!degrees.undergrad.includes("minor")) {
+            myAssertEquals(expectedCUs, degreeCUs, `${degrees.undergrad} degree should be ${expectedCUs} CUs but was ${degreeCUs}`)
+        }
     }
 
     let mastersDegreeRequirements: DegreeRequirement[] = []
@@ -4100,7 +4144,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         // handle special ShareWith requirements: writing, depth, ethics
         const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
 
-        { // Writing requirement
+        if (!degrees.undergrad.includes("minor")) { // Writing requirement
             const writingReq = new RequirementAttributes(41, "Writing", [CourseAttribute.Writing]).withNoConsume()
             const matched = writingReq.satisfiedBy(sshCourses)
             if (matched == undefined) {
