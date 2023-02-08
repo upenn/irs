@@ -903,16 +903,18 @@ class RequirementNamedCourses extends DegreeRequirement {
 }
 
 class BucketGroup {
-    readonly coursesRequired: number = 0
+    readonly requiredCUs: number = 0
     public requirements: RequireBucketNamedCourses[] = []
-    constructor(coursesRequired: number) {
-        this.coursesRequired = coursesRequired
+    constructor(requiredCUs: number) {
+        this.requiredCUs = requiredCUs
     }
-    public numSatisfied(): number {
-        return this.requirements.filter(r => r.satisfiedLocally()).length
+    public numCUsSatisfied(): number {
+        return this.requirements.filter(r => r.satisfiedLocally())
+            .map(r => r.cus - r.remainingCUs)
+            .reduce((p, c) => p + c, 0)
     }
     public allSatisfied(): boolean {
-        return this.numSatisfied() == this.coursesRequired
+        return this.numCUsSatisfied() == this.requiredCUs
     }
 }
 /** When we have buckets of named courses, and require students to cover k different buckets */
@@ -923,8 +925,8 @@ class RequireBucketNamedCourses extends RequirementNamedCourses {
         super(displayIndex, tag, courses)
         this.groupName = groupName
     }
-    public getBucketGroupCoursesRemaining(): number {
-        return this.group!.coursesRequired - this.group!.numSatisfied()
+    public getBucketGroupCUsRemaining(): number {
+        return this.group!.requiredCUs - this.group!.numCUsSatisfied()
     }
     public connectBucketGroup(coursesRequired: number, reqs: DegreeRequirement[]) {
         this.group = new BucketGroup(coursesRequired)
@@ -1945,7 +1947,7 @@ abstract class CourseParser {
         } else if (text.includes("Courses Completed") && text.includes("College SEAS Undergraduate")) {
             return new DegreeWorksClassHistoryParser()
         }
-        throw new Error("cannot parse courses: '" + text + "'")
+        throw new Error(`cannot parse courses: '${text}'`)
     }
 
     /** Updates `degrees` IN-PLACE, using heuristics to identify students declared as CSCI but following
@@ -2075,6 +2077,20 @@ abstract class CourseParser {
         // TODO: Math 2410 retro credit for students entering in Fall 2021 and earlier?
         // "For the Class of 2025 and earlier, if you pass Math 2410 at Penn with at least a grade of B, you may come to
         // the math office and receive retroactive credit for (and only one) Math 1400, Math 1410, or Math 2400"
+
+        // "both CIS 4190/5190 & CIS 5200 cannot be taken towards the DATS minor"
+        // TODO: a better approach would be to connect ML and Data Analysis reqs (maybe via callback?), here we disable 4190/5190 for ALL degrees...
+        if (degrees.undergrad == "DATS minor") {
+            const cis5200 = courses.find(c => c.code() == "CIS 5200" && c.grading == GradeType.ForCredit)
+            if (cis5200 != undefined) {
+                courses.forEach(c => {
+                    if (c.code() == "CIS 4190" || c.code() == "CIS 5190") {
+                        myLog("[DATS minor] disabling CIS 4190/5190 because CIS 5200 was taken")
+                        c.disable()
+                    }
+                })
+            }
+        }
 
         // heuristics to split some courses (like physics courses with labs) into 1.0 + 0.5 CU pieces
         const halfCuCourses: CourseTaken[] = []
@@ -3025,7 +3041,7 @@ function countRemainingCUs(allReqs: DegreeRequirement[]): number {
             if (r instanceof RequireBucketNamedCourses) {
                 if (!bucketsProcessed.includes(r.groupName)) {
                     bucketsProcessed.push(r.groupName)
-                    return r.getBucketGroupCoursesRemaining()
+                    return r.getBucketGroupCUsRemaining()
                 }
                 return 0
             }
