@@ -174,6 +174,19 @@ const SseSpaList = [
     "ESE 6500",
     "STAT 4760",
 ]
+const BeEthicsCourses = [
+    "EAS 2030",
+    "HSOC 1330",
+    "SOCI 2971",
+    "HSOC 2457",
+    "PHIL 1342",
+    "PHIL 4330",
+    "PPE 072",
+    "LGST 1000",
+    "LGST 2200",
+    "NURS 3300",
+    "NURS 5250",
+]
 const SeniorDesign1stSem = ["CIS 4000","CIS 4100","ESE 4500","MEAM 4450","BE 4950"]
 const SeniorDesign2ndSem = ["CIS 4010","CIS 4110","ESE 4510","MEAM 4460","BE 4960"]
 
@@ -2166,6 +2179,8 @@ class DegreeWorksClassHistoryParser extends CourseParser {
                 deg.undergrad = "40cu EE"
             } else if (text.match(/Majors? Systems Science & Engineering/) != null) {
                 deg.undergrad = "40cu SSE"
+            } else if (text.match(/Majors? Bioengineering/) != null) {
+                deg.undergrad = "37cu BE"
             }
         } else if (text.includes("Program SEAS - Bachelor of Applied Science") || text.match(/Program.*BAS - SEAS/) != null) {
             if (text.match(/Majors? Appl Science-Computer Science/) != null) {
@@ -2461,6 +2476,8 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
                 d.undergrad = "40cu EE"
             } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+SSE\s+`, "m")) != -1) {
                 d.undergrad = "40cu SSE"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+BE\s+`, "m")) != -1) {
+                d.undergrad = "37cu BE"
             }
         }
 
@@ -2533,8 +2550,10 @@ export class Degrees {
         if (this.undergrad.startsWith("40cu")) {
             return 40
         }
-        myAssert(this.undergrad.startsWith("37cu"))
-        return 37
+        if (this.undergrad.startsWith("37cu")) {
+            return 37
+        }
+        return 0
     }
 
     public hasWrongDwCatalogYear(): boolean {
@@ -4001,6 +4020,57 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementCisElective(5),
                 new RequirementCisElective(6).withMinLevel(2000),
             ]
+            break
+        case "37cu BE":
+            ugradDegreeRequirements = [
+                new RequirementNamedCourses(1, "Major", ["BE 1000"]).withCUs(0.5),
+                new RequirementNamedCourses(2, "Major", ["ENGR 1050","CIS 1200","CIS 1210"]),
+                new RequirementNamedCourses(3, "Major", ["BE 2000"]),
+                new RequirementNamedCourses(4, "Major", ["BE 2200"]),
+                new RequirementNamedCourses(5, "Major", ["BE 2700"]),
+                new RequirementNamedCourses(6, "Major", ["BE 3010"]),
+                new RequirementNamedCourses(7, "Major", ["BE 3060"]),
+                new RequirementNamedCourses(8, "Major", ["BE 3090"]),
+                new RequirementNamedCourses(9, "Major", ["BE 3100"]),
+                new RequirementNamedCourses(10, "Major", ["BE 3500"]),
+                new RequirementNamedCourses(11, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(12, "Senior Design", SeniorDesign2ndSem),
+                new RequirementNumbered(13, "BE Elective (4000/5000-level)", "BE",
+                    function(x: number) { return x >= 4000 && x < 6000}),
+                new RequirementNumbered(14, "BE Elective (4000/5000-level)", "BE",
+                    function(x: number) { return x >= 4000 && x < 6000}),
+                new RequirementEngineeringElective(15),
+                new RequirementEngineeringElective(16),
+
+                new RequirementNamedCourses(17, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(18, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(19, "Math", ["ENM 2400","MATH 2400"]),
+                new RequirementNamedCourses(20, "Math", ["ENM 3750","ESE 4020","STAT 4310","ENM 3210"]),
+                new RequirementNamedCourses(21, "Physics", ["PHYS 0140","PHYS 0150","PHYS 0170"]),
+                new RequirementNamedCourses(22, "Physics", ["PHYS 0141","PHYS 0151","PHYS 0171"]),
+                new RequirementNamedCourses(23, "Chem", ["CHEM 1011"]),
+                new RequirementNamedCourses(24, "Chem", ["CHEM 1101"]).withCUs(0.5),
+                new RequirementNamedCourses(25, "Chem", ["CHEM 1021"]),
+                new RequirementNamedCourses(26, "Chem", ["CHEM 1102"]).withCUs(0.5),
+                new RequirementNamedCourses(27, "Bio", ["BIOL 1121"]),
+                new RequirementNamedCourses(28, "Bio", ["BIOL 1124"]).withCUs(0.5),
+                new RequirementNamedCourses(29, "Bio", ["BIOL 2310"]),
+
+                new RequirementNamedCourses(30, "Ethics", BeEthicsCourses),
+                new RequirementSsh(31, [CourseAttribute.SocialScience]),
+                new RequirementSsh(32, [CourseAttribute.Humanities]),
+                new RequirementSsh(33, [CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing requirement is @ index 41
+
+                new RequirementFreeElective(42),
+                new RequirementFreeElective(43),
+                new RequirementFreeElective(44),
+            ]
+            break
+        case "37cu ASBS":
             break
         case "none":
             break
