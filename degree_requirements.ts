@@ -2385,6 +2385,7 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
             numHits++
         }
 
+
         const minorPattern = new RegExp(String.raw`^Block\s+Hide\s+Minor in (?<minor>[^-]+)(?<details>(.|\s)*?)(Block\s+Hide|Class Information)`, "gm")
         let hits = minorPattern.exec(worksheetText)
         if (hits != null) {
@@ -3105,6 +3106,7 @@ async function cliMain(): Promise<void> {
         const worksheetFile = worksheets[i]
         const pennid: string = path.basename(worksheetFile).split("-")[0]
         const myWorksheetFiles = worksheets.filter((f: string): boolean => f.includes(pennid))
+        // console.log(`jld: working on ${myWorksheetFiles}...`)
         if (myWorksheetFiles.length == 1) {
             const worksheetText: string = fs.readFileSync(worksheetFile, 'utf8');
             await runOneWorksheet(worksheetText, path.basename(worksheetFile))
@@ -3130,13 +3132,13 @@ let cusRemainingHeaderWritten = false
 
 async function runOneWorksheet(worksheetText: string, analysisOutput: string): Promise<void> {
     const fs = require('fs');
-    try {
+    //try {
         const parser = CourseParser.getParser(worksheetText)
         let parseResult
         try {
             parseResult = await parser.parse(worksheetText, undefined)
         } catch (Error) {
-            return
+           return
         }
         let pennid = parser.extractPennID(worksheetText)!
 
@@ -3151,6 +3153,13 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string): P
                 wrongCatalogYearHeaderWritten = true
             }
             fs.appendFileSync(outputFile, `${pennid},${parseResult.degrees.undergradMajorCatalogYear},${parseResult.degrees.firstTerm}\n`)
+        }
+        // TODO: only analyze students of interest
+        if (parseResult.degrees.undergrad == "none" || parseResult.degrees.getUndergradCUs() != 40) {
+            return
+        }
+        if (worksheetText.includes("Active on Leave")) {
+            return
         }
 
         const response = await fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
@@ -3200,11 +3209,11 @@ ${unconsumed}
         }
         fs.appendFileSync(cusRemainingFile, `${pennid},${result.cusRemaining}\n`)
 
-    } catch (err) {
-        console.error(err + " when processing " + process.argv[2]);
-        // @ts-ignore
-        console.error(err.stack);
-    }
+    // } catch (err) {
+    //     console.error(err + " when processing " + process.argv[2]);
+    //     // @ts-ignore
+    //     console.error(err.stack);
+    // }
 }
 
 function myLog(msg: string): void {
