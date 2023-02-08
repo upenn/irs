@@ -2374,7 +2374,13 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
                 hits.groups!["restOfLine"],
                 hits.groups!["attributes"])
             if (c != null) {
-                coursesTaken.push(c)
+                let dupe = coursesTaken.some((a) =>
+                    a.subject == c!.subject &&
+                    a.courseNumber == c!.courseNumber &&
+                    a.term == c!.term)
+                if (!dupe) {
+                    coursesTaken.push(c)
+                }
             }
             numHits++
         }
