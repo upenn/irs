@@ -3639,7 +3639,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                     ["ESE 4000", "EAS 5450", "EAS 5950", "MGMT 2370", "OIDD 2360"]),
 
                 new RequirementNamedCourses(30, SsHTbsTag, ["EAS 2030"]),
-                new RequirementSsh(34, [CourseAttribute.SocialScience]),
+                new RequirementSsh(31, [CourseAttribute.SocialScience]),
                 new RequirementSsh(32, [CourseAttribute.Humanities]),
                 new RequirementSsh(33, [CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
@@ -4006,7 +4006,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
     }
     if (ugradDegreeRequirements.length > 0) {
         const displayIndices = new Set<number>(ugradDegreeRequirements.map(r => r.displayIndex))
-        myAssertEquals(displayIndices.size, ugradDegreeRequirements.length, "duplicate ugrad displayIndex")
+        myAssertEquals(displayIndices.size, ugradDegreeRequirements.length, `duplicate ugrad displayIndex with ${degrees}`)
         const degreeCUs = ugradDegreeRequirements.map(r => r.doesntConsume ? 0 : r.cus).reduce((sum, e) => sum + e, 0)
         const expectedCUs = degrees.getUndergradCUs()
         if (!degrees.undergrad.includes("minor")) {
