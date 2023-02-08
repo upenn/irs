@@ -3159,8 +3159,11 @@ ${unconsumed}
         if (!fs.existsSync(AnalysisOutputDir)) {
             fs.mkdirSync(AnalysisOutputDir)
         }
-        const cusRemainingFormatted = result.cusRemaining.toLocaleString(undefined,
-            { maximumFractionDigits: 1, minimumFractionDigits: 1, minimumIntegerDigits: 2 });
+        let cusRemainingFormatted = "alldone"
+        if (result.cusRemaining > 0) {
+            cusRemainingFormatted = result.cusRemaining.toLocaleString(undefined,
+                {maximumFractionDigits: 1, minimumFractionDigits: 1, minimumIntegerDigits: 2});
+        }
         const outputFile = `${AnalysisOutputDir}${cusRemainingFormatted}-cusLeft-${analysisOutput}.analysis.txt`
         // TODO: print out JSON version of worksheet here
         fs.writeFileSync(outputFile, summary /*+ JSON.stringify(result, null, 2)*/ + worksheetText)
