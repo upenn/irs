@@ -3133,7 +3133,10 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string): P
         const result = run(telist, degrees!, coursesTaken)
 
         const unsat = result.requirementOutcomes
-            .filter(ro => ro.applyResult != RequirementApplyResult.Satisfied)
+            .filter(ro =>
+                ro.applyResult != RequirementApplyResult.Satisfied &&
+                !(ro.degreeReq instanceof RequirementLabel) &&
+                !(ro.degreeReq instanceof RequireBucketNamedCourses))
             .map(ro => "  " + ro.outcomeString() + " " + ro.coursesApplied.map(c => c.code()).join(','))
             .join("\n")
         const unconsumed = result.unconsumedCourses
