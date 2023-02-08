@@ -2120,6 +2120,7 @@ abstract class CourseParser {
     }
 
     abstract extractPennID(worksheetText: string): string | undefined
+    abstract parseDegrees(worksheetText: string): Degrees | undefined
     async parse(text: string, degrees: Degrees | undefined): Promise<CourseParserResult> {
         throw new Error("unreachable")
     }
@@ -2147,7 +2148,7 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         return undefined
     }
 
-    private parseDegrees(text: string): Degrees {
+    parseDegrees(text: string): Degrees | undefined {
         const deg = new Degrees()
 
         if (text.includes("Program SEAS - BSE") || text.match(/Program.*BSE - SEAS/) != null) {
@@ -2186,7 +2187,7 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         }
 
         if (deg.undergrad == "none" && deg.masters == "none") {
-            throw new Error("couldn't parse any degrees")
+            return undefined
         }
         return deg
     }
@@ -2196,7 +2197,7 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         if (degrees != undefined) {
             result.degrees = degrees
         } else {
-            result.degrees = this.parseDegrees(text)
+            result.degrees = this.parseDegrees(text)!
         }
 
         const response = await fetch(window.location.origin + "/3d_to_4d_course_translation.json")
@@ -2327,7 +2328,7 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
             result.degrees = degrees
         } else {
             const deg = this.parseDegrees(text)
-            myAssert(deg != undefined, "could not infer DegreeWorks degree")
+            myAssert(deg != undefined, `could not infer DegreeWorks degree from: '${text}'`)
             //console.log("inferred degrees as " + deg)
             result.degrees = deg!
         }
@@ -2439,7 +2440,7 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
             !inProgress)
     }
 
-    private parseDegrees(worksheetText: string): Degrees | undefined {
+    parseDegrees(worksheetText: string): Degrees | undefined {
         let d = new Degrees()
 
         // undergrad degrees
