@@ -4237,7 +4237,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 reqOutcomes.push([42, depthReq, RequirementApplyResult.Unsatisfied, []])
             }
         }
-        if (degrees.getUndergradCUs() == 40) { // ethics requirement: NB doesn't have to come from SSH block!
+        if (degrees.getUndergradCUs() == 40 && degrees.undergrad != "40cu DMD") { // ethics requirement: NB doesn't have to come from SSH block!
             const ethicsReq = new RequirementNamedCourses(43, "Engineering Ethics", CsciEthicsCourses).withNoConsume()
             const match1 = ethicsReq.satisfiedBy(coursesTaken)
             if (match1 == undefined) {
