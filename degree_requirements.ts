@@ -1217,6 +1217,7 @@ class RequirementCsci40TechElective extends DegreeRequirement {
                 // both, or neither, are SS/H/TBS
                 return 0
             })
+            .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
             return c.grading == GradeType.ForCredit &&
                 (c.attributes.includes(CourseAttribute.MathNatSciEngr) ||
@@ -4071,18 +4072,18 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(28, "Bio", ["BIOL 1124"]).withCUs(0.5),
                 new RequirementNamedCourses(29, "Bio", ["BIOL 2310"]),
 
-                new RequirementNamedCourses(30, "Ethics", BeEthicsCourses),
+                new RequirementSsh(30, [CourseAttribute.SocialScience]),
                 new RequirementSsh(31, [CourseAttribute.SocialScience]),
                 new RequirementSsh(32, [CourseAttribute.Humanities]),
                 new RequirementSsh(33, [CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing requirement is @ index 41
+                // NB: Writing requirement is @ index 41, Ethics is @ index 42
 
-                new RequirementFreeElective(42),
                 new RequirementFreeElective(43),
                 new RequirementFreeElective(44),
+                new RequirementFreeElective(45),
             ]
             break
         case "37cu ASBS":
@@ -4267,6 +4268,16 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 } else {
                     reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Satisfied, [match1,match2]])
                 }
+            }
+        }
+        if (degrees.undergrad == "37cu BE") {
+            // BE Ethics req comes from SS/H block
+            const ethicsReq = new RequirementNamedCourses(42, "Ethics", BeEthicsCourses).withNoConsume()
+            const match1 = ethicsReq.satisfiedBy(sshCourses)
+            if (match1 == undefined) {
+                reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Unsatisfied, []])
+            } else if (ethicsReq.remainingCUs == 0) {
+                reqOutcomes.push([ethicsReq.displayIndex, ethicsReq, RequirementApplyResult.Satisfied, [match1]])
             }
         }
     }
