@@ -3102,6 +3102,14 @@ async function cliMain(): Promise<void> {
     }
     const path = require('path');
     const fs = require('fs');
+    const csv = require('csv-parse/sync');
+    //import { parse } from 'csv-parse/sync';
+
+    const fileContent = fs.readFileSync('/Users/devietti/Desktop/2023-spring-summer-grads.csv', { encoding: 'utf-8' });
+    let majorCsvRecords = csv.parse(fileContent, {
+        delimiter: ',',
+        columns: true,
+    }) as MajorCsvRecord[]
 
     let worksheets = process.argv.slice(2)
     for (let i = 0; i < worksheets.length;) {
@@ -3111,14 +3119,14 @@ async function cliMain(): Promise<void> {
         // console.log(`jld: working on ${myWorksheetFiles}...`)
         if (myWorksheetFiles.length == 1) {
             const worksheetText: string = fs.readFileSync(worksheetFile, 'utf8');
-            await runOneWorksheet(worksheetText, path.basename(worksheetFile))
+            await runOneWorksheet(worksheetText, path.basename(worksheetFile), majorCsvRecords)
 
         } else {
             // aggregate multiple worksheets for the same student
             const allMyWorksheets: string = myWorksheetFiles
                 .map((f: string): string => fs.readFileSync(f, 'utf8'))
                 .join("\n")
-            await runOneWorksheet(allMyWorksheets, path.basename(worksheetFile))
+            await runOneWorksheet(allMyWorksheets, path.basename(worksheetFile), majorCsvRecords)
         }
         i += myWorksheetFiles.length
     }
@@ -3132,7 +3140,11 @@ async function cliMain(): Promise<void> {
 let wrongCatalogYearHeaderWritten = false
 let cusRemainingHeaderWritten = false
 
-async function runOneWorksheet(worksheetText: string, analysisOutput: string): Promise<void> {
+interface MajorCsvRecord {
+    [index: string]: string;
+}
+
+async function runOneWorksheet(worksheetText: string, analysisOutput: string, majorCsvRecords: MajorCsvRecord[]): Promise<void> {
     const fs = require('fs');
     //try {
         const parser = CourseParser.getParser(worksheetText)
@@ -3163,6 +3175,13 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string): P
         if (worksheetText.includes("Active on Leave")) {
             return
         }
+
+        let foundRecord = majorCsvRecords.find((c) => c['Penn ID'] == pennid)
+        if (foundRecord == undefined ||
+            foundRecord['On Leave'] != '') {
+            return
+        }
+        const egt = foundRecord['Degree Term']
 
         const response = await fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
         const telist = await response.json()
@@ -3200,7 +3219,7 @@ ${unconsumed}
             cusRemainingFormatted = result.cusRemaining.toLocaleString(undefined,
                 {maximumFractionDigits: 1, minimumFractionDigits: 1, minimumIntegerDigits: 2});
         }
-        const outputFile = `${AnalysisOutputDir}${cusRemainingFormatted}-cusLeft-${analysisOutput}.analysis.txt`
+        const outputFile = `${AnalysisOutputDir}${cusRemainingFormatted}-cusLeft-${egt}-${analysisOutput}.analysis.txt`
         // TODO: print out JSON version of worksheet here
         fs.writeFileSync(outputFile, summary /*+ JSON.stringify(result, null, 2)*/ + worksheetText)
 
