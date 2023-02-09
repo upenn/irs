@@ -2515,6 +2515,195 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
     }
 }
 
+class DegreeWorksStudentDataReportParser extends CourseParser {
+    constructor() {
+        super();
+    }
+    public extractPennID(worksheetText: string): string | undefined {
+        const matches = worksheetText.match(/Student ID\s+(\d{8})/)
+        if (matches != null) {
+            return matches![1]
+        }
+        return undefined
+    }
+
+    public async parse(text: string, degrees: Degrees | undefined): Promise<CourseParserResult> {
+        const result = new CourseParserResult()
+        result.courses = this.extractCourses(text)
+        if (degrees != undefined) {
+            result.degrees = degrees
+        } else {
+            const deg = this.parseDegrees(text)
+            myAssert(deg != undefined, `could not infer DegreeWorks degree from: '${text}'`)
+            //console.log("inferred degrees as " + deg)
+            result.degrees = deg!
+        }
+        result.courses = this.postProcess(result.courses, result.degrees, degrees == undefined)
+        // get catalog year from GoalData-Dtl, check if it is right
+        // UG  	BSE  	2020  	MAJOR  	CMPE  	0001
+        const catalogYear = text.match(/UG\s+(BSE|BAS)\s+(?<catalogYear>\d{4})\s+MAJOR\s+(CSCI|ASCS|NETS|DMD|CMPE|SSE|EE)\s+/)
+        if (catalogYear != null) {
+            result.degrees.undergradMajorCatalogYear = parseInt(catalogYear.groups!["catalogYear"])
+        }
+        return result
+    }
+
+    private extractCourses(worksheetText: string): CourseTaken[] {
+        let coursesTaken: CourseTaken[] = []
+
+        const courseTakenPattern = new RegExp(String.raw`^(?<subject>[A-Z]{2,4}) (?<number>\\d{3,4})\\s+(?<term>\\d{6})(?<restOfLine>.*)`, "g")
+        let numHits = 0
+        while (numHits < 100) {
+            let hits = courseTakenPattern.exec(worksheetText)
+            if (hits == null) {
+                break
+            }
+            let c = this.parseOneCourse(
+                hits.groups!["subject"],
+                hits.groups!["number"],
+                hits.groups!["term"],
+                hits.groups!["restOfLine"])
+            // TODO: implement the rest of Student Data Report parser
+            if (c != null) {
+                let dupe = coursesTaken.some((a) =>
+                    a.subject == c!.subject &&
+                    a.courseNumber == c!.courseNumber &&
+                    a.term == c!.term)
+                if (!dupe) {
+                    coursesTaken.push(c)
+                }
+            }
+            numHits++
+        }
+
+
+        const minorPattern = new RegExp(String.raw`^Block\s+Hide\s+Minor in (?<minor>[^-]+)(?<details>(.|\s)*?)(Block\s+Hide|Class Information)`, "gm")
+        let hits = minorPattern.exec(worksheetText)
+        if (hits != null) {
+            // console.log(hits.groups!["details"].split("\n"))
+            hits.groups!["details"].split("\n")
+                .filter((line: string): boolean => line.startsWith("Applied:"))
+                .forEach((line: string) => {
+                    // console.log(line)
+                    // list of courses applied to the minor looks like this on DegreeWorks:
+                    // Applied: LING 071 (1.0) LING 072 (1.0) LING 106 (1.0) LING 230 (1.0) LING 250 (1.0) LING 3810 (1.0)
+                    myLog(`found courses used for minor in ${line}`)
+                    line.substring("Applied:".length).split(")").forEach(c => {
+                        let name = c.split("(")[0].trim()
+                        let course = coursesTaken.find((c: CourseTaken): boolean => c.code() == name || c._3dName == name)
+                        if (course != undefined) {
+                            course.partOfMinor = true
+                        }
+                    })
+                })
+        }
+
+        return coursesTaken
+    }
+
+    private parseOneCourse(subject: string, courseNumber: string, courseInfo: string, rawAttrs: string): CourseTaken | null {
+        const code = `${subject} ${courseNumber}`
+        const parts = courseInfo.split("\t")
+        const letterGrade = parts[1].trim()
+        const creditUnits = parseFloat(parts[2])
+        const term = parseInt(parts[4])
+        const inProgress = (parts[7] == "YIP" || parts[7] == "YPR")
+        const passFail = parts[9] == "YPF"
+        let gradingType = passFail ? GradeType.PassFail : GradeType.ForCredit
+        // const numericGrade = parseFloat(parts[12])
+        const title = parts[21].trim()
+
+        if (CovidTerms.includes(term) && gradingType == GradeType.PassFail) {
+            gradingType = GradeType.ForCredit
+        }
+
+        if (!inProgress && !CompletedGrades.includes(letterGrade)) {
+            myLog(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${letterGrade}`)
+            return null
+        }
+
+        const _4d = parts[28]
+            .replace("[", "")
+            .replace("]","").trim()
+        if (_4d != "") {
+            // student took 3d course, DW mapped to a 4d course
+            const _4dparts = _4d.split(" ")
+            return new CourseTaken(
+                _4dparts[0],
+                _4dparts[1],
+                title,
+                code,
+                creditUnits,
+                gradingType,
+                letterGrade,
+                term,
+                rawAttrs,
+                !inProgress)
+        }
+        // student took or is taking 4d course
+        return new CourseTaken(
+            subject,
+            courseNumber,
+            title,
+            null,
+            creditUnits,
+            gradingType,
+            letterGrade,
+            term,
+            rawAttrs,
+            !inProgress)
+    }
+
+    parseDegrees(worksheetText: string): Degrees | undefined {
+        let d = new Degrees()
+
+        // undergrad degrees
+        if (worksheetText.includes('Degree in Bachelor of Science in Engineering') ||
+            worksheetText.includes('Degree in Bachelor of Applied Science')) {
+            if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CSCI\s+`, "m")) != -1) {
+                d.undergrad = "40cu CSCI"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+ASCS\s+`, "m")) != -1) {
+                d.undergrad = "40cu ASCS"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CMPE\s+`, "m")) != -1) {
+                d.undergrad = "40cu CMPE"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+NETS\s+`, "m")) != -1) {
+                d.undergrad = "40cu NETS"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+DMD\s+`, "m")) != -1) {
+                d.undergrad = "40cu DMD"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+EE\s+`, "m")) != -1) {
+                d.undergrad = "40cu EE"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+SSE\s+`, "m")) != -1) {
+                d.undergrad = "40cu SSE"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+BE\s+`, "m")) != -1) {
+                d.undergrad = "37cu BE"
+            }
+        }
+
+        if (worksheetText.includes("MINOR = DATS")) {
+            d.undergrad = "DATS minor"
+        }
+        if (worksheetText.includes("MINOR = CSCI")) {
+            d.undergrad = "CIS minor"
+        }
+
+        // masters degrees
+        if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CIS\s+`, "m")) != -1) {
+            d.masters = "CIS-MSE"
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+ROBO\s+`, "m")) != -1) {
+            d.masters = "ROBO"
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+DATS\s+`, "m")) != -1) {
+            d.masters = "DATS"
+        } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CGGT\s+`, "m")) != -1) {
+            d.masters = "CGGT"
+        }
+
+        if (d.undergrad == "none" && d.masters == "none") {
+            return undefined
+        }
+        return d
+    }
+}
+
 const NodeCoursesTaken = "#coursesTaken"
 const NodeDoubleColumn = "#columns1And2"
 const NodeColumn1Header = "#col1Header"
