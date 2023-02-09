@@ -47,12 +47,13 @@ const CoursesWithLab15CUs = [
 ]
 /** 0.5 CU standalone Natural Science lab courses */
 const StandaloneLabCourses05CUs = [
+    "BIOL 1123",
     "CHEM 1101", "CHEM 1102",
     "PHYS 0050", "PHYS 0051",
     "MEAM 1470",
 ]
 const CoursesWith15CUsToSplit = [
-    "MUSC 2700", "MUSC 2710"
+    "EESC 1090", "MUSC 2700", "MUSC 2710"
 ]
 
 // only allowed for 40cu students: https://ugrad.seas.upenn.edu/student-handbook/courses-requirements/engineering-courses/
@@ -4209,6 +4210,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
 
     // use undergrad courses first, reserve grad courses for AM
     coursesTaken.sort((a,b): number => a.courseNumberInt - b.courseNumberInt)
+    coursesTaken.sort(byHighestCUsFirst)
 
     // displayIndex, DegreeRequirement, RequirementOutcome, course(s) applied
     let reqOutcomes: [number,DegreeRequirement,RequirementApplyResult,CourseTaken[]][] = []
