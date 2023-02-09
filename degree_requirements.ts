@@ -1135,8 +1135,8 @@ class RequireCis1100 extends DegreeRequirement {
             // try lower-number courses first
             .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
             .find((c: CourseTaken): boolean => {
-                const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes(CourseAttribute.NonEngr)
-                return foundMatch &&
+                const cisNetsEngr = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes(CourseAttribute.NonEngr)
+                return (cisNetsEngr || c.code() == "ENGR 1050") &&
                     c.grading == GradeType.ForCredit &&
                     c.courseNumberInt >= this.minLevel &&
                     this.applyCourse(c)
