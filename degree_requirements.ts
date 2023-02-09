@@ -750,6 +750,9 @@ abstract class DegreeRequirement {
     /** Set to true for requirements that don't consume a course, e.g., SEAS Writing Requirement */
     public doesntConsume: boolean = false
 
+    /** Set to true to allow P/F courses to be used for this requirement (e.g., SSH, FE) */
+    public allowPassFail: boolean = false
+
     /** Used to sort requirements for display */
     readonly displayIndex: number
 
@@ -820,6 +823,12 @@ abstract class DegreeRequirement {
     /** Set the min course level (e.g., 2000) for this requirement */
     withMinLevel(n: number): DegreeRequirement {
         this.minLevel = n
+        return this
+    }
+
+    /** Allow P/F courses to be used to satisfy this requirement */
+    withPassFail(): DegreeRequirement {
+        this.allowPassFail = true
         return this
     }
 
@@ -902,7 +911,7 @@ class RequirementNamedCourses extends DegreeRequirement {
     satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
         return courses.find((c: CourseTaken): boolean => {
             return this.courses.includes(c.code()) &&
-                c.grading == GradeType.ForCredit &&
+                (c.grading == GradeType.ForCredit || (this.allowPassFail && c.grading == GradeType.PassFail)) &&
                 c.courseNumberInt >= this.minLevel &&
                 this.applyCourse(c)
         })
@@ -3767,8 +3776,8 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(23, "Senior Design", SeniorDesign2ndSem),
                 new RequireCis1100(10),
 
-                new RequirementNamedCourses(30, SsHTbsTag, ["ECON 2100"]),
-                new RequirementNamedCourses(31, SsHTbsTag, ["ECON 4100","ECON 4101","ECON 6110"]),
+                new RequirementNamedCourses(30, SsHTbsTag, ["ECON 2100"]).withPassFail(),
+                new RequirementNamedCourses(31, SsHTbsTag, ["ECON 4100","ECON 4101","ECON 6110"]).withPassFail(),
 
                 new RequirementAttributes(9, "Natural Science", [CourseAttribute.NatSci]),
 
