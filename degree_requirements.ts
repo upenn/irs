@@ -774,11 +774,14 @@ abstract class DegreeRequirement {
 
     /** internal method for actually applying `c` to this requirement, decrementing CUs for both `c` and `this` */
     protected applyCourse(c: CourseTaken): boolean {
+        if (0 == c.getCUs()) {
+            return false
+        }
         if (this.doesntConsume) {
             if (this.remainingCUs > 0 && !this.coursesApplied.includes(c)) {
                 this.coursesApplied.push(c)
                 this.remainingCUs -= c.getCUs()
-                myAssert(this.remainingCUs >= 0, this.toString())
+                myAssert(this.remainingCUs >= 0, `${this} ${this.remainingCUs} ${c.getCUs()} ${this.coursesApplied}`)
                 return true
             }
             return false
@@ -2318,8 +2321,9 @@ class DegreeWorksClassHistoryParser extends CourseParser {
 
         const inProgress = grade == "NA"
         if (!inProgress && !CompletedGrades.includes(grade)) {
-            myLog(`Ignoring failed/incomplete course ${subject} ${number} from ${term} with grade of ${grade}`)
-            return null
+            myLog(`Zeroing CUs for unsuccessful course ${subject} ${number} from ${term} with grade of ${grade}`)
+            cus = '0'
+            // return null
         }
 
         return new CourseTaken(
@@ -2437,10 +2441,10 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
             gradingType = GradeType.ForCredit
         }
 
-        if (!inProgress && !CompletedGrades.includes(letterGrade)) {
-            myLog(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${letterGrade}`)
-            return null
-        }
+        // if (!inProgress && !CompletedGrades.includes(letterGrade)) {
+            // myLog(`Ignoring failed/incomplete course ${code} from ${term} with grade of ${letterGrade}`)
+            // return null
+        // }
 
         const _4d = parts[28]
             .replace("[", "")
@@ -3303,7 +3307,8 @@ async function cliMain(): Promise<void> {
     const csv = require('csv-parse/sync');
     //import { parse } from 'csv-parse/sync';
 
-    const fileContent = fs.readFileSync('/Users/devietti/Desktop/2023-spring-summer-grads.csv', { encoding: 'utf-8' });
+    // TODO: this is a hack, pass this as a proper cmdline argument
+    const fileContent = fs.readFileSync('/Users/devietti/Projects/irs/2023-cis-majors.csv', { encoding: 'utf-8' });
     let majorCsvRecords = csv.parse(fileContent, {
         delimiter: ',',
         columns: true,
@@ -3337,6 +3342,8 @@ async function cliMain(): Promise<void> {
 
 let wrongCatalogYearHeaderWritten = false
 let cusRemainingHeaderWritten = false
+let badGradeHeaderWritten = false
+let probationRiskHeaderWritten = false
 
 interface MajorCsvRecord {
     [index: string]: string;
@@ -3344,7 +3351,7 @@ interface MajorCsvRecord {
 
 async function runOneWorksheet(worksheetText: string, analysisOutput: string, majorCsvRecords: MajorCsvRecord[]): Promise<void> {
     const fs = require('fs');
-    //try {
+    try {
         const parser = CourseParser.getParser(worksheetText)
         let parseResult
         try {
@@ -3366,8 +3373,9 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string, ma
             }
             fs.appendFileSync(outputFile, `${pennid},${parseResult.degrees.undergradMajorCatalogYear},${parseResult.degrees.firstTerm}\n`)
         }
-        // TODO: only analyze students of interest
-        if (parseResult.degrees.undergrad == "none" || parseResult.degrees.getUndergradCUs() != 40) {
+
+        // only analyze students of interest
+        if (parseResult.degrees.undergrad == "none") {
             return
         }
         if (worksheetText.includes("Active on Leave")) {
@@ -3380,6 +3388,20 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string, ma
             return
         }
         const egt = foundRecord['Degree Term']
+        const studentName = foundRecord['Name']
+        const studentEmail = foundRecord['Email Address']
+
+        // add to bad-grade overview spreadsheet
+        const badGradeFile = `${AnalysisOutputDir}bad-grades.csv`
+        if (!badGradeHeaderWritten) {
+            fs.writeFileSync(badGradeFile, "PennID,name,email,degree,course,term,grade\n")
+            badGradeHeaderWritten = true
+        }
+        for (const ct of coursesTaken) {
+            if (ct.term == 202310 && ['F','I','D','W'].includes(ct.letterGrade)) {
+                fs.appendFileSync(badGradeFile, `${pennid}, "${studentName}", ${studentEmail}, ${degrees}, ${ct.code()}, ${ct.term}, ${ct.letterGrade}\n`)
+            }
+        }
 
         const response = await fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
         const telist = await response.json()
@@ -3400,13 +3422,12 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string, ma
 ${wrongDwCatalogYear}
 ${degrees.undergrad} ${degrees.masters}
 ${result.cusRemaining} CUs remaining in ${degrees}
-
+    
 unsatisfied requirements:
 ${unsat}
-
+    
 unused courses:
-${unconsumed}
-
+${unconsumed}    
 `
         // console.log(summary)
         if (!fs.existsSync(AnalysisOutputDir)) {
@@ -3421,6 +3442,18 @@ ${unconsumed}
         // TODO: print out JSON version of worksheet here
         fs.writeFileSync(outputFile, summary /*+ JSON.stringify(result, null, 2)*/ + worksheetText)
 
+        // add to probation risk spreadsheet
+        const probationRiskFile = `${AnalysisOutputDir}probation-risk.csv`
+        if (!probationRiskHeaderWritten) {
+            fs.writeFileSync(probationRiskFile, "PennID,name,email,probation reason\n")
+            probationRiskHeaderWritten = true
+        }
+        const pcr = probationRisk(result, coursesTaken, [202230,202310])
+        if (pcr.hasProbationRisk()) {
+            fs.appendFileSync(probationRiskFile, `${pennid}, "${studentName}", ${studentEmail}, "${pcr}"\n`)
+        }
+
+        // add to CUs remaining overview spreadsheet
         const cusRemainingFile = `${AnalysisOutputDir}cus-remaining.csv`
         if (!cusRemainingHeaderWritten) {
             fs.writeFileSync(cusRemainingFile, "PennID,CUs remaining\n")
@@ -3428,11 +3461,11 @@ ${unconsumed}
         }
         fs.appendFileSync(cusRemainingFile, `${pennid},${result.cusRemaining}\n`)
 
-    // } catch (err) {
-    //     console.error(err + " when processing " + process.argv[2]);
-    //     // @ts-ignore
-    //     console.error(err.stack);
-    // }
+    } catch (err) {
+        console.error(err + " when processing " + process.argv[2]);
+        // @ts-ignore
+        console.error(err.stack);
+    }
 }
 
 function myLog(msg: string): void {
@@ -3441,6 +3474,54 @@ function myLog(msg: string): void {
     } else {
         $(NodeMessages).append(`<div>${msg}</div>`)
     }
+}
+
+class ProbationCheckResult {
+    notEnoughCUs: number | null = null
+    lowOverallGpa: number | null = null
+    lowStemGpa: number | null = null
+    notes: string = ''
+
+    hasProbationRisk(): boolean {
+        return this.notEnoughCUs != null || this.lowOverallGpa != null || this.lowStemGpa != null
+    }
+
+    toString(): string {
+        if (!this.hasProbationRisk()) {
+            return ''
+        }
+        let s = ''
+        if (this.notEnoughCUs != null) {
+            s += `notEnoughCUs: ${this.notEnoughCUs}, `
+        }
+        if (this.lowStemGpa != null) {
+            s += `lowStemGpa: ${this.lowStemGpa}, `
+        }
+        if (this.lowOverallGpa != null) {
+            s += `lowOverallGpa: ${this.lowOverallGpa}, `
+        }
+        return s + this.notes
+    }
+}
+
+/** Check if student is at risk of being placed on academic probation */
+function probationRisk(rr: RunResult, allCourses: CourseTaken[], termsThisYear: number[]): ProbationCheckResult {
+    const pcr = new ProbationCheckResult()
+
+    // completed 8 CUs this past academic year?
+    const cusThisYear = allCourses.filter(c => termsThisYear.includes(c.term))
+        .map(c => c.letterGrade == 'P' ? c.getCUs() : c.getGpaCUs())
+        .reduce((psum, a) => psum+a, 0)
+    const fallCourses = allCourses.filter(c => termsThisYear[0] == c.term)
+    if (fallCourses.length > 0 && cusThisYear < 8) {
+        pcr.notEnoughCUs = cusThisYear
+    } else if (fallCourses.length == 0 && cusThisYear < 4) {
+        pcr.notEnoughCUs = cusThisYear
+        pcr.notes += 'on leave in '+termsThisYear[0]
+    }
+    pcr.lowOverallGpa = rr.gpaOverall < 2.0 ? rr.gpaOverall : null
+    pcr.lowStemGpa = rr.gpaStem < 2.0 ? rr.gpaStem : null
+    return pcr
 }
 
 export enum RequirementApplyResult {
