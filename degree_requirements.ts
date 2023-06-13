@@ -2233,7 +2233,7 @@ class DegreeWorksClassHistoryParser extends CourseParser {
             result.degrees = this.parseDegrees(text)!
         }
 
-        const response = await fetch(window.location.origin + "/3d_to_4d_course_translation.json")
+        const response = await fetch(window.location.origin + "/assets/json/3d_to_4d_course_translation.json")
         const _324 = <_3digitTo4DigitMap>await response.json()
 
         const courseText = text.substring(text.indexOf("Courses Completed"))
@@ -2970,7 +2970,7 @@ async function webMain(): Promise<void> {
 </div>`)
 
     // download the latest Technical Elective list
-    const response = await fetch(window.location.origin + "/37cu_csci_tech_elective_list.json")
+    const response = await fetch(window.location.origin + "/assets/json/37cu_csci_tech_elective_list.json")
     const telist = await response.json()
 
     const result = run(telist, degrees, coursesTaken)
@@ -3408,7 +3408,7 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string, ma
             }
         }
 
-        const response = await fetch("https://advising.cis.upenn.edu/37cu_csci_tech_elective_list.json")
+        const response = await fetch("https://advising.cis.upenn.edu/assets/json/37cu_csci_tech_elective_list.json")
         const telist = await response.json()
         const result = run(telist, degrees!, coursesTaken)
 
