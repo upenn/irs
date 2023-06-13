@@ -20,6 +20,9 @@ const CompletedGrades = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","F",
 /** academic terms during which students could take unlimited P/F courses */
 const CovidTerms = [202010, 202020, 202030, 202110]
 
+const CURRENT_TERM = 202310
+const PREVIOUS_TERM = 202230
+
 enum CourseAttribute {
     Writing = "AUWR",
     Math = "EUMA",
@@ -3398,7 +3401,7 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string, ma
             badGradeHeaderWritten = true
         }
         for (const ct of coursesTaken) {
-            if (ct.term == 202310 && ['F','I','D','W'].includes(ct.letterGrade)) {
+            if (ct.term == CURRENT_TERM && ['F','I','D','W'].includes(ct.letterGrade)) {
                 fs.appendFileSync(badGradeFile, `${pennid}, "${studentName}", ${studentEmail}, ${degrees}, ${ct.code()}, ${ct.term}, ${ct.letterGrade}\n`)
             }
         }
@@ -3448,7 +3451,7 @@ ${unconsumed}
             fs.writeFileSync(probationRiskFile, "PennID,name,email,probation reason\n")
             probationRiskHeaderWritten = true
         }
-        const pcr = probationRisk(result, coursesTaken, [202230,202310])
+        const pcr = probationRisk(result, coursesTaken, [PREVIOUS_TERM,CURRENT_TERM])
         if (pcr.hasProbationRisk()) {
             fs.appendFileSync(probationRiskFile, `${pennid}, "${studentName}", ${studentEmail}, "${pcr}"\n`)
         }
