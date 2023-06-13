@@ -1663,7 +1663,7 @@ export class CourseTaken {
         this.courseNumberInt = parseInt(courseNumber, 10)
         this._3dName = _3dName
         this.courseUnits = cus
-        this.courseUnitsRemaining = cus
+        this.courseUnitsRemaining = letterGrade == 'F' ? 0 : cus
         this.grading = grading
         this.letterGrade = letterGrade
         this.term = term
@@ -2432,7 +2432,9 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
         const code = `${subject} ${courseNumber}`
         const parts = courseInfo.split("\t")
         const letterGrade = parts[1].trim()
-        const creditUnits = parseFloat(parts[2])
+        const credits = parseFloat(parts[2]) // 0 for Failed courses, use `gpaCredits` instead
+        const gpaCredits = parseFloat(parts[14]) // 0 for in-progress courses, use `credits` instead
+        const creditUnits = Math.max(credits, gpaCredits)
         const term = parseInt(parts[4])
         const inProgress = (parts[7] == "YIP" || parts[7] == "YPR")
         const passFail = parts[9] == "YPF"
