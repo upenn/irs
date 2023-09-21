@@ -254,6 +254,7 @@ const EngrLinkingCourses = [
 const CsciEthicsCourses = ["EAS 2030", "CIS 4230", "CIS 5230", "LAWM 5060", "VIPR 1200", "VIPR 1210"]
 const CsciProjectElectives = [
     "NETS 2120","CIS 3410","CIS 3500",
+    "CIS 4120","CIS 5120",
     "CIS 4410","CIS 5410",
     "CIS 4500","CIS 5500",
     "CIS 4550","CIS 5550",
