@@ -2089,7 +2089,7 @@ export class CourseTaken {
             (this.subject == "NRSC" && !["0050","0060"].includes(this.courseNumber)) ||
             (this.subject == "BIOL" && this.courseNumberInt > 1000 && this.courseNumberInt != 2510) ||
             (this.subject == "CHEM" && ![1000, 1200, 250, 1011].includes(this.courseNumberInt)) ||
-            (this.subject == "EESC" && ([1030,1090,2500].includes(this.courseNumberInt))) ||
+            (this.subject == "EESC" && ([1030,1090,2500,4200,4360,4440,4630].includes(this.courseNumberInt))) ||
             (this.subject == "PHYS" && this.courseNumberInt >= 150 && ![3314,5500].includes(this.courseNumberInt))
     }
 
