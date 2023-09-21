@@ -2038,7 +2038,8 @@ export class CourseTaken {
             "EAS 2280", "EAS 2420", "EAS 2900", "EAS 3010", "EAS 3060", "EAS 3200", "EAS 4010", "EAS 4020", "EAS 4030",
             "EAS 4080", "EAS 5010", "EAS 5020", "EAS 5050", "EAS 5070", "EAS 5100", "EAS 5120", "EAS 5450", "EAS 5460",
             "EAS 5490", "EAS 5900", "EAS 5950",
-            "IPD 5090","IPD 5450","LAWM 5060","MGMT 2370","OIDD 2360","OIDD 2340","WH 1010",
+            "IPD 5090","IPD 5450","LAWM 5060","MGMT 2370","OIDD 2360","OIDD 2340","OIDD 2550","WH 1010",
+            "LGST 2440",
         ]
         return tbsCourses.includes(this.code()) ||
             (this.code() == "TFXR 000" && this.title == "PFP FREE") ||
