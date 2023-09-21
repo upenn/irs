@@ -5,6 +5,185 @@ import DroppableEventUIParam = JQueryUI.DroppableEventUIParam;
 import exp from "constants";
 import {isBooleanObject} from "util/types";
 import fs from "fs";
+import csv from "csv-parse/lib/sync";
+
+/** For checking whether Path course attributes are correct or not */
+class CourseWithAttrs {
+    readonly codes: Set<string> = new Set<string>()
+    readonly title: string
+    readonly courses: CourseTaken[] = []
+    readonly attributes: Set<string> = new Set<string>()
+
+    constructor(code: string, title: string) {
+        this.title = title
+        this.addCode(code)
+    }
+
+    addCode(code: string) {
+        if (this.codes.has(code)) {
+            return
+        }
+
+        const coursePattern = /(?<subject>[A-Z]{2,4})(?<number>\d{4})(?<term>[ABC])?/
+        const m = code.match(coursePattern)
+        if (m == null) {
+            throw new Error(`problem parsing course: ${code}`)
+        }
+        this.codes.add(code)
+    }
+
+    finalize() {
+        for (const code of this.codes) {
+            const coursePattern = /(?<subject>[A-Z]{2,4})(?<number>\d{4})(?<term>[ABC])?/
+            const m = code.match(coursePattern)
+            const ct = new CourseTaken(
+                m!.groups!['subject'],
+                // NB: we strip the term suffix (e.g., the 'A' in BCHE4597A)
+                m!.groups!['number'],
+                '',
+                null,
+                1.0,
+                GradeType.ForCredit,
+                'A',
+                202330,
+                Array.from(this.attributes).map(a => `ATTRIBUTE=${a}`).join(';'),
+                true)
+            this.courses.push(ct)
+        }
+    }
+
+    codesStr(): string {
+        //return this.courses.map(i => i.code()).join(' ')
+        return [...this.codes].join(' ')
+    }
+
+    toString(): string {
+        const js = {
+            codes: Array.from(this.codes),
+            attrs: Array.from(this.attributes)
+        }
+        return JSON.stringify(js)
+    }
+}
+function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
+    const fs = require('fs')
+    const csv = require('csv-parse/sync')
+    const csvStringify = require('csv-stringify/sync')
+
+    const fileContent = fs.readFileSync(csvFilePath, { encoding: 'utf-8' })
+    let cattrCsvRecords = csv.parse(fileContent, {
+        delimiter: ',',
+        columns: true,
+    }) as CsvRecord[]
+
+    // 1: BUILD UP LIST OF ALL COURSES
+
+    // each object has ≥1 course code (like "ACCT1010") and a list of attributes (like "EUHS")
+    const AllCourses: CourseWithAttrs[] = []
+
+    let currentCourse = new CourseWithAttrs(cattrCsvRecords[0]['Primary Course'], cattrCsvRecords[0]['Course Title'])
+    const skippedCourses = []
+    for (const r of cattrCsvRecords) {
+        const pc = r['Primary Course']
+        const title = r['Course Title']
+        const crs = r['Course']
+        const rawAttrs = r['Attributes']
+        const attrs = rawAttrs.split(',').map(a => a.split(':')[0].trim())
+
+        if (!currentCourse.codes.has(pc)) {
+            try {
+                // start a new course
+                const cc = new CourseWithAttrs(pc, title)
+                // store previous course
+                currentCourse.finalize()
+                AllCourses.push(currentCourse)
+                currentCourse = cc
+            } catch (e) {
+                // console.log(`couldn't parse course ${pc}, skipping...`)
+                skippedCourses.push(pc)
+                continue
+            }
+        }
+
+        currentCourse.addCode(pc)
+        currentCourse.addCode(crs)
+        attrs.forEach(a => currentCourse.attributes.add(a))
+    }
+    console.log(`skipped ${skippedCourses.length} courses that couldn't be parsed: ${skippedCourses}`)
+    console.log(`checking ${AllCourses.length} courses...`)
+
+    // 2: CHECK ATTRIBUTES
+    const attrsToCheck = [
+        CourseAttribute.MathNatSciEngr,
+        CourseAttribute.Math,
+        CourseAttribute.NatSci,
+        CourseAttribute.SocialScience,
+        CourseAttribute.Humanities,
+        CourseAttribute.TBS,
+        CourseAttribute.Writing
+    ]
+
+    const errorsFound: {codes: string, title: string, reason: string}[] = []
+
+    for (const pathCourse of AllCourses.slice(0)) {
+        // check if attrs are consistent across xlists
+        const allAttrLists = pathCourse.courses.map(xl => xl.attributes)
+        const biggestAttrList = [...allAttrLists]
+            .sort((a,b) => b.length - a.length)[0]
+        const biggestAttrSet = new Set<CourseAttribute>(biggestAttrList)
+        const biggestIsSuperset = allAttrLists.every(al => al.every(a => biggestAttrSet.has(a)))
+        if (!biggestIsSuperset) {
+            errorsFound.push({
+                codes: pathCourse.codesStr(),
+                title: pathCourse.title,
+                reason: 'attributes inconsistent across crosslists ' +
+                    allAttrLists
+                        .map((al,i) => {
+                            return {c: pathCourse.courses[i].code(), al: al}
+                        })
+                        .filter(cal => cal.al.length > 0)
+                        .map(cal => cal.c + ' has ' + cal.al.map(a => a).join('')).join(', ')
+            })
+            // don't bother reporting on attrs, since we aren't sure what the right answer is
+            continue
+        }
+
+        // check if Path course has correct attrs
+        for (const atc of attrsToCheck) {
+            if (biggestAttrSet.has(atc) && !pathCourse.attributes.has(atc)) {
+                errorsFound.push({
+                    codes: pathCourse.codesStr(),
+                    title: pathCourse.title,
+                    reason: 'missing attribute ' + atc
+                })
+            }
+            if (!biggestAttrSet.has(atc) && pathCourse.attributes.has(atc)) {
+                errorsFound.push({
+                    codes: pathCourse.codesStr(),
+                    title: pathCourse.title,
+                    reason: 'has incorrect attribute ' + atc
+                })
+            }
+        }
+    }
+
+    const csvStr = csvStringify.stringify(errorsFound,
+        {
+            header: true,
+            columns: {
+                codes: 'Course (including crosslists)',
+                title: 'Course Title',
+                reason: 'Issue',
+            }
+        })
+    fs.writeFileSync('course-attr-problems.csv', csvStr)
+
+    const suhInconsistencies = errorsFound.filter(e => e.reason.startsWith('attributes inconsistent across')).length
+    const attrMissing = errorsFound.filter(e => e.reason.startsWith('missing attribute')).length
+    const attrWrong = errorsFound.filter(e => e.reason.startsWith('has incorrect attribute')).length
+    console.log(`SUMMARY: ${suhInconsistencies} SUH inconsistencies, ${attrMissing} missing attrs and ${attrWrong} wrong attrs`)
+}
+
 
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 const DraggableDataGetCourseTaken = "CourseTaken"
@@ -1808,7 +1987,7 @@ export class CourseTaken {
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Social Science.
      * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
-    private suhSaysSS(): boolean {
+    public suhSaysSS(): boolean {
         // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SAST. NB: in 37cu CIS majors, SS-vs-H distinction is moot
         // TODO: ECON except statistics, probability, and math courses, [ECON 104 is not allowed]. Xlist not helpful
         // TODO: PSYC, SOCI except statistics, probability, and math courses. Xlist not helpful
@@ -1826,7 +2005,7 @@ export class CourseTaken {
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as Humanities.
      * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
-    private suhSaysHum(): boolean {
+    public suhSaysHum(): boolean {
         // TODO: ASAM cross-listed with AMES, ENGL, FNAR, HIST, and SARS only. NB: in 37cu CIS majors, SS-vs-H distinction is moot
         // TODO: PHIL except 005, 006, and all other logic courses. Does "logic" mean LGIC courses?
         const humSubjects = [
@@ -1852,7 +2031,7 @@ export class CourseTaken {
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as TBS.
      * NB: this IS intended to be a definitive classification */
-    private suhSaysTbs(): boolean {
+    public suhSaysTbs(): boolean {
         const tbsCourses = [
             "CIS 1070","CIS 1250","CIS 4230","CIS 5230","DSGN 0020",
             "EAS 2040", "EAS 2200", "EAS 2210", "EAS 2220", "EAS 2230", "EAS 2240", "EAS 2250", "EAS 2260", "EAS 2270",
@@ -3303,6 +3482,11 @@ if (typeof window === 'undefined') {
     cliMain()
 }
 async function cliMain(): Promise<void> {
+    if (process.argv.length == 3 && process.argv[2].startsWith('CourseAttributes')) {
+        analyzeCourseAttributeSpreadsheet(process.argv[2])
+        return
+    }
+
     if (process.argv.length < 3) {
         console.log(`Usage: ${process.argv[1]} DW_WORKSHEETS...`)
         return
@@ -3317,7 +3501,7 @@ async function cliMain(): Promise<void> {
     let majorCsvRecords = csv.parse(fileContent, {
         delimiter: ',',
         columns: true,
-    }) as MajorCsvRecord[]
+    }) as CsvRecord[]
 
     let worksheets = process.argv.slice(2)
     for (let i = 0; i < worksheets.length;) {
@@ -3350,11 +3534,11 @@ let cusRemainingHeaderWritten = false
 let badGradeHeaderWritten = false
 let probationRiskHeaderWritten = false
 
-interface MajorCsvRecord {
+interface CsvRecord {
     [index: string]: string;
 }
 
-async function runOneWorksheet(worksheetText: string, analysisOutput: string, majorCsvRecords: MajorCsvRecord[]): Promise<void> {
+async function runOneWorksheet(worksheetText: string, analysisOutput: string, majorCsvRecords: CsvRecord[]): Promise<void> {
     const fs = require('fs');
     try {
         const parser = CourseParser.getParser(worksheetText)
@@ -3403,7 +3587,7 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string, ma
             badGradeHeaderWritten = true
         }
         for (const ct of coursesTaken) {
-            if (ct.term == CURRENT_TERM && ['F','I','D','W'].includes(ct.letterGrade)) {
+            if (ct.term == CURRENT_TERM && ['F','I','D','W','NR','GR'].includes(ct.letterGrade)) {
                 fs.appendFileSync(badGradeFile, `${pennid}, "${studentName}", ${studentEmail}, ${degrees}, ${ct.code()}, ${ct.term}, ${ct.letterGrade}\n`)
             }
         }
@@ -4617,3 +4801,4 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         gpaOverall, gpaStem, gpaMns
     )
 }
+
