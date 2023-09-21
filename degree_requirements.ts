@@ -1994,8 +1994,9 @@ export class CourseTaken {
         // TODO: PSYC, SOCI except statistics, probability, and math courses. Xlist not helpful
         const ssSubjects = ["COMM","CRIM","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
         const ssCourses = [
-            "BEPP 2010","BEPP 2030","BEPP 2120","BEPP 2200","BEPP 2500",
-            "EAS 2030","FNCE 1010",
+            "BEPP 2010","BEPP 2020","BEPP 2030","BEPP 2080","BEPP 2110","BEPP 2120","BEPP 2140","BEPP 2200",
+            "BEPP 2300","BEPP 2500","BEPP 2610","BEPP 2630","BEPP 2650","BEPP 2800","BEPP 2840","BEPP 2890","BEPP 3050",
+            "EAS 2030","ENVS 4250","EESC 1060","EESC 2300","FNCE 1010",
             "LGST 1000","LGST 1010","LGST 2120","LGST 2150","LGST 2200",
             "NURS 3130","NURS 3150","NURS 3160","NURS 3300","NURS 5250"]
         return (this.courseNumberInt < 5000 && ssSubjects.includes(this.subject)) ||
@@ -2011,7 +2012,7 @@ export class CourseTaken {
         // TODO: PHIL except 005, 006, and all other logic courses. Does "logic" mean LGIC courses?
         const humSubjects = [
             "ANTH","ANCH","ANEL","ARTH","ASLD","CLST","LATN","GREK","COML","EALC","ENGL","FNAR",
-            "FOLK","GRMN","DTCH","SCND","HIST","HSSC","JWST","LALS","MUSC","NELC","RELS","FREN",
+            "FOLK","GRMN","DTCH","SCND","HIST","HSSC","JOUR","JWST","LALS","MUSC","NELC","RELS","FREN",
             "ITAL","PRTG","ROML","SPAN","CZCH","REES","PLSH","QUEC","RUSS","SARS","SAST","THAR",
             "SWAH","CHIN","JPAN","KORN","ARAB", "HEBR", "TURK", "PERS",
         ]
@@ -2040,7 +2041,7 @@ export class CourseTaken {
             "EAS 4080", "EAS 5010", "EAS 5020", "EAS 5050", "EAS 5070", "EAS 5100", "EAS 5120", "EAS 5450", "EAS 5460",
             "EAS 5490", "EAS 5900", "EAS 5950",
             "IPD 5090","IPD 5450","LAWM 5060","MGMT 2370","OIDD 2360","OIDD 2340","OIDD 2550","WH 1010",
-            "LGST 2440",
+            "LGST 2440","ENVS 3700","NURS 3570"
         ]
         return tbsCourses.includes(this.code()) ||
             (this.code() == "TFXR 000" && this.title == "PFP FREE") ||
@@ -2089,7 +2090,7 @@ export class CourseTaken {
             (this.subject == "NRSC" && !["0050","0060"].includes(this.courseNumber)) ||
             (this.subject == "BIOL" && this.courseNumberInt > 1000 && this.courseNumberInt != 2510) ||
             (this.subject == "CHEM" && ![1000, 1200, 250, 1011].includes(this.courseNumberInt)) ||
-            (this.subject == "EESC" && ([1030,1090,2500,4200,4360,4440,4630].includes(this.courseNumberInt))) ||
+            (this.subject == "EESC" && ([1000,1030,1090,2500,4200,4360,4440,4630].includes(this.courseNumberInt))) ||
             (this.subject == "PHYS" && this.courseNumberInt >= 150 && ![3314,5500].includes(this.courseNumberInt))
     }
 
@@ -4276,7 +4277,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
 
                 // elective "breadth" requirements
                 new RequirementNamedCourses(29, "Networking Elective",
-                    ["NETS 1500", "NETS 2120", "CIS 3310", "CIS 4550", "CIS 5550", "CIS 5050", "CIS 5530"]).withNoConsume(),
+                    ["NETS 1500", "NETS 2120", "CIS 3310", "CIS 4510", "CIS 5510", "CIS 4550", "CIS 5550", "CIS 5050", "CIS 5530"]).withNoConsume(),
                 new RequirementNamedCourses(30, "Database Elective",
                     ["CIS 4500", "CIS 5500", "CIS 4550", "CIS 5550", "CIS 5450"]).withNoConsume(),
                 new RequirementNamedCourses(31, "Distributed Systems Elective",
