@@ -2321,7 +2321,8 @@ abstract class CourseParser {
                 const lab = c.split(0.5, c.courseNumber + "lab")
                 halfCuCourses.push(lab)
             }
-            if (c.getCUs() > 0 && CoursesWith15CUsToSplit.includes(c.code())) {
+            let ese3500NotCmpe = c.code() == "ESE 3500" && degrees.undergrad != "37cu CMPE"
+            if (c.getCUs() > 0 && (CoursesWith15CUsToSplit.includes(c.code()) || ese3500NotCmpe)) {
                 c.setCUs(c.getCUs() - 0.5)
                 const half = c.split(0.5, c.courseNumber + "half")
                 halfCuCourses.push(half)
