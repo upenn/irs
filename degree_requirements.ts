@@ -1990,18 +1990,20 @@ export class CourseTaken {
      * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
     public suhSaysSS(): boolean {
         // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SAST. NB: in 37cu CIS majors, SS-vs-H distinction is moot
-        // TODO: ECON except statistics, probability, and math courses, [ECON 104 is not allowed]. Xlist not helpful
+        // TODO: ECON except statistics, probability, and math courses, [ECON 104/2310 is not allowed]. Xlist not helpful
         // TODO: PSYC, SOCI except statistics, probability, and math courses. Xlist not helpful
         const ssSubjects = ["COMM","CRIM","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
+        const beppCourseNums = [
+            1000, 2010, 2020, 2030, 2080, 2110, 2120, 2140, 2200, 2300, 2330, 2500, 2610, 2630, 2650, 2800, 2840, 2890, 3050
+        ]
         const ssCourses = [
-            "BEPP 2010","BEPP 2020","BEPP 2030","BEPP 2080","BEPP 2110","BEPP 2120","BEPP 2140","BEPP 2200",
-            "BEPP 2300","BEPP 2500","BEPP 2610","BEPP 2630","BEPP 2650","BEPP 2800","BEPP 2840","BEPP 2890","BEPP 3050",
-            "EAS 2030","ENVS 4250","EESC 1060","EESC 2300","FNCE 1010",
+            "EAS 2030","EESC 1060","EESC 2300","EESC 3003","ENVS 4250","FNCE 1010",
             "LGST 1000","LGST 1010","LGST 2120","LGST 2150","LGST 2200",
             "NURS 3130","NURS 3150","NURS 3160","NURS 3300","NURS 5250"]
         return (this.courseNumberInt < 5000 && ssSubjects.includes(this.subject)) ||
             ssCourses.includes(this.code()) ||
             (this.subject == "LING" && this.courseNumber != "0700") ||
+            (this.subject == "BEPP" && beppCourseNums.includes(this.courseNumberInt)) ||
             WritingSeminarSsHTbs.get(this.code()) == CourseAttribute.SocialScience
     }
 
@@ -2019,7 +2021,7 @@ export class CourseTaken {
         const humCourses = [
             "DSGN 0010","DSGN 1020","DSGN 1030","DSGN 1040","DSGN 1050","DSGN 2010","DSGN 2030","DSGN 2040","DSGN 2510","DSGN 5001",
             "ARCH 1010","ARCH 2010","ARCH 2020","ARCH 3010","ARCH 3020","ARCH 4010","ARCH 4110","ARCH 4120",
-            "CIS 1060","IPD 5090"
+            "CIS 1060","IPD 5090","BIOE 4020",
         ]
         return (this.courseNumberInt < 5000 && humSubjects.includes(this.subject)) ||
             // "any foreign language course", leverage attrs from SAS
@@ -2034,16 +2036,18 @@ export class CourseTaken {
     /** If this returns true, the SEAS Undergraduate Handbook classifies this course as TBS.
      * NB: this IS intended to be a definitive classification */
     public suhSaysTbs(): boolean {
+        const easCourseNums = [
+            2040, 2200, 2210, 2220, 2230, 2240, 2250, 2260, 2270, 2280, 2420, 2900, 3010, 3060, 3200,
+            4010, 4020, 4030, 4080, 5010, 5020, 5050, 5070, 5100, 5120, 5450, 5460, 5490, 5900, 5950
+        ]
         const tbsCourses = [
-            "CIS 1070","CIS 1250","CIS 4230","CIS 5230","DSGN 0020",
-            "EAS 2040", "EAS 2200", "EAS 2210", "EAS 2220", "EAS 2230", "EAS 2240", "EAS 2250", "EAS 2260", "EAS 2270",
-            "EAS 2280", "EAS 2420", "EAS 2900", "EAS 3010", "EAS 3060", "EAS 3200", "EAS 4010", "EAS 4020", "EAS 4030",
-            "EAS 4080", "EAS 5010", "EAS 5020", "EAS 5050", "EAS 5070", "EAS 5100", "EAS 5120", "EAS 5450", "EAS 5460",
-            "EAS 5490", "EAS 5900", "EAS 5950",
-            "IPD 5090","IPD 5450","LAWM 5060","MGMT 2370","OIDD 2360","OIDD 2340","OIDD 2550","WH 1010",
-            "LGST 2440","ENVS 3700","NURS 3570"
+            "CIS 1070","CIS 1250","CIS 4230","CIS 5230",
+            "DSGN 0020", "EAS 0010", "ENVS 3700", "IPD 5090", "IPD 5450",
+            "LGST 2440", "LAWM 5060","MGMT 2370","NURS 3570",
+            "OIDD 2360","OIDD 2340","OIDD 2550","WH 1010",
         ]
         return tbsCourses.includes(this.code()) ||
+            (this.subject == "EAS" && easCourseNums.includes(this.courseNumberInt)) ||
             (this.code() == "TFXR 000" && this.title == "PFP FREE") ||
             WritingSeminarSsHTbs.get(this.code()) == CourseAttribute.TBS
     }
@@ -2060,13 +2064,13 @@ export class CourseTaken {
         ]
         const prohibitedMathCourseNumbers = [
             // 3-digit MATH courses that don't have translations
-            150, 151, 172, 174, 180, 212, 220,
+            150, 151, 172, 174, 180, 212, 220, 475,
             // 4-digit MATH courses
             1100, 1510, 1234, 1248, 1300, 1700, 2100, 2800
         ]
         return this.subject == "ENM" ||
             mathCourses.includes(this.code()) ||
-            (this.subject == "MATH" && !prohibitedMathCourseNumbers.includes(this.courseNumberInt))
+            (this.subject == "MATH" && this.courseNumberInt >= 1400 && !prohibitedMathCourseNumbers.includes(this.courseNumberInt))
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Natural Science.
@@ -2074,7 +2078,7 @@ export class CourseTaken {
     public suhSaysNatSci(): boolean {
         const nsCourses = [
             "ASTR 1211", "ASTR 1212","ASTR 1250","ASTR 3392",
-            "BE 3050", "CIS 3980", "ESE 1120", "MSE 2210",
+            "BE 3050", "BIOL 0992", "CIS 3980", "ESE 1120", "MSE 2210",
             "MEAM 1100", "MEAM 1470",
             "PHYS 0050", "PHYS 0051", "PHYS 0140", "PHYS 0141",
 
