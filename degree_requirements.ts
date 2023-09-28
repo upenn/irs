@@ -2260,6 +2260,13 @@ abstract class CourseParser {
             }
         })
 
+        // SEAS No-Credit List
+        courses.forEach((c: CourseTaken) => {
+            if (c.suhSaysNoCredit()) {
+                c.disable()
+            }
+        })
+
         // Math retroactive credit
         // https://www.math.upenn.edu/undergraduate/advice-new-students/advanced-placement-transfer-retroactive-credit
         if (!courses.some((c: CourseTaken): boolean => c.code() == "MATH 1400") ) {
