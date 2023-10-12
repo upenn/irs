@@ -2048,7 +2048,7 @@ export class CourseTaken {
      * NB: this IS intended to be a definitive classification */
     public suhSaysTbs(): boolean {
         const easCourseNums = [
-            2040, 2200, 2210, 2220, 2230, 2240, 2250, 2260, 2270, 2280, 2420, 2900, 3010, 3060, 3200,
+            2020, 2040, 2200, 2210, 2220, 2230, 2240, 2250, 2260, 2270, 2280, 2420, 2900, 3010, 3060, 3200,
             4010, 4020, 4030, 4080, 5010, 5020, 5050, 5070, 5100, 5120, 5450, 5460, 5490, 5900, 5950
         ]
         const tbsCourses = [
