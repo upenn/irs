@@ -1437,6 +1437,17 @@ class RequirementAscs40Concentration extends RequirementCsci40TechElective {
         if (csciTE != undefined) {
             return csciTE
         }
+        const cis2970 = courses.slice()
+            .find((c: CourseTaken): boolean => {
+                return c.grading == GradeType.ForCredit &&
+                    c.subject == "CIS" && c.courseNumberInt == 2970 &&
+                    c.courseNumberInt >= this.minLevel &&
+                    !c.suhSaysNoCredit() &&
+                    this.applyCourse(c)
+            })
+        if (cis2970 != undefined) {
+            return cis2970
+        }
         // allow Wharton courses in ASCS Concentration
         return courses.slice()
             .sort(byHighestCUsFirst)
