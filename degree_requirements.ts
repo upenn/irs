@@ -6,6 +6,10 @@ import exp from "constants";
 import {isBooleanObject} from "util/types";
 import fs from "fs";
 import csv from "csv-parse/lib/sync";
+//import { command, string, positional } from 'cmd-ts';
+import * as CmdTs from 'cmd-ts';
+import * as CmdTsFs from 'cmd-ts/batteries/fs';
+
 
 /** For checking whether Path course attributes are correct or not */
 class CourseWithAttrs {
@@ -3504,32 +3508,55 @@ function setRemainingCUs(n: number) {
     $(NodeRemainingCUs).append(`<div class="alert alert-primary" role="alert">${n} CUs needed to graduate</div>`)
 }
 
-if (typeof window === 'undefined') {
-    cliMain()
-}
-async function cliMain(): Promise<void> {
-    if (process.argv.length == 3 && process.argv[2].startsWith('CourseAttributes')) {
-        analyzeCourseAttributeSpreadsheet(process.argv[2])
-        return
-    }
 
-    if (process.argv.length < 3) {
-        console.log(`Usage: ${process.argv[1]} DW_WORKSHEETS...`)
-        return
+/*
+ COMMAND-LINE FLAGS
+ */
+
+const courseAttrs = CmdTs.command({
+    name: 'course-attrs',
+    args: {
+        courseAttrCsv: CmdTs.positional({ type: CmdTsFs.File, description: 'course attributes CSV file (from Pennant Reports)' }),
+    },
+    handler: ({ courseAttrCsv }) => {
+        analyzeCourseAttributeSpreadsheet(courseAttrCsv)
+    },
+})
+const dwWorksheets = CmdTs.command({
+    name: 'dw-worksheets',
+    args: {
+        majorsListCsv: CmdTs.option({
+            type: CmdTsFs.File,
+            long: 'majors-list',
+            description: 'majors list CSV file (from Pennant Reports)'
+        }),
+        worksheets: CmdTs.restPositionals({ type: CmdTsFs.File, description: 'DW worksheet(s)' })
+    },
+    handler: async ({ majorsListCsv, worksheets }) => {
+        await analyzeWorksheets(majorsListCsv, worksheets)
     }
+})
+const app = CmdTs.subcommands({
+    name: 'irs',
+    cmds: { courseAttrsCmd: courseAttrs, dwWorksheetsCmd: dwWorksheets },
+})
+
+if (typeof window === 'undefined') {
+    CmdTs.run(app, process.argv.slice(2))
+}
+async function analyzeWorksheets(majorsListCsv: string, worksheets: string[]): Promise<void> {
     const path = require('path');
     const fs = require('fs');
     const csv = require('csv-parse/sync');
-    //import { parse } from 'csv-parse/sync';
 
-    // TODO: this is a hack, pass this as a proper cmdline argument
-    const fileContent = fs.readFileSync('/Users/devietti/Projects/irs/2023-cis-majors.csv', { encoding: 'utf-8' });
+    //const fileContent = fs.readFileSync('/Users/devietti/Projects/irs/2023-cis-majors.csv', { encoding: 'utf-8' });
+    // const fileContent = fs.readFileSync('/Users/devietti/Projects/irs/MajorsList-202330-mse.csv', { encoding: 'utf-8' });
+    const fileContent = fs.readFileSync(majorsListCsv, { encoding: 'utf-8' });
     let majorCsvRecords = csv.parse(fileContent, {
         delimiter: ',',
         columns: true,
     }) as CsvRecord[]
 
-    let worksheets = process.argv.slice(2)
     for (let i = 0; i < worksheets.length;) {
         const worksheetFile = worksheets[i]
         const pennid: string = path.basename(worksheetFile).split("-")[0]
@@ -3677,7 +3704,7 @@ ${unconsumed}
         fs.appendFileSync(cusRemainingFile, `${pennid},${result.cusRemaining}\n`)
 
     } catch (err) {
-        console.error(err + " when processing " + process.argv[2]);
+        console.error(err + " when processing " + worksheetText);
         // @ts-ignore
         console.error(err.stack);
     }

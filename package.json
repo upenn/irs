@@ -9,6 +9,7 @@
   "dependencies": {
     "@types/jqueryui": "^1.12.16",
     "bootstrap": "^5.2.1",
+    "cmd-ts": "^0.13.0",
     "csv-parse": "^5.3.5",
     "csv-stringify": "^6.4.0",
     "jquery": "^3.6.1"
