@@ -3693,6 +3693,28 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string, ma
         const telist = await response.json()
         const result = run(telist, degrees!, coursesTaken)
 
+        // // check if student needs CIS 3800
+        // if (degrees!.undergrad == "37cu CSCI" ||
+        //     degrees!.undergrad == "37cu CMPE") {
+        //     if (!coursesTaken.some(c => ["CIS 3800","CIS 5480","CIS 380","CIS 548"].includes(c.code()))) {
+        //         fs.appendFileSync(`${AnalysisOutputDir}needs-CIS3800.txt`, `${pennid}, ${studentName}, ${studentEmail}, ${degrees}\n`)
+        //     }
+        // }
+        // // check if student needs CIS 3200/5020
+        // if (degrees!.undergrad == "37cu CSCI" ||
+        //     degrees!.undergrad == "37cu ASCS" ||
+        //     degrees!.undergrad == "37cu DMD" ||
+        //     degrees!.undergrad == "37cu NETS") {
+        //     if (!coursesTaken.some(c => ["CIS 3200","CIS 5020","CIS 320","CIS 502"].includes(c.code()))) {
+        //         fs.appendFileSync(`${AnalysisOutputDir}needs-CIS3200_5020.txt`, `${pennid}, ${studentName}, ${studentEmail}, ${degrees}\n`)
+        //     }
+        // }
+        // if (degrees!.masters == "CIS-MSE") {
+        //     if (!coursesTaken.some(c => ["CIS 5110","CIS 5020","CIS 511","CIS 502"].includes(c.code()))) {
+        //         fs.appendFileSync(`${AnalysisOutputDir}needs-CIS5020.txt`, `${pennid}, ${studentName}, ${studentEmail}, ${degrees}\n`)
+        //     }
+        // }
+
         const unsat = result.requirementOutcomes
             .filter(ro =>
                 ro.applyResult != RequirementApplyResult.Satisfied &&
