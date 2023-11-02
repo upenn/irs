@@ -26,7 +26,7 @@ function makeCourse(subject: string, number: string, cu: number, grade: string =
 describe('description', function () {
     test('TEs prefer non-SSH courses', () => {
         const teList: TechElectiveDecision[] = []
-        teList.push({course3d: "LGST 100", course4d: "LGST 1000", status: "yes", title: "" })
+        teList.push({course4d: "LGST 1000", status: "yes", title: "" })
 
         const d = new Degrees()
         d.undergrad = "40cu CSCI"

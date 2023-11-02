@@ -908,7 +908,6 @@ export enum GradeType {
 
 export interface TechElectiveDecision {
     course4d: string,
-    course3d: string,
     title: string,
     status: "yes" | "no" | "ask"
 }
