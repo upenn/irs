@@ -3590,8 +3590,25 @@ interface CsvRecord {
     [index: string]: string;
 }
 
-async function runOneWorksheet(worksheetText: string, analysisOutput: string, majorCsvRecords: CsvRecord[]): Promise<void> {
+interface PathwaysCourse {
+    course: string,
+    term: number,
+    gradeType: GradeType,
+}
+interface PathwaysDegreeRequirement {
+    requirement: string,
+    status: RequirementApplyResult,
+    coursesUsed: string[],
+}
+interface PathwaysObject {
+    coursesCompleted: PathwaysCourse[],
+    degree: string,
+    degreeRequirements: PathwaysDegreeRequirement[],
+}
+
+async function runOneWorksheet(worksheetText: string, analysisOutput: string, majorCsvRecords: CsvRecord[], makePennPathwaysWorksheets: boolean): Promise<void> {
     const fs = require('fs');
+    const crypto = require('crypto');
     try {
         const parser = CourseParser.getParser(worksheetText)
         let parseResult
@@ -3616,16 +3633,19 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string, ma
         }
 
         // only analyze students of interest
-        if (parseResult.degrees.undergrad == "none") {
-            return
-        }
+        // if (parseResult.degrees.undergrad == "none") {
+        //     return
+        // }
         if (worksheetText.includes("Active on Leave")) {
             return
         }
 
         let foundRecord = majorCsvRecords.find((c) => c['Penn ID'] == pennid)
-        if (foundRecord == undefined ||
-            foundRecord['On Leave'] != '') {
+        if (foundRecord == undefined) {
+            fs.appendFileSync(`${AnalysisOutputDir}skipped.txt`, `${pennid}\n`)
+            return
+        }
+        if (foundRecord['On Leave'] != '') {
             return
         }
         const egt = foundRecord['Degree Term']
@@ -3680,8 +3700,36 @@ ${unconsumed}
                 {maximumFractionDigits: 1, minimumFractionDigits: 1, minimumIntegerDigits: 2});
         }
         const outputFile = `${AnalysisOutputDir}${cusRemainingFormatted}-cusLeft-${egt}-${analysisOutput}.analysis.txt`
-        // TODO: print out JSON version of worksheet here
         fs.writeFileSync(outputFile, summary /*+ JSON.stringify(result, null, 2)*/ + worksheetText)
+
+        if (makePennPathwaysWorksheets && degrees.undergrad == '37cu CSCI' && degrees.masters == 'none') {
+            const pennid = analysisOutput.split('-')[0] ?? 'unknown'
+            const pennidHash = crypto.createHash('sha1').update(pennid).digest('hex')
+            const pathwaysOutputFile = `${AnalysisOutputDir}pathways-${pennidHash}.json`
+            const ct = coursesTaken
+                .filter(c => CompletedGrades.includes(c.letterGrade) && c.letterGrade != 'F')
+                .map(c => {
+                    return {
+                        course: c.code(),
+                        term: c.term,
+                        gradeType: c.grading
+                    }})
+                .sort((a,b) => a.course.localeCompare(b.course))
+            const dr = result.requirementOutcomes.map(ro => {
+                const coursesUsed = ro.coursesApplied.map(c => c.code())
+                return {
+                    requirement: ro.degreeReq.toString(),
+                    status: ro.applyResult,
+                    coursesUsed: coursesUsed,
+                }
+            })
+            const pathwaysObject: PathwaysObject = {
+                degree: degrees.undergrad,
+                coursesCompleted: ct,
+                degreeRequirements: dr,
+            }
+            fs.writeFileSync(pathwaysOutputFile, JSON.stringify(pathwaysObject, null, 2))
+        }
 
         // add to probation risk spreadsheet
         const probationRiskFile = `${AnalysisOutputDir}probation-risk.csv`
@@ -3766,7 +3814,7 @@ function probationRisk(rr: RunResult, allCourses: CourseTaken[], termsThisYear: 
 }
 
 export enum RequirementApplyResult {
-    Unsatisfied, PartiallySatisfied, Satisfied
+    Unsatisfied= 'unsatisfied', PartiallySatisfied= 'partially satisfied', Satisfied = 'fully satisfied'
 }
 class RequirementOutcome {
     /** true if this is an undergraduate degree requirement, false if masters */
