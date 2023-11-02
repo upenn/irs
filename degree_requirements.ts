@@ -6,9 +6,6 @@ import exp from "constants";
 import {isBooleanObject} from "util/types";
 import fs from "fs";
 import csv from "csv-parse/lib/sync";
-//import { command, string, positional } from 'cmd-ts';
-import * as CmdTs from 'cmd-ts';
-import * as CmdTsFs from 'cmd-ts/batteries/fs';
 
 
 /** For checking whether Path course attributes are correct or not */
@@ -3509,41 +3506,65 @@ function setRemainingCUs(n: number) {
 
 
 /*
- COMMAND-LINE FLAGS
+ COMMAND-LINE USAGE
  */
-
-const courseAttrs = CmdTs.command({
-    name: 'course-attrs',
-    args: {
-        courseAttrCsv: CmdTs.positional({ type: CmdTsFs.File, description: 'course attributes CSV file (from Pennant Reports)' }),
-    },
-    handler: ({ courseAttrCsv }) => {
-        analyzeCourseAttributeSpreadsheet(courseAttrCsv)
-    },
-})
-const dwWorksheets = CmdTs.command({
-    name: 'dw-worksheets',
-    args: {
-        majorsListCsv: CmdTs.option({
-            type: CmdTsFs.File,
-            long: 'majors-list',
-            description: 'majors list CSV file (from Pennant Reports)'
-        }),
-        worksheets: CmdTs.restPositionals({ type: CmdTsFs.File, description: 'DW worksheet(s)' })
-    },
-    handler: async ({ majorsListCsv, worksheets }) => {
-        await analyzeWorksheets(majorsListCsv, worksheets)
-    }
-})
-const app = CmdTs.subcommands({
-    name: 'irs',
-    cmds: { courseAttrsCmd: courseAttrs, dwWorksheetsCmd: dwWorksheets },
-})
-
 if (typeof window === 'undefined') {
+    //import * as CmdTs from 'cmd-ts';
+    //import * as CmdTsFs from 'cmd-ts/batteries/fs';
+    const CmdTs = require('cmd-ts')
+    const CmdTsFs = require('cmd-ts/batteries/fs')
+    const courseAttrs = CmdTs.command({
+        name: 'course-attrs',
+        args: {
+            courseAttrCsv: CmdTs.positional({ type: CmdTsFs.File, description: 'course attributes CSV file (from Pennant Reports)' }),
+        },
+        handler: ({ courseAttrCsv }: {courseAttrCsv: string}) => {
+            analyzeCourseAttributeSpreadsheet(courseAttrCsv)
+        },
+    })
+    const dwWorksheets = CmdTs.command({
+        name: 'dw-worksheets',
+        args: {
+            majorsListCsv: CmdTs.option({
+                type: CmdTsFs.File,
+                long: 'majors-list',
+                description: 'majors list CSV file (from Pennant Reports)'
+            }),
+            limit: CmdTs.option({
+                type: CmdTs.number,
+                long: 'limit',
+                description: 'process only the first K worksheets (0 for all)',
+                defaultValue(): number {
+                    return 0
+                },
+                defaultValueIsSerializable: true,
+            }),
+            makePennPathwaysWorksheets: CmdTs.flag({
+                type: CmdTs.boolean,
+                long: 'pathways',
+                description: 'generate Penn Pathways anonymized degree worksheets',
+                defaultValue(): boolean {
+                    return false
+                },
+                defaultValueIsSerializable: true,
+            }),
+            worksheets: CmdTs.restPositionals({ type: CmdTsFs.File, description: 'DW worksheet(s)' })
+        },
+        handler: async ({ majorsListCsv, makePennPathwaysWorksheets, limit, worksheets }:
+                            {majorsListCsv: string, makePennPathwaysWorksheets: boolean, limit: number, worksheets: string[]}) => {
+            await analyzeWorksheets(majorsListCsv, makePennPathwaysWorksheets, limit, worksheets)
+        }
+    })
+    const app = CmdTs.subcommands({
+        name: 'irs',
+        cmds: { courseAttrs, dwWorksheets },
+    })
     CmdTs.run(app, process.argv.slice(2))
 }
-async function analyzeWorksheets(majorsListCsv: string, worksheets: string[]): Promise<void> {
+async function analyzeWorksheets(majorsListCsv: string,
+                                 makePennPathwaysWorksheets: boolean,
+                                 limit: number,
+                                 worksheets: string[]): Promise<void> {
     const path = require('path');
     const fs = require('fs');
     const csv = require('csv-parse/sync');
@@ -3556,21 +3577,25 @@ async function analyzeWorksheets(majorsListCsv: string, worksheets: string[]): P
         columns: true,
     }) as CsvRecord[]
 
-    for (let i = 0; i < worksheets.length;) {
+    if (limit == 0) {
+        limit = worksheets.length
+    }
+
+    for (let i = 0; i < limit;) {
         const worksheetFile = worksheets[i]
         const pennid: string = path.basename(worksheetFile).split("-")[0]
         const myWorksheetFiles = worksheets.filter((f: string): boolean => f.includes(pennid))
         // console.log(`jld: working on ${myWorksheetFiles}...`)
         if (myWorksheetFiles.length == 1) {
             const worksheetText: string = fs.readFileSync(worksheetFile, 'utf8');
-            await runOneWorksheet(worksheetText, path.basename(worksheetFile), majorCsvRecords)
+            await runOneWorksheet(worksheetText, path.basename(worksheetFile), majorCsvRecords, makePennPathwaysWorksheets)
 
         } else {
             // aggregate multiple worksheets for the same student
             const allMyWorksheets: string = myWorksheetFiles
                 .map((f: string): string => fs.readFileSync(f, 'utf8'))
                 .join("\n")
-            await runOneWorksheet(allMyWorksheets, path.basename(worksheetFile), majorCsvRecords)
+            await runOneWorksheet(allMyWorksheets, path.basename(worksheetFile), majorCsvRecords, makePennPathwaysWorksheets)
         }
         i += myWorksheetFiles.length
     }
