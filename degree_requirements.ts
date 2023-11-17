@@ -2105,7 +2105,7 @@ export class CourseTaken {
             (this.subject == "NRSC" && !["0050","0060"].includes(this.courseNumber)) ||
             (this.subject == "BIOL" && this.courseNumberInt > 1000 && this.courseNumberInt != 2510) ||
             (this.subject == "CHEM" && ![1000, 1200, 250, 1011].includes(this.courseNumberInt)) ||
-            (this.subject == "EESC" && ([1000,1030,1090,2500,4200,4360,4440,4630].includes(this.courseNumberInt))) ||
+            (this.subject == "EESC" && ([1000,1030,1090,2120,2500,4200,4360,4440,4630].includes(this.courseNumberInt))) ||
             (this.subject == "PHYS" && this.courseNumberInt >= 150 && ![3314,5500].includes(this.courseNumberInt))
     }
 
@@ -2139,7 +2139,7 @@ export class CourseTaken {
         const noCreditPhys = this.subject == "PHYS" && this.courseNumberInt < 140 && !["PHYS 0050", "PHYS 0051"].includes(this.code())
 
         const noCreditList = ["ASTRO 0001", "EAS 5030", "EAS 5050", "MATH 1510", "MATH 1700",
-            "FNCE 0001", "FNCE 0002", "HCMG 0001", "MGMT 0004", "MKTG 0001", "OIDD 0001"]
+            "FNCE 0001", "FNCE 0002", "HCMG 0001", "MGMT 0004", "MKTG 0001", "OIDD 0001", "PHYS 1100"]
 
         // no-credit subject areas
         return (["CIT", "MSCI", "DYNM", "MED"].includes(this.subject)) ||
