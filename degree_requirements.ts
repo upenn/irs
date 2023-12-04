@@ -4502,7 +4502,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
 
                 new RequirementNamedCourses(6, "Physics", ["PHYS 0140","PHYS 0150","PHYS 0170","MEAM 1100"]),
                 new RequirementNamedCourses(7, "Physics", ["ESE 1120"]).withCUs(1.5),
-                new RequirementNamedCourses(8, "Natural Science", ["CHEM 1011","EAS 0091","BIOL 1101","BIOL 1121","PHYS 1240"]),
+                new RequirementNamedCourses(8, "Natural Science", ["CHEM 1012","EAS 0091","BIOL 1101","BIOL 1121","PHYS 1240"]),
                 new RequirementAttributes(9, "Math/Natural Science Elective", [CourseAttribute.Math, CourseAttribute.NatSci]),
                 new RequirementNaturalScienceLab(10, "Natural Science Lab").withCUs(0.5),
 
@@ -4599,7 +4599,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(5, "Linear Algebra", ["MATH 2400", "MATH 2600", "MATH 3120", "MATH 3130", "MATH 3140"]),
                 new RequirementNamedCourses(6, "Physics", ["PHYS 0150","PHYS 0170","MEAM 1100","MEAM 1470"]).withCUs(1.5),
                 new RequirementNamedCourses(7, "Natural Science",
-                    ["BIOL 1101","BIOL 1121","BIOL 1124","CHEM 1011","CHEM 1101","PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
+                    ["BIOL 1101","BIOL 1121","BIOL 1124","CHEM 1012","CHEM 1101","PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
                 new RequirementAttributes(8, "Math/Natural Science Elective", [CourseAttribute.Math, CourseAttribute.NatSci]),
 
                 new RequirementNamedCourses(10, "Major", ["CIS 1200"]),
