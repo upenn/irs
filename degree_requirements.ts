@@ -264,6 +264,22 @@ const CsciProjectElectives = [
     "ESE 3500"
 ]
 const AscsProjectElectives = CsciProjectElectives.concat(["CIS 4710","CIS 5710","CIS 3800","CIS 5480"])
+const ArinCogSciCourses = [
+    "COGS 1001",
+    "LING 0500",
+    "LING 2500",
+    "LING 3810",
+    "PHIL 1710",
+    "PHIL 2640",
+    "PHIL 4721",
+    "PHIL 4840",
+    "PSYC 0001",
+    "PSYC 1210",
+    "PSYC 1340",
+    "PSYC 1230",
+    "PSYC 1310",
+    "PSYC 2737",
+]
 const SseIseElectives = [
     "CIS 2400", "CIS 4500", "CIS 5500",
     "ESE 3050", "ESE 3250", "ESE 4070", "ESE 4200", "ESE 5000", "ESE 5040", "ESE 5050", "ESE 5120",
@@ -910,7 +926,7 @@ export interface TechElectiveDecision {
 }
 
 type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" |
-    "37cu ASCS" | "37cu CSCI" | "37cu CMPE" | "37cu NETS" | "37cu DMD" | "37cu BE" | "37cu ASBS" | "none" |
+    "37cu ASCS" | "37cu CSCI" | "37cu CMPE" | "37cu ARIN" | "37cu NETS" | "37cu DMD" | "37cu BE" | "37cu ASBS" | "none" |
     "CIS minor" | "DATS minor" // TODO: handle minors properly as their own kind of degree
 type MastersDegree = "CIS-MSE" | "DATS" | "ROBO" | "CGGT" | "none"
 
@@ -4543,6 +4559,50 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 // NB: Writing requirement is @ index 41
+            ]
+            break
+        case "37cu ARIN":
+            ugradDegreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
+                new RequirementNamedCourses(4, "Math", ["ESE 2030"]),
+                new RequirementNamedCourses(5, "Math", ["ESE 3010","STAT 4300"]),
+                new RequirementNamedCourses(6, "Math", ["ESE 4020","ESE 5420"]),
+                new RequirementAttributes(7, "Natural Science", [CourseAttribute.NatSci]),
+
+                // NB: CIS 1100 is below
+                new RequirementNamedCourses(9, "Computing", ["CIS 1200"]),
+                new RequirementNamedCourses(10, "Computing", ["CIS 1210"]),
+                new RequirementNamedCourses(11, "Computing", ["CIS 2450"]),
+                new RequirementNamedCourses(12, "Computing", ["CIS 3200","CIS 5020"]),
+
+                // TODO: AI ELECTIVES
+
+                new RequirementNamedCourses(21, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(22, "Senior Design", SeniorDesign2ndSem),
+
+                new RequirementNamedCoursesOrAttributes(23, "Technical Elective", csci37TechElectives,
+                    [CourseAttribute.Math, CourseAttribute.NatSci, CourseAttribute.MathNatSciEngr]).withConcise(),
+                new RequirementNamedCoursesOrAttributes(24, "Technical Elective", csci37TechElectives,
+                    [CourseAttribute.Math, CourseAttribute.NatSci, CourseAttribute.MathNatSciEngr])
+                    .withConcise().withMinLevel(2000),
+                new RequirementNamedCoursesOrAttributes(25, "Technical Elective", csci37TechElectives,
+                    [CourseAttribute.Math, CourseAttribute.NatSci, CourseAttribute.MathNatSciEngr])
+                    .withConcise().withMinLevel(2000),
+
+                new RequireCis1100(8),
+
+                new RequirementNamedCourses(29, "Ethics", ["CIS 4230", "CIS 5230", "LAWM 5060"]),
+                new RequirementNamedCourses(30, "Cognitive Science", ArinCogSciCourses),
+                new RequirementSsh(31, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(32, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing requirement is @ index 41
+
+                new RequirementFreeElective(42),
             ]
             break
         case "37cu NETS":
