@@ -2003,7 +2003,7 @@ export class CourseTaken {
         // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SAST. NB: in 37cu CIS majors, SS-vs-H distinction is moot
         // TODO: ECON except statistics, probability, and math courses, [ECON 104/2310 is not allowed]. Xlist not helpful
         // TODO: PSYC, SOCI except statistics, probability, and math courses. Xlist not helpful
-        const ssSubjects = ["COMM","CRIM","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
+        const ssSubjects = ["COMM","CRIM","EDUC","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
         const beppCourseNums = [
             1000, 2010, 2020, 2030, 2080, 2110, 2120, 2140, 2200, 2300, 2330, 2500, 2610, 2630, 2650, 2800, 2840, 2890, 3050
         ]
@@ -2390,23 +2390,23 @@ class DegreeWorksClassHistoryParser extends CourseParser {
         if (text.includes("Program SEAS - BSE") || text.match(/Program.*BSE - SEAS/) != null) {
             // there's an undergrad degree
             if (text.match(/Majors? Computer Science/) != null) {
-                deg.undergrad = "40cu CSCI"
+                deg.undergrad = "37cu CSCI"
             } else if (text.match(/Majors? Computer Engineering/) != null) {
-                deg.undergrad = "40cu CMPE"
+                deg.undergrad = "37cu CMPE"
             } else if (text.match(/Majors? Digital Media Design/) != null) {
-                deg.undergrad = "40cu DMD"
+                deg.undergrad = "37cu DMD"
             } else if (text.match(/Majors? Networked And Social Systems/) != null) {
-                deg.undergrad = "40cu NETS"
-            } else if (text.match(/Majors? Electrical Engineering/) != null) {
-                deg.undergrad = "40cu EE"
-            } else if (text.match(/Majors? Systems Science & Engineering/) != null) {
-                deg.undergrad = "40cu SSE"
+                deg.undergrad = "37cu NETS"
+            // } else if (text.match(/Majors? Electrical Engineering/) != null) {
+            //     deg.undergrad = "37cu EE"
+            // } else if (text.match(/Majors? Systems Science & Engineering/) != null) {
+            //     deg.undergrad = "37cu SSE"
             } else if (text.match(/Majors? Bioengineering/) != null) {
                 deg.undergrad = "37cu BE"
             }
         } else if (text.includes("Program SEAS - Bachelor of Applied Science") || text.match(/Program.*BAS - SEAS/) != null) {
             if (text.match(/Majors? Appl Science-Computer Science/) != null) {
-                deg.undergrad = "40cu ASCS"
+                deg.undergrad = "37cu ASCS"
             } else if (text.match(/Majors? Appl Science In Comp & Cog.Sc/) != null) {
                 deg.undergrad = "40cu ASCC"
             }
@@ -2695,29 +2695,31 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
         if (worksheetText.includes('Degree in Bachelor of Science in Engineering') ||
             worksheetText.includes('Degree in Bachelor of Applied Science')) {
             if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CSCI\s+`, "m")) != -1) {
-                d.undergrad = "40cu CSCI"
+                d.undergrad = "37cu CSCI"
             } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+ASCS\s+`, "m")) != -1) {
-                d.undergrad = "40cu ASCS"
+                d.undergrad = "37cu ASCS"
             } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+CMPE\s+`, "m")) != -1) {
-                d.undergrad = "40cu CMPE"
+                d.undergrad = "37cu CMPE"
             } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+NETS\s+`, "m")) != -1) {
-                d.undergrad = "40cu NETS"
+                d.undergrad = "37cu NETS"
             } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+DMD\s+`, "m")) != -1) {
-                d.undergrad = "40cu DMD"
-            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+EE\s+`, "m")) != -1) {
-                d.undergrad = "40cu EE"
-            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+SSE\s+`, "m")) != -1) {
-                d.undergrad = "40cu SSE"
+                d.undergrad = "37cu DMD"
+            // } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+EE\s+`, "m")) != -1) {
+            //     d.undergrad = "40cu EE"
+            // } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+SSE\s+`, "m")) != -1) {
+            //     d.undergrad = "40cu SSE"
             } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+BE\s+`, "m")) != -1) {
                 d.undergrad = "37cu BE"
             }
         }
 
-        if (worksheetText.includes("MINOR = DATS")) {
-            d.undergrad = "DATS minor"
-        }
-        if (worksheetText.includes("MINOR = CSCI")) {
-            d.undergrad = "CIS minor"
+        if (d.undergrad == "none") {
+            if (worksheetText.includes("MINOR = DATS")) {
+                d.undergrad = "DATS minor"
+            }
+            if (worksheetText.includes("MINOR = CSCI")) {
+                d.undergrad = "CIS minor"
+            }
         }
 
         // masters degrees
