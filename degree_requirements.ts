@@ -2055,7 +2055,7 @@ export class CourseTaken {
             "CIS 1070","CIS 1250","CIS 4230","CIS 5230",
             "DSGN 0020", "EAS 0010", "ENVS 3700", "IPD 5090", "IPD 5450",
             "LGST 2440", "LAWM 5060","MGMT 2370","MKTG 2470","NURS 3570",
-            "OIDD 2360","OIDD 2340","OIDD 2550","OIDD 3990","WH 1010",
+            "OIDD 2360","OIDD 2340","OIDD 2550","OIDD 3140","OIDD 3990","WH 1010",
         ]
         return tbsCourses.includes(this.code()) ||
             (this.subject == "EAS" && easCourseNums.includes(this.courseNumberInt)) ||
@@ -2089,7 +2089,7 @@ export class CourseTaken {
     public suhSaysNatSci(): boolean {
         const nsCourses = [
             "ASTR 1211", "ASTR 1212","ASTR 1250","ASTR 3392",
-            "BE 3050", "BIOL 0992", "CIS 3980", "ESE 1120", "MSE 2210",
+            "BE 3050", "BIOL 0992", "CIS 3980", "EESC 4320", "ESE 1120", "MSE 2210",
             "MEAM 1100", "MEAM 1470",
             "PHYS 0050", "PHYS 0051", "PHYS 0140", "PHYS 0141",
 
