@@ -1263,7 +1263,7 @@ class RequireBucketNamedCourses extends RequirementNamedCourses {
             myAssertEquals(0, this.remainingCUs)
             return
         }
-        // group not already satisfied
+        // group not yet satisfied
         const filledFromNested = this.group!.filledFrom.map(r => r.coursesApplied)
         const filledFromCourses = ([] as CourseTaken[]).concat(...filledFromNested)
         const result = super.satisfiedBy(filledFromCourses)
@@ -3416,6 +3416,15 @@ Math+Natural Science = ${result.gpaMathNatSci.toFixed(2)}
         setRemainingCUs(countRemainingCUs(allDegreeReqs))
         setDoubleCount()
 
+        // update bucket requirements, which draw on filled-from reqs
+        allDegreeReqs.filter(r => r instanceof RequireBucketNamedCourses)
+            .map(r => <RequireBucketNamedCourses>r)
+            .forEach(r => {
+                r.coursesApplied.slice().forEach(c => r.unapplyCourse(c))
+                r.satisfiedBy([])
+                r.updateViewWeb()
+            })
+
         if (ugradDegreeReqs.length == 0) {
             return
         }
@@ -3429,8 +3438,10 @@ Math+Natural Science = ${result.gpaMathNatSci.toFixed(2)}
             req.updateViewWeb()
         }
 
-        const writReq = allDegreeReqs.find(r => r.toString().startsWith("Writing"))!
-        updateGlobalReq(writReq)
+        const writReq = allDegreeReqs.find(r => r.toString().startsWith("Writing"))
+        if (writReq != undefined) {
+            updateGlobalReq(writReq)
+        }
         const depthReq = allDegreeReqs.find(r => r.toString() == SshDepthTag)
         if (depthReq != undefined) {
             updateGlobalReq(depthReq)
@@ -3554,7 +3565,7 @@ ${realCourse.code()}
 
             // update model
             if (req.coursesApplied.includes(course)) {
-                // console.log(`unapplying ${course.code()}`)
+                console.log(`unapplying ${course.code()}`)
                 req.unapplyCourse(course)
                 req.updateViewWeb(true)
                 updateGlobalReqs()
