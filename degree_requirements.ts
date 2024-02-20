@@ -280,6 +280,74 @@ const ArinCogSciCourses = [
     "PSYC 1310",
     "PSYC 2737",
 ]
+const ArinAiElectives = [
+    "CIS 4210",
+    "CIS 5210",
+    "ESE 2000",
+    "CIS 4190",
+    "CIS 5190",
+    "CIS 5200",
+    "ESE 2100",
+    "ESE 2240",
+    "ESE 3040",
+    "ESE 4210",
+    "CIS 4300",
+    "CIS 5300",
+    "CIS 4810",
+    "CIS 5810",
+    "CIS 3500",
+    "CIS 4300",
+    "CIS 5300",
+    "CIS 4810",
+    "CIS 5810",
+    "ESE 3060",
+    "ESE 3600",
+    "ESE 4210",
+    "NETS 2120",
+    "CIS 3333",
+    "CIS 6200",
+    "CIS 6250",
+    "ESE 4380",
+    "ESE 5380",
+    "ESE 5140",
+    "ESE 5460",
+    "ESE 6450",
+    "ESE 6740",
+    "ESE 3030",
+    "ESE 5000",
+    "ESE 5050",
+    "ESE 5060",
+    "ESE 6050",
+    "ESE 6060",
+    "ESE 6180",
+    "ESE 6190",
+    "BE 5210",
+    "CIS 4120",
+    "CIS 5120",
+    "CIS 4500",
+    "CIS 5500",
+    "CIS 5360",
+    "CIS 5800",
+    "CIS 6500",
+    "MEAM 5200",
+    "MEAM 6200",
+    "ESE 4040",
+    "ESE 6150",
+    "ESE 6500",
+    "NETS 3120",
+    "NETS 4120",
+]
+const DatsMinorStatBucket = ["BIOL 2510","CIS 2610","ESE 3010","STAT 4300","STAT 4760"]
+const DatsMinorDataMgmtBucket = ["CIS 4500","CIS 5500","CIS 4550","CIS 5550","NETS 2130","OIDD 1050","STAT 4750"]
+const DatsMinorModelingBucket = ["NETS 3120","MKTG 2710","OIDD 3250","OIDD 3530","STAT 4330"]
+const DatsMinorDataCentricProgrammingBucket = ["CIS 1050","ENGR 1050","ESE 3050","OIDD 3110","STAT 4050","STAT 4700"]
+const DatsMinorDataAnalysisBucket = ["CIS 4190","CIS 5190","CIS 4210","CIS 5210","CIS 5300","MKTG 2120","MKTG 3090","OIDD 4100",
+    "STAT 4220","STAT 4710","STAT 4740","STAT 5200"]
+const DatsMinorElectives = DatsMinorStatBucket.concat(
+    DatsMinorDataMgmtBucket,
+    DatsMinorModelingBucket,
+    DatsMinorDataCentricProgrammingBucket,
+    DatsMinorDataAnalysisBucket)
 const SseIseElectives = [
     "CIS 2400", "CIS 4500", "CIS 5500",
     "ESE 3050", "ESE 3250", "ESE 4070", "ESE 4200", "ESE 5000", "ESE 5040", "ESE 5050", "ESE 5120",
@@ -1128,53 +1196,80 @@ class RequirementNamedCourses extends DegreeRequirement {
     }
 }
 
+/** When we have buckets of named courses, and require students to cover k different buckets */
 class BucketGroup {
-    readonly requiredCUs: number = 0
-    public requirements: RequireBucketNamedCourses[] = []
-    constructor(requiredCUs: number) {
-        this.requiredCUs = requiredCUs
+    readonly numBucketsRequired: number = 0
+    readonly oneCourseCanFillMultipleBuckets: boolean = true
+    public buckets: RequireBucketNamedCourses[] = []
+    public filledFrom: DegreeRequirement[] = []
+
+    /** Build a bucket group, which contains all the RequireBucketNamedCourses objects in `reqs`
+     * that have a groupName of `bucketGroupName`. To satisfy this bucket group, we look at
+     * courses with the tag `filledFromTag` from `reqs`. If those courses satisfy
+     * `numBucketsRequired` buckets, then this bucket group is satisfied.
+     * If `oneCourseCanFillMultipleBuckets` is true, then one course can satisfy multiple buckets;
+     * otherwise, if a course C0 satisfied bucket B0, then another bucket B1 can only be satisfied by
+     * another course C1 where C0 != C1, even if C0 meets the criteria for both B0 and B1. */
+    constructor(numBucketsRequired: number,
+                reqs: DegreeRequirement[],
+                bucketGroupName: string,
+                filledFromTag: string,
+                oneCourseCanFillMultipleBuckets: boolean) {
+        this.numBucketsRequired = numBucketsRequired
+        this.oneCourseCanFillMultipleBuckets = oneCourseCanFillMultipleBuckets
+
+        // connect the RequireBucketNamedCourses
+        reqs.filter(r => r instanceof RequireBucketNamedCourses)
+            .map(r => <RequireBucketNamedCourses>r)
+            .filter(r => r.groupName == bucketGroupName)
+            .forEach(r => {
+                this.buckets.push(r)
+                r.setBucketGroup(this)
+            })
+
+        // connect to the reqs we fill the buckets from
+        // NB: we may need to extend this to numbered and/or attribute courses later
+        reqs.filter(r => r instanceof RequirementNamedCourses)
+            .map(r => <RequirementNamedCourses>r)
+            .filter(r => r.tag == filledFromTag)
+            .forEach(r => {
+                this.filledFrom.push(r)
+            })
+
     }
-    public numCUsSatisfied(): number {
-        return this.requirements.filter(r => r.satisfiedLocally())
-            .map(r => r.cus - r.remainingCUs)
-            .reduce((p, c) => p + c, 0)
+    public numBucketsSatisfied(): number {
+        return this.buckets.filter(r => r.satisfiedLocally()).length
     }
     public allSatisfied(): boolean {
-        return this.numCUsSatisfied() == this.requiredCUs
+        return this.numBucketsSatisfied() == this.numBucketsRequired
     }
 }
-/** When we have buckets of named courses, and require students to cover k different buckets */
+/** See BucketGroup */
 class RequireBucketNamedCourses extends RequirementNamedCourses {
     readonly groupName: string
     private group: BucketGroup | undefined = undefined
     constructor(displayIndex: number, tag: string, courses: string[], groupName: string) {
         super(displayIndex, tag, courses)
         this.groupName = groupName
+        this.doesntConsume = true
     }
-    public getBucketGroupCUsRemaining(): number {
-        return this.group!.requiredCUs - this.group!.numCUsSatisfied()
+    public setBucketGroup(g: BucketGroup) {
+        myAssert(this.group == undefined)
+        this.group = g
     }
-    public connectBucketGroup(coursesRequired: number, reqs: DegreeRequirement[]) {
-        this.group = new BucketGroup(coursesRequired)
-        reqs.filter(r => r instanceof RequireBucketNamedCourses)
-            .map(r => <RequireBucketNamedCourses>r)
-            .filter(r => r.groupName == this.groupName)
-            .forEach(r => {
-                this.group!.requirements.push(r)
-                r.group = this.group
-            })
-    }
-    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
-        // don't consume any more courses if our group is satisfied
+    satisfiedBy(_: CourseTaken[]): CourseTaken | undefined {
+        // don't consume any more courses once our group is satisfied
         if (this.group!.allSatisfied()) {
             myAssertEquals(0, this.remainingCUs)
             return
         }
         // group not already satisfied
-        const result = super.satisfiedBy(courses)
+        const filledFromNested = this.group!.filledFrom.map(r => r.coursesApplied)
+        const filledFromCourses = ([] as CourseTaken[]).concat(...filledFromNested)
+        const result = super.satisfiedBy(filledFromCourses)
         if (this.group!.allSatisfied()) {
             // this course completed the last required bucket
-            this.group!.requirements
+            this.group!.buckets
                 .filter(r => r.remainingCUs > 0)
                 .forEach(r => {
                     r.remainingCUs = 0
@@ -1193,7 +1288,7 @@ class RequireBucketNamedCourses extends RequirementNamedCourses {
         super.unapplyCourse(c)
         if (!this.group!.allSatisfied()) {
             // reset all the bucket reqs that are empty
-            this.group!.requirements
+            this.group!.buckets
                 .filter(r => r.satisfiedByOtherBuckets())
                 .forEach(r => {
                     r.remainingCUs = r.cus
@@ -3505,13 +3600,6 @@ function countRemainingCUs(allReqs: DegreeRequirement[]): number {
     const bucketsProcessed: string[] = []
     return allReqs
         .map(r => {
-            if (r instanceof RequireBucketNamedCourses) {
-                if (!bucketsProcessed.includes(r.groupName)) {
-                    bucketsProcessed.push(r.groupName)
-                    return r.getBucketGroupCUsRemaining()
-                }
-                return 0
-            }
             return r.doesntConsume ? 0 : r.remainingCUs
         })
         .reduce((sum, remCUs) => sum + remCUs, 0)
@@ -4701,28 +4789,33 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
             ]
             break
         case "DATS minor":
-            const datsMinorElectives = "DATS minor electives"
+            const datsMinorBucketGroup = "DATS minor electives"
             ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Programming", ["CIS 1200"]),
                 new RequirementNamedCourses(2, "ML", ["CIS 4190","CIS 5190","CIS 5200","STAT 4710",]),
                 new RequirementNamedCourses(3, "Scalability", ["NETS 2120","CIS 5450"]),
-                new RequireBucketNamedCourses(7, "Statistics Bucket", // prefer STAT 4300/ESE 3010 here over Stats core req
-                    ["BIOL 2510","CIS 2610","ESE 3010","STAT 4300","STAT 4760"], datsMinorElectives),
-                new RequirementNamedCourses(4, "Statistics", ["ESE 3010","ESE 4020","STAT 4300","STAT 4310"]),
-                new RequirementLabel(5, "<b>Take courses in 2 of the 5 buckets below:</b>"),
-                new RequireBucketNamedCourses(8, "Data Management Bucket",
-                    ["CIS 4500","CIS 5500","CIS 4550","CIS 5550","NETS 2130","OIDD 1050","STAT 4750"], datsMinorElectives),
-                new RequireBucketNamedCourses(10, "Modeling Bucket",
-                    ["NETS 3120","MKTG 2710","OIDD 3250","OIDD 3530","STAT 4330"], datsMinorElectives),
+                new RequirementNamedCourses(4, "Data Science Elective", DatsMinorElectives).withConcise(),
+                new RequirementNamedCourses(5, "Data Science Elective", DatsMinorElectives).withConcise(),
+                new RequireBucketNamedCourses(9, "Statistics Bucket", // prefer STAT 4300/ESE 3010 here over Stats core req
+                    DatsMinorStatBucket, datsMinorBucketGroup),
+                new RequirementNamedCourses(6, "Statistics", ["ESE 3010","ESE 4020","STAT 4300","STAT 4310"]),
+                new RequirementLabel(7, "<b>Your Data Science Electives must fill 2 of the 5 buckets below:</b>"),
+                new RequireBucketNamedCourses(10, "Data Management Bucket",
+                    DatsMinorDataMgmtBucket, datsMinorBucketGroup),
+                new RequireBucketNamedCourses(12, "Modeling Bucket",
+                    DatsMinorModelingBucket, datsMinorBucketGroup),
                 // put these last since they allow 0.5cu courses STAT 4050 & STAT 4220, which is a bit broken atm
-                new RequireBucketNamedCourses(6, "Data-Centric Programming Bucket",
-                    ["CIS 1050","ENGR 1050","ESE 3050","OIDD 3110","STAT 4050","STAT 4700"], datsMinorElectives),
-                new RequireBucketNamedCourses(9, "Data Analysis Bucket",
-                    ["CIS 4190","CIS 5190","CIS 4210","CIS 5210","CIS 5300","MKTG 2120","MKTG 3090","OIDD 4100",
-                        "STAT 4220","STAT 4710","STAT 4740","STAT 5200"], datsMinorElectives),
+                new RequireBucketNamedCourses(8, "Data-Centric Programming Bucket",
+                    DatsMinorDataCentricProgrammingBucket, datsMinorBucketGroup),
+                new RequireBucketNamedCourses(11, "Data Analysis Bucket",
+                    DatsMinorDataAnalysisBucket, datsMinorBucketGroup),
             ]
-            const datsBuckets = <RequireBucketNamedCourses>ugradDegreeRequirements[6]
-            datsBuckets.connectBucketGroup(2, ugradDegreeRequirements)
+            const datsBuckets = new BucketGroup(
+                2,
+                ugradDegreeRequirements,
+                datsMinorBucketGroup,
+                "Data Science Elective",
+                true)
             break
         case "CIS minor":
             ugradDegreeRequirements = [
@@ -4862,8 +4955,8 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementAttributes(10, "General Elective", [CourseAttribute.RoboGeneralElective]),
                 new RequirementAttributes(11, "General Elective", [CourseAttribute.RoboGeneralElective]),
             ]
-            const roboBuckets = <RequireBucketNamedCourses>mastersDegreeRequirements[1]
-            roboBuckets.connectBucketGroup(3, mastersDegreeRequirements)
+            // const roboBuckets = <RequireBucketNamedCourses>mastersDegreeRequirements[1]
+            // roboBuckets.connectBucketGroup(3, mastersDegreeRequirements)
             break
         case "DATS":
             const datsTE = "datsTechElective"
@@ -4887,8 +4980,8 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(15, "Elective (from any bucket)", allDatsCourses).withConcise(),
                 new RequirementNamedCourses(16, "Elective (from any bucket)", allDatsCourses).withConcise(),
             ]
-            const datsBuckets = <RequireBucketNamedCourses>mastersDegreeRequirements[6]
-            datsBuckets.connectBucketGroup(3, mastersDegreeRequirements)
+            // const datsBuckets = <RequireBucketNamedCourses>mastersDegreeRequirements[6]
+            // datsBuckets.connectBucketGroup(3, mastersDegreeRequirements)
             break
         case "none":
             break
