@@ -280,6 +280,17 @@ const ArinCogSciCourses = [
     "PSYC 1310",
     "PSYC 2737",
 ]
+const ArinProjectElectives = [
+    "CIS 3500",
+    "CIS 4300",
+    "CIS 5300",
+    "CIS 4810",
+    "CIS 5810",
+    "ESE 3060",
+    "ESE 3600",
+    "ESE 4210",
+    "NETS 2120",
+]
 const ArinAiElectives = [
     "CIS 4210",
     "CIS 5210",
@@ -782,6 +793,16 @@ const CisMseNonCisElectives = new Set<string>([
     "STAT 9910",
 ])
 
+const RoboAiBucket = ["CIS 4190","CIS 5190","CIS 5200","CIS 4210","CIS 5210","ESE 6500"]
+const RoboRobotDesignAnalysisBucket = ["MEAM 5100","MEAM 5200","MEAM 6200"]
+const RoboControlBucket = ["ESE 5000","ESE 5050","ESE 6190","MEAM 5130","MEAM 5170"]
+const RoboPerceptionBucket = ["CIS 5800","CIS 5810","CIS 6800"]
+const RoboFoundationalCourses = RoboAiBucket.concat(
+    RoboRobotDesignAnalysisBucket,
+    RoboControlBucket,
+    RoboPerceptionBucket
+)
+
 // ROBO imported 19 Oct 2022 from https://www.grasp.upenn.edu/academics/masters-degree-program/curriculum-information/technical-electives/
 const RoboTechElectives = new Set<string>([
     "BE 5210",
@@ -1265,7 +1286,13 @@ class RequireBucketNamedCourses extends RequirementNamedCourses {
         }
         // group not yet satisfied
         const filledFromNested = this.group!.filledFrom.map(r => r.coursesApplied)
-        const filledFromCourses = ([] as CourseTaken[]).concat(...filledFromNested)
+        let filledFromCourses = ([] as CourseTaken[]).concat(...filledFromNested)
+            .filter(c => {
+                if (this.group!.oneCourseCanFillMultipleBuckets) {
+                    return true
+                }
+                return this.group!.buckets.some(b => b.coursesApplied.includes(c)) == false
+            })
         const result = super.satisfiedBy(filledFromCourses)
         if (this.group!.allSatisfied()) {
             // this course completed the last required bucket
@@ -4556,9 +4583,9 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(38, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(39, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(40, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing requirement is @ index 41
+                // NB: Writing requirement is @ index 45
 
-                new RequirementFreeElective(42),
+                new RequirementFreeElective(50),
             ]
             break
         case "37cu ASCS":
@@ -4604,9 +4631,9 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing requirement is @ index 41
+                // NB: Writing requirement is @ index 45
 
-                new RequirementFreeElective(42),
+                new RequirementFreeElective(50),
             ]
             break
         case "37cu CMPE":
@@ -4657,15 +4684,17 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing requirement is @ index 41
+                // NB: Writing requirement is @ index 45
             ]
             break
         case "37cu ARIN":
+            const aiElecTag = "AI Electives"
+            const aiElecGroup = "aiElecGroup"
             ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
                 new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
-                new RequirementNamedCourses(4, "Math", ["ESE 2030"]),
+                new RequirementNamedCourses(4, "Math", ["MATH 2400", "MATH 2600", "ESE 2030"]),
                 new RequirementNamedCourses(5, "Math", ["ESE 3010","STAT 4300"]),
                 new RequirementNamedCourses(6, "Math", ["ESE 4020","ESE 5420"]),
                 new RequirementAttributes(7, "Natural Science", [CourseAttribute.NatSci]),
@@ -4673,36 +4702,61 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 // NB: CIS 1100 is below
                 new RequirementNamedCourses(9, "Computing", ["CIS 1200"]),
                 new RequirementNamedCourses(10, "Computing", ["CIS 1210"]),
-                new RequirementNamedCourses(11, "Computing", ["CIS 2450"]),
+                new RequirementNamedCourses(11, "Computing", ["CIS 2450","CIS 5450"]),
                 new RequirementNamedCourses(12, "Computing", ["CIS 3200","CIS 5020"]),
 
-                // TODO: AI ELECTIVES
+                new RequirementNamedCourses(13, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(14, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(15, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(16, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(17, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(18, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(19, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(20, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(21, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(22, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(23, aiElecTag, ArinAiElectives).withConcise(),
+                new RequirementNamedCourses(24, aiElecTag, ArinAiElectives).withConcise(),
 
-                new RequirementNamedCourses(21, "Senior Design", SeniorDesign1stSem),
-                new RequirementNamedCourses(22, "Senior Design", SeniorDesign2ndSem),
+                new RequirementLabel(25, "AI Electives must satisfy these 6 buckets. A single course cannot satisfy multiple buckets."),
+                new RequireBucketNamedCourses(26, "Intro to AI", ["CIS 4210", "CIS 5210", "ESE 2000"], aiElecGroup),
+                new RequireBucketNamedCourses(27, "Machine Learning", ["CIS 4190", "CIS 5190", "CIS 5200"], aiElecGroup),
+                new RequireBucketNamedCourses(28, "Signals & Systems", ["ESE 2100", "ESE 2240"], aiElecGroup),
+                new RequireBucketNamedCourses(29, "Optimization & Control", ["ESE 2040", "ESE 3040", "ESE 4210"], aiElecGroup),
+                new RequireBucketNamedCourses(30, "Vision & Language", ["CIS 4300", "CIS 5300", "CIS 4810", "CIS 5810"], aiElecGroup),
+                new RequireBucketNamedCourses(31, "Project", ArinProjectElectives, aiElecGroup),
 
-                new RequirementNamedCoursesOrAttributes(23, "Technical Elective", csci37TechElectives,
+                new RequirementNamedCourses(32, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(33, "Senior Design", SeniorDesign2ndSem),
+
+                new RequirementNamedCoursesOrAttributes(34, "Technical Elective", csci37TechElectives,
                     [CourseAttribute.Math, CourseAttribute.NatSci, CourseAttribute.MathNatSciEngr]).withConcise(),
-                new RequirementNamedCoursesOrAttributes(24, "Technical Elective", csci37TechElectives,
+                new RequirementNamedCoursesOrAttributes(35, "Technical Elective", csci37TechElectives,
                     [CourseAttribute.Math, CourseAttribute.NatSci, CourseAttribute.MathNatSciEngr])
                     .withConcise().withMinLevel(2000),
-                new RequirementNamedCoursesOrAttributes(25, "Technical Elective", csci37TechElectives,
+                new RequirementNamedCoursesOrAttributes(36, "Technical Elective", csci37TechElectives,
                     [CourseAttribute.Math, CourseAttribute.NatSci, CourseAttribute.MathNatSciEngr])
                     .withConcise().withMinLevel(2000),
 
                 new RequireCis1100(8),
 
-                new RequirementNamedCourses(29, "Ethics", ["CIS 4230", "CIS 5230", "LAWM 5060"]),
-                new RequirementNamedCourses(30, "Cognitive Science", ArinCogSciCourses),
-                new RequirementSsh(31, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
-                new RequirementSsh(32, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
-                new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
-                new RequirementSsh(34, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing requirement is @ index 41
+                new RequirementNamedCourses(37, "Ethics", ["CIS 4230", "CIS 5230", "LAWM 5060"]),
+                new RequirementNamedCourses(38, "Cognitive Science", ArinCogSciCourses),
+                new RequirementSsh(39, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(40, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(41, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(42, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(43, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing requirement is @ index 45
 
-                new RequirementFreeElective(42),
+                new RequirementFreeElective(50),
             ]
+            const __ = new BucketGroup(
+                6,
+                ugradDegreeRequirements,
+                aiElecGroup,
+                aiElecTag,
+                false)
             break
         case "37cu NETS":
             ugradDegreeRequirements = [
@@ -4745,9 +4799,9 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing requirement is @ index 41
+                // NB: Writing requirement is @ index 45
 
-                new RequirementFreeElective(42),
+                new RequirementFreeElective(50),
             ]
             break
         case "37cu DMD":
@@ -4794,9 +4848,9 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(34, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing requirement is @ index 41
+                // NB: Writing requirement is @ index 45
 
-                new RequirementFreeElective(42),
+                new RequirementFreeElective(50),
             ]
             break
         case "DATS minor":
@@ -4821,12 +4875,12 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequireBucketNamedCourses(11, "Data Analysis Bucket",
                     DatsMinorDataAnalysisBucket, datsMinorBucketGroup),
             ]
-            const datsBuckets = new BucketGroup(
+            const _ = new BucketGroup(
                 2,
                 ugradDegreeRequirements,
                 datsMinorBucketGroup,
                 "Data Science Elective",
-                true)
+                false)
             break
         case "CIS minor":
             ugradDegreeRequirements = [
@@ -4880,11 +4934,11 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementSsh(34, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
                 new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
                 new RequirementSsh(36, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
-                // NB: Writing requirement is @ index 41, Ethics is @ index 42
+                // NB: Writing requirement is @ index 45, Ethics is @ index 42
 
-                new RequirementFreeElective(43),
-                new RequirementFreeElective(44),
-                new RequirementFreeElective(45),
+                new RequirementFreeElective(46),
+                new RequirementFreeElective(47),
+                new RequirementFreeElective(48),
             ]
             break
         case "37cu ASBS":
@@ -4951,26 +5005,34 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
             ]
             break
         case "ROBO":
-            const roboFoundation = "roboFoundation"
+            const roboFoundationBucketGroup = "roboFoundation"
+            const foundationalCourses = "Foundational Courses"
             mastersDegreeRequirements = [
-                new RequirementLabel(0, "<b>Take courses in at least 3 of the 4 buckets below:</b>"),
-                new RequireBucketNamedCourses(1, "Artificial Intelligence Bucket", ["CIS 4190","CIS 5190","CIS 5200","CIS 4210","CIS 5210","ESE 6500"], roboFoundation),
-                new RequireBucketNamedCourses(2, "Robot Design & Analysis Bucket", ["MEAM 5100","MEAM 5200","MEAM 6200"], roboFoundation),
-                new RequireBucketNamedCourses(3, "Control Bucket", ["ESE 5000","ESE 5050","ESE 6190","MEAM 5130","MEAM 5170"], roboFoundation),
-                new RequireBucketNamedCourses(4, "Perception Bucket", ["CIS 5800","CIS 5810","CIS 6800"], roboFoundation),
-                new RequirementAttributes(5, "Technical Elective", [CourseAttribute.RoboTechElective]),
-                new RequirementAttributes(6, "Technical Elective", [CourseAttribute.RoboTechElective]),
+                new RequirementNamedCourses(0, foundationalCourses, RoboFoundationalCourses),
+                new RequirementNamedCourses(1, foundationalCourses, RoboFoundationalCourses),
+                new RequirementLabel(2, "<b>Take Foundational Courses in at least 3 of the 4 buckets below:</b>"),
+                new RequireBucketNamedCourses(3, "Artificial Intelligence Bucket", RoboAiBucket, roboFoundationBucketGroup),
+                new RequireBucketNamedCourses(4, "Robot Design & Analysis Bucket", RoboRobotDesignAnalysisBucket, roboFoundationBucketGroup),
+                new RequireBucketNamedCourses(5, "Control Bucket", RoboControlBucket, roboFoundationBucketGroup),
+                new RequireBucketNamedCourses(6, "Perception Bucket", RoboPerceptionBucket, roboFoundationBucketGroup),
                 new RequirementAttributes(7, "Technical Elective", [CourseAttribute.RoboTechElective]),
                 new RequirementAttributes(8, "Technical Elective", [CourseAttribute.RoboTechElective]),
                 new RequirementAttributes(9, "Technical Elective", [CourseAttribute.RoboTechElective]),
-                new RequirementAttributes(10, "General Elective", [CourseAttribute.RoboGeneralElective]),
-                new RequirementAttributes(11, "General Elective", [CourseAttribute.RoboGeneralElective]),
+                new RequirementAttributes(10, "Technical Elective", [CourseAttribute.RoboTechElective]),
+                new RequirementAttributes(11, "Technical Elective", [CourseAttribute.RoboTechElective]),
+                new RequirementAttributes(12, "General Elective", [CourseAttribute.RoboGeneralElective]),
+                new RequirementAttributes(13, "General Elective", [CourseAttribute.RoboGeneralElective]),
             ]
-            // const roboBuckets = <RequireBucketNamedCourses>mastersDegreeRequirements[1]
-            // roboBuckets.connectBucketGroup(3, mastersDegreeRequirements)
+            const _ = new BucketGroup(
+                3,
+                mastersDegreeRequirements,
+                roboFoundationBucketGroup,
+                foundationalCourses,
+                false)
             break
         case "DATS":
-            const datsTE = "datsTechElective"
+            const teTag = "Technical Elective"
+            const datsTEBucketGroup = "datsTechElective"
             const allDatsCourses = DatsThesis.concat(DatsBiomedicine,DatsNetworkScience,DatsProgramming,DatsStats,DatsAI,DatsSimulation,DatsMath)
             mastersDegreeRequirements = [
                 new RequirementNamedCourses(1, "Programming", ["CIT 5900","CIT 5910"]),
@@ -4978,21 +5040,30 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(3, "Big Data Analytics", ["CIS 5450"]),
                 new RequirementNamedCourses(4, "Linear Algebra", ["CIS 5150", "MATH 5130"]),
                 new RequirementNamedCourses(5, "Machine Learning", ["CIS 4190", "CIS 5190", "CIS 5200", "ENM 5310", "ESE 5450", "STAT 5710"]),
-                new RequirementLabel(6, "<b>Take courses in at least 3 of the 8 buckets below</b>"),
-                new RequireBucketNamedCourses(7, "Thesis Bucket", DatsThesis, datsTE),
-                new RequireBucketNamedCourses(8, "Biomedicine Bucket", DatsBiomedicine, datsTE),
-                new RequireBucketNamedCourses(9, "Social/Network Science Bucket", DatsNetworkScience, datsTE),
-                new RequireBucketNamedCourses(10, "Data-centric Programming Bucket", DatsProgramming, datsTE),
-                new RequireBucketNamedCourses(11, "Surveys and Statistics Bucket", DatsStats, datsTE),
-                new RequireBucketNamedCourses(12, "Data Analysis & AI Bucket", DatsAI, datsTE),
-                new RequireBucketNamedCourses(13, "Simulation Methods Bucket", DatsSimulation, datsTE),
-                new RequireBucketNamedCourses(14, "Math & Algorithms Bucket", DatsMath, datsTE),
+                new RequirementNamedCourses(7, teTag, allDatsCourses),
+                new RequirementNamedCourses(8, teTag, allDatsCourses),
+                new RequirementNamedCourses(9, teTag, allDatsCourses),
+                new RequirementNamedCourses(10, teTag, allDatsCourses),
+                new RequirementNamedCourses(11, teTag, allDatsCourses),
+                new RequirementLabel(12, "<b>Take Technical Electives in at least 3 of the 8 buckets below</b>"),
+                new RequireBucketNamedCourses(13, "Thesis Bucket", DatsThesis, datsTEBucketGroup),
+                new RequireBucketNamedCourses(14, "Biomedicine Bucket", DatsBiomedicine, datsTEBucketGroup),
+                new RequireBucketNamedCourses(15, "Social/Network Science Bucket", DatsNetworkScience, datsTEBucketGroup),
+                new RequireBucketNamedCourses(16, "Data-centric Programming Bucket", DatsProgramming, datsTEBucketGroup),
+                new RequireBucketNamedCourses(17, "Surveys and Statistics Bucket", DatsStats, datsTEBucketGroup),
+                new RequireBucketNamedCourses(18, "Data Analysis & AI Bucket", DatsAI, datsTEBucketGroup),
+                new RequireBucketNamedCourses(19, "Simulation Methods Bucket", DatsSimulation, datsTEBucketGroup),
+                new RequireBucketNamedCourses(20, "Math & Algorithms Bucket", DatsMath, datsTEBucketGroup),
 
-                new RequirementNamedCourses(15, "Elective (from any bucket)", allDatsCourses).withConcise(),
-                new RequirementNamedCourses(16, "Elective (from any bucket)", allDatsCourses).withConcise(),
+                new RequirementNamedCourses(21, "Elective (from any bucket)", allDatsCourses).withConcise(),
+                new RequirementNamedCourses(22, "Elective (from any bucket)", allDatsCourses).withConcise(),
             ]
-            // const datsBuckets = <RequireBucketNamedCourses>mastersDegreeRequirements[6]
-            // datsBuckets.connectBucketGroup(3, mastersDegreeRequirements)
+            const __ = new BucketGroup(
+                3,
+                mastersDegreeRequirements,
+                datsTEBucketGroup,
+                teTag,
+                false)
             break
         case "none":
             break
@@ -5039,7 +5110,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         const sshCourses: CourseTaken[] = coursesTaken.filter(c => c.consumedBy != undefined && c.consumedBy!.toString().startsWith(SsHTbsTag))
 
         if (!degrees.undergrad.includes("minor")) { // Writing requirement
-            const writingReq = new RequirementAttributes(41, "Writing", [CourseAttribute.Writing]).withNoConsume()
+            const writingReq = new RequirementAttributes(45, "Writing", [CourseAttribute.Writing]).withNoConsume()
             const matched = writingReq.satisfiedBy(sshCourses)
             if (matched == undefined) {
                 reqOutcomes.push([writingReq.displayIndex, writingReq, RequirementApplyResult.Unsatisfied, []])
