@@ -4699,7 +4699,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(6, "Math", ["ESE 4020","ESE 5420"]),
                 new RequirementAttributes(7, "Natural Science", [CourseAttribute.NatSci]),
 
-                // NB: CIS 1100 is below
+                new RequireCis1100(8),
                 new RequirementNamedCourses(9, "Computing", ["CIS 1200"]),
                 new RequirementNamedCourses(10, "Computing", ["CIS 1210"]),
                 new RequirementNamedCourses(11, "Computing", ["CIS 2450","CIS 5450"]),
@@ -4737,8 +4737,6 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCoursesOrAttributes(36, "Technical Elective", csci37TechElectives,
                     [CourseAttribute.Math, CourseAttribute.NatSci, CourseAttribute.MathNatSciEngr])
                     .withConcise().withMinLevel(2000),
-
-                new RequireCis1100(8),
 
                 new RequirementNamedCourses(37, "Ethics", ["CIS 4230", "CIS 5230", "LAWM 5060"]),
                 new RequirementNamedCourses(38, "Cognitive Science", ArinCogSciCourses),
