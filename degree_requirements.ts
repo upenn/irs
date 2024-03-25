@@ -4552,15 +4552,15 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementCisElective(19),
 
                 new RequirementNamedCourses(23, "Technical Elective", csci37TechElectives).withConcise(),
-                new RequirementNamedCourses(24, "Technical Elective", csci37TechElectives)
+                new RequirementNamedCourses(24, "Technical Elective ≥2000-level", csci37TechElectives)
                     .withConcise().withMinLevel(2000),
-                new RequirementNamedCourses(25, "Technical Elective", csci37TechElectives)
+                new RequirementNamedCourses(25, "Technical Elective ≥2000-level", csci37TechElectives)
                     .withConcise().withMinLevel(2000),
-                new RequirementNamedCourses(26, "Technical Elective", csci37TechElectives)
+                new RequirementNamedCourses(26, "Technical Elective ≥2000-level", csci37TechElectives)
                     .withConcise().withMinLevel(2000),
-                new RequirementNamedCourses(27, "Technical Elective", csci37TechElectives)
+                new RequirementNamedCourses(27, "Technical Elective ≥2000-level", csci37TechElectives)
                     .withConcise().withMinLevel(2000),
-                new RequirementNamedCourses(28, "Technical Elective", csci37TechElectives)
+                new RequirementNamedCourses(28, "Technical Elective ≥2000-level", csci37TechElectives)
                     .withConcise().withMinLevel(2000),
 
                 // elective "breadth" requirements
@@ -4731,10 +4731,10 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
 
                 new RequirementNamedCoursesOrAttributes(34, "Technical Elective", csci37TechElectives,
                     [CourseAttribute.Math, CourseAttribute.NatSci, CourseAttribute.MathNatSciEngr]).withConcise(),
-                new RequirementNamedCoursesOrAttributes(35, "Technical Elective", csci37TechElectives,
+                new RequirementNamedCoursesOrAttributes(35, "Technical Elective ≥2000-level", csci37TechElectives,
                     [CourseAttribute.Math, CourseAttribute.NatSci, CourseAttribute.MathNatSciEngr])
                     .withConcise().withMinLevel(2000),
-                new RequirementNamedCoursesOrAttributes(36, "Technical Elective", csci37TechElectives,
+                new RequirementNamedCoursesOrAttributes(36, "Technical Elective ≥2000-level", csci37TechElectives,
                     [CourseAttribute.Math, CourseAttribute.NatSci, CourseAttribute.MathNatSciEngr])
                     .withConcise().withMinLevel(2000),
 
