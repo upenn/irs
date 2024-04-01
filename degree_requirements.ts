@@ -1591,7 +1591,7 @@ class RequirementAscs40Concentration extends RequirementCsci40TechElective {
             .sort(byHighestCUsFirst)
             .find((c: CourseTaken): boolean => {
                 return c.grading == GradeType.ForCredit &&
-                    ["ACCT","BEPP","FNCE","LGST","MGMT","MKTG","OIDD"].includes(c.subject) &&
+                    ["ACCT","BEPP","FNCE","LGST","MGMT","MKTG","OIDD","REAL"].includes(c.subject) &&
                     c.courseNumberInt >= this.minLevel &&
                     !c.suhSaysNoCredit() &&
                     this.applyCourse(c)
