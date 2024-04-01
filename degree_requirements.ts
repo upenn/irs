@@ -2146,7 +2146,7 @@ export class CourseTaken {
             1000, 2010, 2020, 2030, 2080, 2110, 2120, 2140, 2200, 2300, 2330, 2500, 2610, 2630, 2650, 2800, 2840, 2890, 3050
         ]
         const ssCourses = [
-            "EAS 2030","EESC 1060","EESC 2300","EESC 3003","ENVS 4250","FNCE 1010",
+            "EAS 2030","EDUC 5437","EESC 1060","EESC 2300","EESC 3003","ENVS 4250","FNCE 1010",
             "LGST 1000","LGST 1010","LGST 2120","LGST 2150","LGST 2200",
             "NURS 3130","NURS 3150","NURS 3160","NURS 3300","NURS 5250"]
         return (this.courseNumberInt < 5000 && ssSubjects.includes(this.subject)) ||
