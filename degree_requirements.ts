@@ -295,7 +295,7 @@ const CoursesWithLab15CUs = [
     "BIOL 1101", "BIOL 1102",
     "PHYS 0150", "PHYS 0151",
     "PHYS 0170", "PHYS 0171",
-    "ESE 1120",
+    "ESE 1120" //, "ESE 2240"
 ]
 /** 0.5 CU standalone Natural Science lab courses */
 const StandaloneLabCourses05CUs = [
@@ -1131,7 +1131,7 @@ abstract class DegreeRequirement {
 
     /** internal method for actually applying `c` to this requirement, decrementing CUs for both `c` and `this` */
     protected applyCourse(c: CourseTaken): boolean {
-        if (0 == c.getCUs()) {
+        if (!this.doesntConsume && 0 == c.getCUs()) {
             return false
         }
         if (this.doesntConsume) {
@@ -2136,12 +2136,12 @@ export class CourseTaken {
         }
         if (attr == CourseAttribute.MathNatSciEngr) {
             // Math and NS courses should have EUMS attribute, too
-            if (this.attributes.includes(CourseAttribute.Math) || this.attributes.includes(CourseAttribute.NatSci)) {
-                if (!this.attributes.includes(CourseAttribute.MathNatSciEngr)) {
-                    this.attributes.push(CourseAttribute.MathNatSciEngr)
-                }
-                return
-            }
+            // if (this.attributes.includes(CourseAttribute.Math) || this.attributes.includes(CourseAttribute.NatSci)) {
+            //     if (!this.attributes.includes(CourseAttribute.MathNatSciEngr)) {
+            //         this.attributes.push(CourseAttribute.MathNatSciEngr)
+            //     }
+            //     return
+            // }
         }
         if (this.attributes.includes(attr) && !groundTruth) {
             this.attributes.splice(this.attributes.indexOf(attr), 1)
@@ -2546,12 +2546,14 @@ abstract class CourseParser {
                     ["37cu CSCI","37cu NETS"].includes(degrees.undergrad)) ||
                 "37cu DMD" == degrees.undergrad
             if (c.getCUs() > 0 && CoursesWithLab15CUs.includes(c.code()) && !nosplit) {
+                console.log(`splittingA ${c}`)
                 c.setCUs(c.getCUs() - 0.5)
                 const lab = c.split(0.5, c.courseNumber + "lab")
                 halfCuCourses.push(lab)
             }
             let ese3500NotCmpe = c.code() == "ESE 3500" && degrees.undergrad != "37cu CMPE"
-            if (c.getCUs() > 0 && (CoursesWith15CUsToSplit.includes(c.code()) || ese3500NotCmpe)) {
+            if (c.getCUs() > 0 && (CoursesWith15CUsToSplit.includes(c.code()) || ese3500NotCmpe) && !nosplit) {
+                console.log(`splittingB ${c}`)
                 c.setCUs(c.getCUs() - 0.5)
                 const half = c.split(0.5, c.courseNumber + "half")
                 halfCuCourses.push(half)
@@ -4813,13 +4815,14 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(23, aiElecTag, ArinAiElectives).withConcise(),
                 new RequirementNamedCourses(24, aiElecTag, ArinAiElectives).withConcise(),
 
+                // NB: buckets are filled from AI Electives so need to do AI Elecs first
                 new RequirementLabel(25, "AI Electives must satisfy these 6 buckets. A single course cannot satisfy multiple buckets."),
-                new RequireBucketNamedCourses(26, "Intro to AI", ["CIS 4210", "CIS 5210", "ESE 2000"], aiElecGroup),
-                new RequireBucketNamedCourses(27, "Machine Learning", ["CIS 4190", "CIS 5190", "CIS 5200"], aiElecGroup),
-                new RequireBucketNamedCourses(28, "Signals & Systems", ["ESE 2100", "ESE 2240"], aiElecGroup),
-                new RequireBucketNamedCourses(29, "Optimization & Control", ["ESE 2040", "ESE 3040", "ESE 4210"], aiElecGroup),
-                new RequireBucketNamedCourses(30, "Vision & Language", ["CIS 4300", "CIS 5300", "CIS 4810", "CIS 5810"], aiElecGroup),
-                new RequireBucketNamedCourses(31, "Project", ArinProjectElectives, aiElecGroup),
+                new RequireBucketNamedCourses(26, "Intro to AI", ["CIS 4210", "CIS 5210", "ESE 2000"], aiElecGroup).withNoConsume(),
+                new RequireBucketNamedCourses(27, "Machine Learning", ["CIS 4190", "CIS 5190", "CIS 5200"], aiElecGroup).withNoConsume(),
+                new RequireBucketNamedCourses(28, "Signals & Systems", ["ESE 2100", "ESE 2240"], aiElecGroup).withCUs(1.5).withNoConsume(),
+                new RequireBucketNamedCourses(29, "Optimization & Control", ["ESE 2040", "ESE 3040", "ESE 4210"], aiElecGroup).withNoConsume(),
+                new RequireBucketNamedCourses(30, "Vision & Language", ["CIS 4300", "CIS 5300", "CIS 4810", "CIS 5810"], aiElecGroup).withNoConsume(),
+                new RequireBucketNamedCourses(31, "Project", ArinProjectElectives, aiElecGroup).withNoConsume(),
 
                 new RequirementNamedCourses(32, "Senior Design", SeniorDesign1stSem),
                 new RequirementNamedCourses(33, "Senior Design", SeniorDesign2ndSem),
