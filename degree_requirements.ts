@@ -2210,7 +2210,7 @@ export class CourseTaken {
         // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SAST. NB: in 37cu CIS majors, SS-vs-H distinction is moot
         // TODO: ECON except statistics, probability, and math courses, [ECON 104/2310 is not allowed]. Xlist not helpful
         // TODO: PSYC, SOCI except statistics, probability, and math courses. Xlist not helpful
-        const ssSubjects = ["COMM","CRIM","EDUC","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
+        const ssSubjects = ["COMM","CRIM","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
         const beppCourseNums = [
             1000, 2010, 2020, 2030, 2080, 2110, 2120, 2140, 2200, 2300, 2330, 2500, 2610, 2630, 2650, 2800, 2840, 2890, 3050
         ]
