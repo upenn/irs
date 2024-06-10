@@ -6,6 +6,8 @@ import exp from "constants";
 import {isBooleanObject} from "util/types";
 import fs from "fs";
 import csv from "csv-parse/lib/sync";
+import CmdTs from "cmd-ts";
+import CmdTsFs from "cmd-ts/dist/esm/batteries/fs";
 
 
 /** For checking whether Path course attributes are correct or not */
@@ -185,6 +187,73 @@ function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
     console.log(`SUMMARY: ${suhInconsistencies} SUH inconsistencies, ${attrMissing} missing attrs and ${attrWrong} wrong attrs`)
 }
 
+interface ProbationStudentInfo {
+    name: string
+    pennid: number
+    email: string
+    coursesTaken: CourseTaken[]
+}
+
+function generateApcProbationList(csvFilePath: string) {
+    const fs = require('fs')
+    const csv = require('csv-parse/sync')
+
+    // start probation risk spreadsheet
+    const probationRiskFile = `${AnalysisOutputDir}apc-probation-risk.csv`
+    fs.writeFileSync(probationRiskFile, "PennID,name,email,overall GPA,stem GPA,fall CUs,spring CUs,AY CUs,probation risk\n")
+
+    const fileContent = fs.readFileSync(csvFilePath, {encoding: 'utf-8'})
+    const courseTakenCsvRecords = csv.parse(fileContent, {
+        delimiter: ',',
+        columns: true,
+    }) as CsvRecord[]
+    const coursesForStudent = new Map<number,ProbationStudentInfo>();
+    courseTakenCsvRecords.forEach((row) => {
+        const pennid = Number.parseInt(row['pennid'])
+        myAssert(!Number.isNaN(pennid))
+
+        if (!coursesForStudent.has(pennid)) {
+            const psi = {
+                name: row['student name'],
+                pennid: pennid,
+                email: row['email'],
+                coursesTaken: []
+            }
+            coursesForStudent.set(pennid, psi)
+        }
+        const existingCourses = coursesForStudent.get(pennid)
+
+        const cus = Number.parseFloat(row['CUs'])
+        myAssert(!Number.isNaN(cus))
+        const term = Number.parseInt(row['term'])
+        myAssert(!Number.isNaN(term))
+        const newCourse = new CourseTaken(
+            row['course subject'],
+            row['course number'],
+            row['course title'],
+            null,
+            cus,
+            row['grade mode'] == "P" ? GradeType.PassFail : GradeType.ForCredit,
+            row['grade'],
+            term,
+            '',
+            true)
+        existingCourses!.coursesTaken.push(newCourse)
+    })
+
+    let numStudentsFlagged = 0
+    coursesForStudent.forEach((psi, pennid) => {
+        const result = run([], new Degrees(), psi.coursesTaken)
+        const pcr = probationRisk(result, psi.coursesTaken, [PREVIOUS_TERM,CURRENT_TERM])
+        if (pcr.hasProbationRisk()) {
+            fs.appendFileSync(probationRiskFile, `${pennid}, "${psi.name}", ${psi.email}, ${pcr.overallGpa.toFixed(2)}, ${pcr.stemGpa.toFixed(2)}, ${pcr.fallCUs}, ${pcr.springCUs}, ${pcr.fallCUs + pcr.springCUs}, "${pcr}"\n`)
+            numStudentsFlagged += 1
+        }
+    })
+    console.log(`processed ${courseTakenCsvRecords.length} courses from ${coursesForStudent.size} students`)
+    console.log(`${numStudentsFlagged} students flagged for probation risk`)
+}
+
 
 const AnalysisOutputDir = "/Users/devietti/Projects/irs/dw-analysis/"
 const DraggableDataGetCourseTaken = "CourseTaken"
@@ -200,8 +269,8 @@ const CompletedGrades = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","F",
 /** academic terms during which students could take unlimited P/F courses */
 const CovidTerms = [202010, 202020, 202030, 202110]
 
-const CURRENT_TERM = 202310
-const PREVIOUS_TERM = 202230
+const CURRENT_TERM = 202410
+const PREVIOUS_TERM = 202330
 
 enum CourseAttribute {
     Writing = "AUWR",
@@ -3666,6 +3735,15 @@ if (typeof window === 'undefined') {
             analyzeCourseAttributeSpreadsheet(courseAttrCsv)
         },
     })
+    const apcProbationList = CmdTs.command({
+        name: 'apc-probation-list',
+        args: {
+            allGradesCsv: CmdTs.positional({ type: CmdTsFs.File, description: 'grades CSV file (from Data Warehouse)' }),
+        },
+        handler: ({ allGradesCsv }: {allGradesCsv: string}) => {
+            generateApcProbationList(allGradesCsv)
+        },
+    })
     const dwWorksheets = CmdTs.command({
         name: 'dw-worksheets',
         args: {
@@ -3701,7 +3779,7 @@ if (typeof window === 'undefined') {
     })
     const app = CmdTs.subcommands({
         name: 'irs',
-        cmds: { courseAttrs, dwWorksheets },
+        cmds: { courseAttrs, apcProbationList, dwWorksheets },
     })
     CmdTs.run(app, process.argv.slice(2))
 }
@@ -3960,7 +4038,11 @@ class ProbationCheckResult {
     notEnoughCUs: number | null = null
     lowOverallGpa: number | null = null
     lowStemGpa: number | null = null
-    notes: string = ''
+    overallGpa: number = 0
+    stemGpa: number = 0
+    fallCUs: number = 0
+    springCUs: number = 0
+    notes: string[] = []
 
     hasProbationRisk(): boolean {
         return this.notEnoughCUs != null || this.lowOverallGpa != null || this.lowStemGpa != null
@@ -3970,17 +4052,17 @@ class ProbationCheckResult {
         if (!this.hasProbationRisk()) {
             return ''
         }
-        let s = ''
+        let n = this.notes
         if (this.notEnoughCUs != null) {
-            s += `notEnoughCUs: ${this.notEnoughCUs}, `
+            n.push(`notEnoughCUs: ${this.notEnoughCUs}`)
         }
         if (this.lowStemGpa != null) {
-            s += `lowStemGpa: ${this.lowStemGpa}, `
+            n.push(`lowStemGpa: ${this.lowStemGpa}`)
         }
         if (this.lowOverallGpa != null) {
-            s += `lowOverallGpa: ${this.lowOverallGpa}, `
+            n.push(`lowOverallGpa: ${this.lowOverallGpa}`)
         }
-        return s + this.notes
+        return n.join(', ')
     }
 }
 
@@ -3993,12 +4075,25 @@ function probationRisk(rr: RunResult, allCourses: CourseTaken[], termsThisYear: 
         .map(c => c.letterGrade == 'P' ? c.getCUs() : c.getGpaCUs())
         .reduce((psum, a) => psum+a, 0)
     const fallCourses = allCourses.filter(c => termsThisYear[0] == c.term)
-    if (fallCourses.length > 0 && cusThisYear < 8) {
+    const springCourses = allCourses.filter(c => termsThisYear[1] == c.term)
+    pcr.fallCUs = fallCourses.reduce((psum, c) =>
+        psum + (c.letterGrade == 'P' ? c.getCUs() : c.getGpaCUs()), 0)
+    pcr.springCUs = springCourses.reduce((psum, c) =>
+        psum + (c.letterGrade == 'P' ? c.getCUs() : c.getGpaCUs()), 0)
+    if (fallCourses.length > 0 && springCourses.length > 0 && cusThisYear < 8) {
         pcr.notEnoughCUs = cusThisYear
-    } else if (fallCourses.length == 0 && cusThisYear < 4) {
-        pcr.notEnoughCUs = cusThisYear
-        pcr.notes += 'on leave in '+termsThisYear[0]
     }
+    if (fallCourses.length == 0 && cusThisYear < 4) {
+        pcr.notEnoughCUs = cusThisYear
+        pcr.notes.push('on leave in '+termsThisYear[0])
+    }
+    if (springCourses.length == 0 && cusThisYear < 4) {
+        pcr.notEnoughCUs = cusThisYear
+        pcr.notes.push('on leave in '+termsThisYear[1])
+    }
+
+    pcr.overallGpa = rr.gpaOverall
+    pcr.stemGpa = rr.gpaStem
     pcr.lowOverallGpa = rr.gpaOverall < 2.0 ? rr.gpaOverall : null
     pcr.lowStemGpa = rr.gpaStem < 2.0 ? rr.gpaStem : null
     return pcr
