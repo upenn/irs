@@ -2309,13 +2309,14 @@ export class CourseTaken {
     public suhSaysTbs(): boolean {
         const easCourseNums = [
             2020, 2040, 2200, 2210, 2220, 2230, 2240, 2250, 2260, 2270, 2280, 2420, 2900, 3010, 3060, 3200,
-            4010, 4020, 4030, 4080, 5010, 5020, 5050, 5070, 5100, 5120, 5450, 5460, 5490, 5900, 5950
+            4010, 4020, 4030, 4080, 5010, 5020, 5050, 5070, 5100, 5120, 5410, 5430, 5450, 5460, 5470, 5490,
+            5900, 5950
         ]
         const tbsCourses = [
             "CIS 1070","CIS 1250","CIS 4230","CIS 5230",
             "DSGN 0020", "EAS 0010", "ENVS 3700", "IPD 5090", "IPD 5450",
-            "LGST 2440", "LAWM 5060","MGMT 2370","MKTG 2470","NURS 3570",
-            "OIDD 2360","OIDD 2340","OIDD 2550","OIDD 3140","OIDD 3990","WH 1010",
+            "LGST 2440", "LAWM 5060","MKTG 2270",
+            "OIDD 2360","OIDD 2340","OIDD 2550","OIDD 3140","OIDD 3150","OIDD 3990","WH 1010",
         ]
         return tbsCourses.includes(this.code()) ||
             (this.subject == "EAS" && easCourseNums.includes(this.courseNumberInt)) ||
