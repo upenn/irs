@@ -120,7 +120,7 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
 
     // 2: CHECK ATTRIBUTES
     const attrsToCheck = [
-        CourseAttribute.MathNatSciEngr,
+        CourseAttribute.Engineering,
         CourseAttribute.Math,
         CourseAttribute.NatSci,
         CourseAttribute.SocialScience,
@@ -148,7 +148,7 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
                             return {c: pathCourse.courses[i].code(), al: al}
                         })
                         .filter(cal => cal.al.length > 0)
-                        .map(cal => cal.c + ' has ' + cal.al.map(a => a).join('')).join(', ')
+                        .map(cal => cal.c + ' has ' + cal.al.map(a => a).join(',')).join(', ')
             })
             // don't bother reporting on attrs, since we aren't sure what the right answer is
             continue
@@ -157,11 +157,19 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
         // check if Path course has correct attrs
         for (const atc of attrsToCheck) {
             if (biggestAttrSet.has(atc) && !pathCourse.attributes.has(atc)) {
-                errorsFound.push({
-                    codes: pathCourse.codesStr(),
-                    title: pathCourse.title,
-                    reason: 'missing attribute ' + atc
-                })
+                if (atc == CourseAttribute.Engineering && pathCourse.attributes.has(CourseAttribute.MathNatSciEngr)) {
+                    errorsFound.push({
+                        codes: pathCourse.codesStr(),
+                        title: pathCourse.title,
+                        reason: `replace ${CourseAttribute.MathNatSciEngr} with ${CourseAttribute.Engineering}`
+                    })
+                } else {
+                    errorsFound.push({
+                        codes: pathCourse.codesStr(),
+                        title: pathCourse.title,
+                        reason: 'missing attribute ' + atc
+                    })
+                }
             }
             if (!biggestAttrSet.has(atc) && pathCourse.attributes.has(atc)) {
                 errorsFound.push({
@@ -170,6 +178,15 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
                     reason: 'has incorrect attribute ' + atc
                 })
             }
+        }
+
+        // no more EUMS
+        if (pathCourse.attributes.has(CourseAttribute.MathNatSciEngr) && !biggestAttrSet.has(CourseAttribute.Engineering)) {
+            errorsFound.push({
+                codes: pathCourse.codesStr(),
+                title: pathCourse.title,
+                reason: 'has deprecated attribute ' + CourseAttribute.MathNatSciEngr
+            })
         }
     }
     // check that CSCI TE list does not intersect SEAS No-Credit List
@@ -304,6 +321,7 @@ enum CourseAttribute {
     Math = "EUMA",
     NatSci = "EUNS",
     MathNatSciEngr = "EUMS",
+    Engineering = "EUNG",
     SocialScience = "EUSS",
     Humanities = "EUHS",
     TBS = "EUTB",
@@ -2167,7 +2185,7 @@ export class CourseTaken {
         this.validateAttribute(this.suhSaysTbs(), CourseAttribute.TBS)
         this.validateAttribute(this.suhSaysMath(), CourseAttribute.Math)
         this.validateAttribute(this.suhSaysNatSci(), CourseAttribute.NatSci)
-        this.validateAttribute(this.suhSaysEngr(), CourseAttribute.MathNatSciEngr)
+        this.validateAttribute(this.suhSaysEngr(), CourseAttribute.Engineering)
         this.validateAttribute(RoboTechElectives.has(this.code()), CourseAttribute.RoboTechElective)
         this.validateAttribute(RoboGeneralElectives.has(this.code()), CourseAttribute.RoboGeneralElective)
         if (this.suhSaysEngr() && this.attributes.includes(CourseAttribute.NonEngr)) {
@@ -2178,15 +2196,6 @@ export class CourseTaken {
         if (groundTruth && !this.attributes.includes(attr)) {
             this.attributes.push(attr)
             IncorrectCMAttributes.add(`${this.code()} missing ${attr}`)
-        }
-        if (attr == CourseAttribute.MathNatSciEngr) {
-            // Math and NS courses should have EUMS attribute, too
-            // if (this.attributes.includes(CourseAttribute.Math) || this.attributes.includes(CourseAttribute.NatSci)) {
-            //     if (!this.attributes.includes(CourseAttribute.MathNatSciEngr)) {
-            //         this.attributes.push(CourseAttribute.MathNatSciEngr)
-            //     }
-            //     return
-            // }
         }
         if (this.attributes.includes(attr) && !groundTruth) {
             this.attributes.splice(this.attributes.indexOf(attr), 1)
