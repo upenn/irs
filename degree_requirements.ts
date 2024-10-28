@@ -2363,7 +2363,7 @@ export class CourseTaken {
         return nsCourses.includes(this.code()) ||
             nsSubjects.includes(this.subject) ||
             (this.subject == "BIBB" && !["010","050","060","160","227"].includes(this.courseNumber)) ||
-            (this.subject == "NRSC" && !["0050","0060"].includes(this.courseNumber)) ||
+            (this.subject == "NRSC" && !["0050","0060","1160","2249"].includes(this.courseNumber)) ||
             (this.subject == "BIOL" && this.courseNumberInt > 1000 && this.courseNumberInt != 2510) ||
             (this.subject == "CHEM" && ![1000, 1200, 250, 1011].includes(this.courseNumberInt)) ||
             (this.subject == "EESC" && ([1000,1030,1090,2120,2500,4200,4360,4440,4630].includes(this.courseNumberInt))) ||
