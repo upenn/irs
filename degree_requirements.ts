@@ -2328,7 +2328,7 @@ export class CourseTaken {
      * NB: this IS intended to be a definitive classification */
     public suhSaysMath(): boolean {
         const mathCourses = [
-            "CIS 1600", "CIS 2610",
+            "CIS 1600", "CIS 2610", "CIS 3333",
             "EAS 205",
             "ESE 3010", "ESE 4020",
             "PHIL 1710", "PHIL 4723",
