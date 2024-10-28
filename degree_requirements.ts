@@ -2324,7 +2324,7 @@ export class CourseTaken {
         const tbsCourses = [
             "CIS 1070","CIS 1250","CIS 4230","CIS 5230",
             "DSGN 0020", "EAS 0010", "ENVS 3700", "IPD 5090", "IPD 5450",
-            "LGST 2440", "LAWM 5060","MKTG 2270",
+            "LGST 2220", "LGST 2440", "LAWM 5060","MKTG 2270",
             "OIDD 2360","OIDD 2340","OIDD 2550","OIDD 3140","OIDD 3150","OIDD 3990","WH 1010",
         ]
         return tbsCourses.includes(this.code()) ||
