@@ -2339,7 +2339,7 @@ export class CourseTaken {
         const mathCourses = [
             "CIS 1600", "CIS 2610", "CIS 3333",
             "EAS 205",
-            "ESE 3010", "ESE 4020",
+            "ESE 2030", "ESE 3010", "ESE 4020",
             "PHIL 1710", "PHIL 4723",
             "STAT 4300", "STAT 4310", "STAT 4320", "STAT 4330"
         ]
