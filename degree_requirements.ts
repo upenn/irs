@@ -10,6 +10,9 @@ import CmdTs from "cmd-ts";
 import CmdTsFs from "cmd-ts/dist/esm/batteries/fs";
 
 
+// global list of CSCI Tech Electives. Used sporadically in a few places so it's easier to have it as a global.
+let TECH_ELECTIVE_LIST: TechElectiveDecision[] = []
+
 /** For checking whether Path course attributes are correct or not */
 class CourseWithAttrs {
     readonly codes: Set<string> = new Set<string>()
@@ -169,6 +172,30 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
             }
         }
     }
+    // check that CSCI TE list does not intersect SEAS No-Credit List
+    {
+        for (const te of TECH_ELECTIVE_LIST) {
+            const subjectNumber = te.course4d.split(' ')
+            const teCourse = new CourseTaken(
+                subjectNumber[0],
+                subjectNumber[1],
+                te.title,
+                null,
+                1.0,
+                GradeType.ForCredit,
+                'C',
+                202510,
+                '',
+                true)
+            if (teCourse.suhSaysNoCredit()) {
+                errorsFound.push({
+                    codes: te.course4d,
+                    title: te.title,
+                    reason: 'CSCI TE on the No-Credit List'
+                })
+            }
+        }
+    }
 
     const csvStr = csvStringify.stringify(errorsFound,
         {
@@ -288,6 +315,8 @@ enum CourseAttribute {
     RoboGeneralElective = "EMRE",
     NetsLightTechElective = "NetsLightTE",
     NetsFullTechElective = "NetsFullTE",
+    CsciRestrictedTechElective = "EUCR",
+    CsciUnrestrictedTechElective = "EUCU",
 }
 
 /** 1.5 CU Natural Science courses with labs */
@@ -1080,11 +1109,12 @@ export enum GradeType {
 export interface TechElectiveDecision {
     course4d: string,
     title: string,
-    status: "yes" | "no" | "ask"
+    status_prefall24: "yes" | "no" | "ask",
+    status: "unrestricted" | "restricted" | "ask" | "no"
 }
 
 type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" |
-    "37cu ASCS" | "37cu CSCI" | "37cu CMPE" | "37cu ARIN" | "37cu NETS" | "37cu DMD" | "37cu BE" | "37cu ASBS" | "none" |
+    "37cu ASCS" | "37cu CSCI preFall24" | "37cu CSCI" | "37cu CMPE" | "37cu ARIN" | "37cu NETS" | "37cu DMD" | "37cu BE" | "37cu ASBS" | "none" |
     "CIS minor" | "DATS minor" // TODO: handle minors properly as their own kind of degree
 type MastersDegree = "CIS-MSE" | "DATS" | "ROBO" | "CGGT" | "none"
 
@@ -2118,6 +2148,21 @@ export class CourseTaken {
             IncorrectCMAttributes.add(`${this.code()} missing ${CourseAttribute.Humanities}`)
         }
 
+        // add EUCR/EUCU attributes, which only entered use in Spring 2024
+        const teHit = TECH_ELECTIVE_LIST.find((ted) => { return ted.course4d == this.code()})
+        if (teHit != undefined) {
+            switch (teHit.status) {
+                case "restricted":
+                    this.attributes.push(CourseAttribute.CsciRestrictedTechElective)
+                    break
+                case "unrestricted":
+                    this.attributes.push(CourseAttribute.CsciUnrestrictedTechElective)
+                    break
+                default:
+                    break
+            }
+        }
+
         // we have definitive categorization for TBS, Math, Natural Science and Engineering courses
         this.validateAttribute(this.suhSaysTbs(), CourseAttribute.TBS)
         this.validateAttribute(this.suhSaysMath(), CourseAttribute.Math)
@@ -2445,6 +2490,10 @@ abstract class CourseParser {
                     default:
                         break
                 }
+            }
+
+            if (degrees.undergrad == "37cu CSCI" && degrees.firstTerm! < 202430) { // new TE rules in Fall 2024
+                degrees.undergrad = "37cu CSCI preFall24"
             }
         }
 
@@ -3336,6 +3385,11 @@ async function webMain(): Promise<void> {
     $(".requirementsList").empty()
     $(".clear-on-init").empty()
 
+    // download the latest Technical Elective list
+    const response = await fetch(window.location.origin + "/assets/json/37cu_csci_tech_elective_list.json")
+    TECH_ELECTIVE_LIST = await response.json()
+    console.log(`parsed ${TECH_ELECTIVE_LIST.length} entries from CSCI technical electives list`)
+
     let autoDegrees = $("#auto_degree").is(":checked")
     $(NodeMessages).append("<h3>Notes</h3>")
 
@@ -3393,11 +3447,7 @@ async function webMain(): Promise<void> {
   </div>
 </div>`)
 
-    // download the latest Technical Elective list
-    const response = await fetch(window.location.origin + "/assets/json/37cu_csci_tech_elective_list.json")
-    const telist = await response.json()
-
-    const result = run(telist, degrees, coursesTaken)
+    const result = run(TECH_ELECTIVE_LIST, degrees, coursesTaken)
     setRemainingCUs(result.cusRemaining)
     $(NodeGpa).append(`<div class="alert alert-secondary" role="alert">
 GPAs Overall = ${result.gpaOverall.toFixed(2)} 
@@ -3801,6 +3851,10 @@ async function analyzeWorksheets(majorsListCsv: string,
     const fs = require('fs');
     const csv = require('csv-parse/sync');
 
+    const response = await fetch("https://advising.cis.upenn.edu/assets/json/37cu_csci_tech_elective_list.json")
+    TECH_ELECTIVE_LIST = await response.json()
+    console.log(`parsed ${TECH_ELECTIVE_LIST.length} entries from CSCI technical electives list`)
+
     //const fileContent = fs.readFileSync('/Users/devietti/Projects/irs/2023-cis-majors.csv', { encoding: 'utf-8' });
     // const fileContent = fs.readFileSync('/Users/devietti/Projects/irs/MajorsList-202330-mse.csv', { encoding: 'utf-8' });
     const fileContent = fs.readFileSync(majorsListCsv, { encoding: 'utf-8' });
@@ -3921,9 +3975,7 @@ async function runOneWorksheet(worksheetText: string, analysisOutput: string, ma
             }
         }
 
-        const response = await fetch("https://advising.cis.upenn.edu/assets/json/37cu_csci_tech_elective_list.json")
-        const telist = await response.json()
-        const result = run(telist, degrees!, coursesTaken)
+        const result = run(TECH_ELECTIVE_LIST, degrees!, coursesTaken)
 
         // // check if student needs CIS 3800
         // if (degrees!.undergrad == "37cu CSCI" ||
@@ -4169,12 +4221,12 @@ class RunResult {
 
 export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Degrees, coursesTaken: CourseTaken[]): RunResult {
     csci37techElectiveList
-        .filter((te: TechElectiveDecision): boolean => te.status == "yes")
+        .filter((te: TechElectiveDecision): boolean => te.status_prefall24 == "yes")
         .forEach((te: TechElectiveDecision) => {
             RequirementCsci40TechElective.techElectives.add(te.course4d)
         })
     const csci37TechElectives: string[] = csci37techElectiveList
-        .filter((te: TechElectiveDecision): boolean => te.status == "yes")
+        .filter((te: TechElectiveDecision): boolean => te.status_prefall24 == "yes")
         .map(te => te.course4d)
     const bothLightAndFull = [...NetsFullTechElectives].filter(full => NetsLightTechElectives.has(full))
     myAssertEquals(bothLightAndFull.length, 0, `Uh-oh, some NETS TEs are both light AND full: ${bothLightAndFull}`)
@@ -4629,7 +4681,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementFreeElective(46),
             ]
             break
-        case "37cu CSCI":
+        case "37cu CSCI preFall24":
             ugradDegreeRequirements = [
                 new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
                 new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
@@ -4667,6 +4719,66 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                     .withConcise().withMinLevel(2000),
                 new RequirementNamedCourses(28, "Technical Elective ≥2000-level", csci37TechElectives)
                     .withConcise().withMinLevel(2000),
+
+                // elective "breadth" requirements
+                new RequirementNamedCourses(29, "Networking Elective",
+                    ["NETS 1500", "NETS 2120", "CIS 3310", "CIS 4510", "CIS 5510", "CIS 4550", "CIS 5550", "CIS 5050", "CIS 5530"]).withNoConsume(),
+                new RequirementNamedCourses(30, "Database Elective",
+                    ["CIS 4500", "CIS 5500", "CIS 4550", "CIS 5550", "CIS 5450"]).withNoConsume(),
+                new RequirementNamedCourses(31, "Distributed Systems Elective",
+                    ["NETS 2120", "CIS 4410", "CIS 5410", "CIS 4500", "CIS 5500", "CIS 5050", "CIS 5450"]).withNoConsume(),
+                new RequirementNamedCourses(32, "Machine Learning/AI Elective",
+                    ["CIS 4190", "CIS 5190", "CIS 4210", "CIS 5210", "CIS 5200", "CIS 5450", "CIS 6200"]).withNoConsume(),
+                new RequirementNamedCourses(33, "Project Elective",
+                    ["NETS 2120", "CIS 3410", "CIS 3500", "CIS 4410", "CIS 5410", "CIS 4500", "CIS 5500",
+                        "CIS 4550", "CIS 5550", "CIS 4600", "CIS 5600", "CIS 5050", "CIS 5530", "ESE 3500"]).withNoConsume(),
+
+                new RequirementNamedCourses(34, "Ethics", CsciEthicsCourses),
+                new RequirementSsh(35, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(36, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(37, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(38, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(39, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(40, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing requirement is @ index 45
+
+                new RequirementFreeElective(50),
+            ]
+            break
+        case "37cu CSCI":
+            ugradDegreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Math", ["CIS 1600"]),
+                new RequirementNamedCourses(4, "Probability", ["CIS 2610", "ESE 3010", "ENM 321", "STAT 4300"]),
+                new RequirementNamedCourses(5, "Linear Algebra", ["MATH 2400", "MATH 2600", "MATH 3120", "MATH 3130", "MATH 3140"]),
+                new RequirementNamedCourses(6, "Physics", ["PHYS 0150","PHYS 0170","MEAM 1100","MEAM 1470"]).withCUs(1.5),
+                new RequirementNamedCourses(7, "Physics", ["PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
+                new RequirementAttributes(8, "Math/Natural Science Elective", [CourseAttribute.Math, CourseAttribute.NatSci]),
+
+                new RequirementNamedCourses(10, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(11, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 2400"]),
+                new RequirementNamedCourses(13, "Math", ["CIS 2620","CIS 5110"]),
+                new RequirementNamedCourses(14, "Major", ["CIS 3200","CIS 5020"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 3800","CIS 5480"]),
+                new RequirementNamedCourses(16, "Major", ["CIS 4710","CIS 5710"]),
+                new RequirementNamedCourses(17, "Senior Design", SeniorDesign1stSem),
+                new RequirementNamedCourses(18, "Senior Design", SeniorDesign2ndSem),
+
+                new RequireCis1100(9),
+                new RequirementCisElective(20).withMinLevel(2000),
+                new RequirementCisElective(21).withMinLevel(2000),
+                new RequirementCisElective(22).withMinLevel(2000),
+                new RequirementCisElective(19),
+
+                new RequirementAttributes(23, "(Un)restricted Tech Elective",
+                    [CourseAttribute.CsciRestrictedTechElective, CourseAttribute.CsciUnrestrictedTechElective]),
+                new RequirementAttributes(24, "Unrestricted Tech Elective", [CourseAttribute.CsciUnrestrictedTechElective]),
+                new RequirementAttributes(25, "Unrestricted Tech Elective", [CourseAttribute.CsciUnrestrictedTechElective]),
+                new RequirementAttributes(26, "Unrestricted Tech Elective", [CourseAttribute.CsciUnrestrictedTechElective]),
+                new RequirementAttributes(27, "Unrestricted Tech Elective", [CourseAttribute.CsciUnrestrictedTechElective]),
+                new RequirementAttributes(28, "Unrestricted Tech Elective", [CourseAttribute.CsciUnrestrictedTechElective]),
 
                 // elective "breadth" requirements
                 new RequirementNamedCourses(29, "Networking Elective",
