@@ -68,7 +68,7 @@ class CourseWithAttrs {
         return JSON.stringify(js)
     }
 }
-function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
+async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
     const fs = require('fs')
     const csv = require('csv-parse/sync')
     const csvStringify = require('csv-stringify/sync')
@@ -200,7 +200,7 @@ function generateApcProbationList(csvFilePath: string) {
 
     // start probation risk spreadsheet
     const probationRiskFile = `${AnalysisOutputDir}apc-probation-risk.csv`
-    fs.writeFileSync(probationRiskFile, "PennID,name,email,overall GPA,stem GPA,fall CUs,spring CUs,AY CUs,probation risk\n")
+    fs.writeFileSync(probationRiskFile, "PennID;name;email;overall GPA;stem GPA;fall CUs;spring CUs;AY CUs;probation risk\n")
 
     const fileContent = fs.readFileSync(csvFilePath, {encoding: 'utf-8'})
     const courseTakenCsvRecords = csv.parse(fileContent, {
@@ -246,7 +246,7 @@ function generateApcProbationList(csvFilePath: string) {
         const result = run([], new Degrees(), psi.coursesTaken)
         const pcr = probationRisk(result, psi.coursesTaken, [PREVIOUS_TERM,CURRENT_TERM])
         if (pcr.hasProbationRisk()) {
-            fs.appendFileSync(probationRiskFile, `${pennid}, "${psi.name}", ${psi.email}, ${pcr.overallGpa.toFixed(2)}, ${pcr.stemGpa.toFixed(2)}, ${pcr.fallCUs}, ${pcr.springCUs}, ${pcr.fallCUs + pcr.springCUs}, "${pcr}"\n`)
+            fs.appendFileSync(probationRiskFile, `${pennid}; ${psi.name}; ${psi.email}; ${pcr.overallGpa.toFixed(2)}; ${pcr.stemGpa.toFixed(2)}; ${pcr.fallCUs}; ${pcr.springCUs}; ${pcr.fallCUs + pcr.springCUs}; ${pcr}\n`)
             numStudentsFlagged += 1
         }
     })
@@ -2173,6 +2173,14 @@ export class CourseTaken {
         this.courseUnitsRemaining = 0
     }
 
+    /** get the number of CUs that were completed, used for APC Probation calculations */
+    public getCompletedCUs(): number {
+        if (CompletedGrades.includes(this.letterGrade) && this.letterGrade != 'F') {
+            return this.courseUnits
+        }
+        return 0
+    }
+
     private countsTowardsGpa(): boolean {
         // failed P/F courses do count towards GPA, as do disabled equivalent courses
         return (this.grading != GradeType.PassFail || this.letterGrade == "F") &&
@@ -3733,8 +3741,8 @@ if (typeof window === 'undefined') {
         args: {
             courseAttrCsv: CmdTs.positional({ type: CmdTsFs.File, description: 'course attributes CSV file (from Pennant Reports)' }),
         },
-        handler: ({ courseAttrCsv }: {courseAttrCsv: string}) => {
-            analyzeCourseAttributeSpreadsheet(courseAttrCsv)
+        handler: async ({ courseAttrCsv }: {courseAttrCsv: string}) => {
+            await analyzeCourseAttributeSpreadsheet(courseAttrCsv)
         },
     })
     const apcProbationList = CmdTs.command({
@@ -4074,14 +4082,14 @@ function probationRisk(rr: RunResult, allCourses: CourseTaken[], termsThisYear: 
 
     // completed 8 CUs this past academic year?
     const cusThisYear = allCourses.filter(c => termsThisYear.includes(c.term))
-        .map(c => c.letterGrade == 'P' ? c.getCUs() : c.getGpaCUs())
+        .map(c => c.getCompletedCUs())
         .reduce((psum, a) => psum+a, 0)
     const fallCourses = allCourses.filter(c => termsThisYear[0] == c.term)
     const springCourses = allCourses.filter(c => termsThisYear[1] == c.term)
     pcr.fallCUs = fallCourses.reduce((psum, c) =>
-        psum + (c.letterGrade == 'P' ? c.getCUs() : c.getGpaCUs()), 0)
+        psum + c.getCompletedCUs(), 0)
     pcr.springCUs = springCourses.reduce((psum, c) =>
-        psum + (c.letterGrade == 'P' ? c.getCUs() : c.getGpaCUs()), 0)
+        psum + c.getCompletedCUs(), 0)
     if (fallCourses.length > 0 && springCourses.length > 0 && cusThisYear < 8) {
         pcr.notEnoughCUs = cusThisYear
     }
