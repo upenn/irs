@@ -5062,7 +5062,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
 
                 new RequirementNamedCourses(23, "Drawing", ["FNAR 0010","FNAR 2200","FNAR 1080"]),
                 new RequirementNamedCourses(24, "3D Modeling", ["DSGN 1030","DSGN 2010"]),
-                new RequirementDmdElective(25),
+                new RequirementNamedCourses(25, "Animation", ["DSGN 2040", "FNAR 1050", "FNAR 2090", "FNAR 2100"]),
                 new RequirementDmdElective(26),
                 new RequirementDmdElective(27),
                 new RequirementDmdElective(28),
