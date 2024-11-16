@@ -2611,7 +2611,7 @@ abstract class CourseParser {
                 (["PHYS 0150","PHYS 0170","PHYS 0151","PHYS 0171"].includes(c.code()) &&
                     degrees.undergrad == "40cu NETS") ||
                 (["PHYS 0150","PHYS 0170","PHYS 0151","PHYS 0171","ESE 1120"].includes(c.code()) &&
-                    ["37cu CSCI","37cu NETS"].includes(degrees.undergrad)) ||
+                    ["37cu CSCI","37cu CSCI preFall24","37cu NETS"].includes(degrees.undergrad)) ||
                 "37cu DMD" == degrees.undergrad
             if (c.getCUs() > 0 && CoursesWithLab15CUs.includes(c.code()) && !nosplit) {
                 console.log(`splittingA ${c}`)
