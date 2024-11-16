@@ -2390,8 +2390,7 @@ export class CourseTaken {
 
         const engrSubjects = ["ENGR", "TCOM", "NETS", "BE", "CBE", "CIS", "ESE", "MEAM", "MSE", "IPD"]
         const notEngrCourses = [
-            "CIS 1050", "CIS 1070", "CIS 1250", "CIS 1600", "CIS 2610", "CIS 4230", "CIS 5230", "CIS 7980",
-            "ESE 3010", "ESE 4020",
+            "CIS 1050", "CIS 1070", "CIS 1250", "CIS 4230", "CIS 5230", "CIS 7980",
             // IPD courses cross listed with ARCH, EAS or FNAR do not count as Engineering
             // TODO: these IPD cross-lists are hard-coded, look them up automatically instead
             "IPD 5090", "IPD 5210", "IPD 5270", "IPD 5280", "IPD 5440", "IPD 5450", "IPD 5720",
@@ -2400,6 +2399,7 @@ export class CourseTaken {
         ]
         return (engrSubjects.includes(this.subject) && this.courseNumberInt < 6000) &&
             !notEngrCourses.includes(this.code()) &&
+            !this.suhSaysMath() &&
             this.courseNumberInt != 2960 && this.courseNumberInt != 2970
     }
 
