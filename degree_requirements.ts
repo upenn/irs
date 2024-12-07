@@ -2270,9 +2270,7 @@ export class CourseTaken {
      * NB: this is NOT an exhaustive list, and should be used in addition to course attributes. */
     public suhSaysSS(): boolean {
         // TODO: ASAM except where cross-listed with AMES, ENGL, FNAR, HIST, or SAST. NB: in 37cu CIS majors, SS-vs-H distinction is moot
-        // TODO: ECON except statistics, probability, and math courses, [ECON 104/2310 is not allowed]. Xlist not helpful
-        // TODO: PSYC, SOCI except statistics, probability, and math courses. Xlist not helpful
-        const ssSubjects = ["COMM","CRIM","GSWS","HSOC","INTR","PPE","PSCI","STSC","URBS"]
+        const ssSubjects = ["COMM","CRIM","GSWS","HSOC","INTR","PPE","PSCI","PSYC","SOCI","STSC","URBS"]
         const beppCourseNums = [
             1000, 2010, 2020, 2030, 2080, 2110, 2120, 2140, 2200, 2300, 2330, 2500, 2610, 2630, 2650, 2800, 2840, 2890, 3050
         ]
@@ -2284,6 +2282,7 @@ export class CourseTaken {
             ssCourses.includes(this.code()) ||
             (this.subject == "LING" && this.courseNumber != "0700") ||
             (this.subject == "BEPP" && beppCourseNums.includes(this.courseNumberInt)) ||
+            (this.subject == "ECON" && !["2300","2310"].includes(this.courseNumber)) ||
             WritingSeminarSsHTbs.get(this.code()) == CourseAttribute.SocialScience
     }
 
@@ -2376,7 +2375,7 @@ export class CourseTaken {
             (this.subject == "NRSC" && !["0050","0060","1160","2249"].includes(this.courseNumber)) ||
             (this.subject == "BIOL" && this.courseNumberInt > 1000 && this.courseNumberInt != 2510) ||
             (this.subject == "CHEM" && ![1000, 1200, 250, 1011].includes(this.courseNumberInt)) ||
-            (this.subject == "EESC" && ([1000,1030,1090,2120,2500,4200,4360,4440,4630].includes(this.courseNumberInt))) ||
+            (this.subject == "EESC" && ([1000,1030,1090,2120,2500,3300,3600,4200,4360,4440,4630].includes(this.courseNumberInt))) ||
             (this.subject == "PHYS" && this.courseNumberInt >= 150 && ![3314,5500].includes(this.courseNumberInt))
     }
 
