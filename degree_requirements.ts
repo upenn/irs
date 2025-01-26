@@ -2298,7 +2298,7 @@ export class CourseTaken {
             "SWAH","CHIN","JPAN","KORN","ARAB", "HEBR", "TURK", "PERS",
         ]
         const humCourses = [
-            "ASAM 1520", "CIMS 3203",
+            "ASAM 1520", "CIMS 1002", "CIMS 3203",
             "DSGN 0010","DSGN 1020","DSGN 1030","DSGN 1040","DSGN 1050","DSGN 2010","DSGN 2030","DSGN 2040","DSGN 2510","DSGN 5001",
             "ARCH 1010","ARCH 2010","ARCH 2020","ARCH 3010","ARCH 3020","ARCH 4010","ARCH 4110","ARCH 4120",
             "AFRC 2321","CIS 1060","IPD 5090","BIOE 4020",
@@ -2325,6 +2325,7 @@ export class CourseTaken {
             "CIS 1070","CIS 1250","CIS 4230","CIS 5230",
             "DSGN 0020", "DSGN 2570", "EAS 0010", "ENGR 5020", "ENVS 3700", "IPD 5090", "IPD 5450",
             "LGST 2220", "LGST 2440", "LAWM 5060","MKTG 2270",
+            "MGMT 2370", "MGMT 2640", "MGMT 2650",
             "OIDD 2360","OIDD 2340","OIDD 2550","OIDD 3140","OIDD 3150","OIDD 3990","WH 1010",
         ]
         return tbsCourses.includes(this.code()) ||
@@ -2390,6 +2391,7 @@ export class CourseTaken {
         const engrSubjects = ["ENGR", "TCOM", "NETS", "BE", "CBE", "CIS", "ESE", "MEAM", "MSE", "IPD"]
         const notEngrCourses = [
             "CIS 1050", "CIS 1070", "CIS 1250", "CIS 4230", "CIS 5230", "CIS 7980",
+            "ESE 5670",
             // IPD courses cross listed with ARCH, EAS or FNAR do not count as Engineering
             // TODO: these IPD cross-lists are hard-coded, look them up automatically instead
             "IPD 5090", "IPD 5210", "IPD 5270", "IPD 5280", "IPD 5440", "IPD 5450", "IPD 5720",
