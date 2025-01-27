@@ -130,7 +130,7 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
         CourseAttribute.CsciUnrestrictedTechElective
     ]
 
-    const errorsFound: {codes: string, title: string, reason: string}[] = []
+    let errorsFound: {codes: string, title: string, reason: string}[] = []
 
     for (const pathCourse of AllCourses.slice(0)) {
         // check if attrs are consistent across xlists
@@ -214,6 +214,17 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
             }
         }
     }
+
+    // ignore study abroad, transfer credit and credit away courses
+    errorsFound = errorsFound.filter(e =>
+        !e.title.toLowerCase().includes('study abroad') &&
+        !e.title.toLowerCase().includes('transfer credit') &&
+        !e.title.toLowerCase().includes('credit away'))
+        .filter(e => e.codes.includes('BCHE') || // filter out some PSOM courses
+            e.codes.includes('BMB') ||
+            e.codes.includes('CAMB') ||
+            e.codes.includes('GCB') ||
+            e.codes.includes('IMUN'))
 
     const csvStr = csvStringify.stringify(errorsFound,
         {
