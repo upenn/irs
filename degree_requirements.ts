@@ -2283,7 +2283,7 @@ export class CourseTaken {
             ssCourses.includes(this.code()) ||
             (this.subject == "LING" && this.courseNumber != "0700") ||
             (this.subject == "BEPP" && beppCourseNums.includes(this.courseNumberInt)) ||
-            (this.subject == "ECON" && !["2300","2310"].includes(this.courseNumber)) ||
+            (this.subject == "ECON" && !["2300","2310"].includes(this.courseNumber) && this.courseNumberInt < 5000) ||
             WritingSeminarSsHTbs.get(this.code()) == CourseAttribute.SocialScience
     }
 
