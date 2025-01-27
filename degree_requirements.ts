@@ -2390,7 +2390,8 @@ export class CourseTaken {
     public suhSaysNatSci(): boolean {
         const nsCourses = [
             "ASTR 1211", "ASTR 1212","ASTR 1250","ASTR 3392",
-            "BE 3050", "BIOL 0992", "CIS 3980", "EESC 4320", "ESE 1120", "MSE 2210",
+            //"CIS 3980", // NB: CIS 3980 is EUNS only for CIS majors
+            "BE 3050", "BIOL 0992", "EESC 4320", "ESE 1120", "MSE 2210",
             "MEAM 1100", "MEAM 1470",
             "PHYS 0050", "PHYS 0051", "PHYS 0140", "PHYS 0141",
 
