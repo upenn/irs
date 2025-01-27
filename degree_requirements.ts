@@ -231,15 +231,38 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
     }
 
     // ignore study abroad, transfer credit and credit away courses
-    errorsFound = errorsFound.filter(e =>
-        !e.title.toLowerCase().includes('study abroad') &&
-        !e.title.toLowerCase().includes('transfer credit') &&
-        !e.title.toLowerCase().includes('credit away'))
-        .filter(e => !e.codes.includes('BCHE') && // filter out some PSOM courses
-            !e.codes.includes('BMB') &&
-            !e.codes.includes('CAMB') &&
-            !e.codes.includes('GCB') &&
-            !e.codes.includes('IMUN'))
+    const badTitles = ['study abroad', 'transfer credit', 'trans credit', 'credit away']
+    errorsFound = errorsFound.filter(e => !badTitles.some(bad => e.title.toLowerCase().includes(bad)))
+    errorsFound = errorsFound.filter(e => // filter out non-SEAS IS courses
+        !e.title.toLowerCase().includes('independent study') ||
+        e.reason.includes('has deprecated attribute EUMS')
+    )
+    const badSubjects = ['BCHE', 'BMB', 'CAMB', 'GCB', 'IMUN'] // filter out some PSOM courses
+    errorsFound = errorsFound.filter(e => !badSubjects.some(bad => e.codes.includes(bad)))
+
+    // sort by severity
+    const order = [
+        'has incorrect attribute',
+        'missing attribute',
+        'replace EUMS',
+        'has deprecated attribute EUMS',
+
+        // SUH ambiguity
+        'has incompatible attributes',
+        'attributes inconsistent across crosslists',
+    ];
+    // const orderMap = new Map(order.map((item, index) => [item, index]));
+
+    errorsFound.sort((a,b) => {
+        if (a.reason < b.reason) return -1
+        if (a.reason > b.reason) return 1
+        return 0
+    })
+    errorsFound.sort((a, b) => {
+        const aIndex = order.findIndex(o => a.reason.startsWith(o))
+        const bIndex = order.findIndex(o => b.reason.startsWith(o))
+        return aIndex - bIndex
+    });
 
     const csvStr = csvStringify.stringify(errorsFound,
         {
