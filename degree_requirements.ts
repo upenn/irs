@@ -2309,7 +2309,7 @@ export class CourseTaken {
             "NURS 3130","NURS 3150","NURS 3160","NURS 3300","NURS 5250"]
         return (this.courseNumberInt < 5000 && ssSubjects.includes(this.subject)) ||
             ssCourses.includes(this.code()) ||
-            (this.subject == "LING" && this.courseNumber != "0700") ||
+            (this.subject == "LING" && this.courseNumber != "0700" && this.courseNumberInt < 5000) ||
             (this.subject == "BEPP" && beppCourseNums.includes(this.courseNumberInt)) ||
             (this.subject == "ECON" && !["2300","2310"].includes(this.courseNumber) && this.courseNumberInt < 5000) ||
             WritingSeminarSsHTbs.get(this.code()) == CourseAttribute.SocialScience
