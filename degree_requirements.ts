@@ -126,7 +126,8 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
         CourseAttribute.SocialScience,
         CourseAttribute.Humanities,
         CourseAttribute.TBS,
-        CourseAttribute.Writing
+        CourseAttribute.CsciRestrictedTechElective,
+        CourseAttribute.CsciUnrestrictedTechElective
     ]
 
     const errorsFound: {codes: string, title: string, reason: string}[] = []
