@@ -115,6 +115,9 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
         currentCourse.addCode(crs)
         attrs.forEach(a => currentCourse.attributes.add(a))
     }
+    // push the last course
+    currentCourse.finalize()
+    AllCourses.push(currentCourse)
     console.log(`skipped ${skippedCourses.length} courses that couldn't be parsed: ${skippedCourses}`)
     console.log(`checking ${AllCourses.length} courses...`)
 
