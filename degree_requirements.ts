@@ -81,6 +81,7 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
         delimiter: ',',
         columns: true,
     }) as CsvRecord[]
+    console.log(`parsed ${cattrCsvRecords.length} CSV records`)
 
     // 1: BUILD UP LIST OF ALL COURSES
 
@@ -118,7 +119,9 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
     // push the last course
     currentCourse.finalize()
     AllCourses.push(currentCourse)
-    console.log(`skipped ${skippedCourses.length} courses that couldn't be parsed: ${skippedCourses}`)
+    if (skippedCourses.length > 0) {
+        console.log(`skipped ${skippedCourses.length} courses that couldn't be parsed: ${skippedCourses}`)
+    }
     console.log(`checking ${AllCourses.length} courses...`)
 
     // 2: CHECK ATTRIBUTES
@@ -132,10 +135,20 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
         CourseAttribute.CsciRestrictedTechElective,
         CourseAttribute.CsciUnrestrictedTechElective
     ]
+    const mutuallyExclusiveAttrs = [
+        CourseAttribute.Engineering,
+        CourseAttribute.Math,
+        CourseAttribute.NatSci,
+        CourseAttribute.SocialScience,
+        CourseAttribute.Humanities,
+        CourseAttribute.TBS
+    ]
 
     let errorsFound: {codes: string, title: string, reason: string}[] = []
 
     for (const pathCourse of AllCourses.slice(0)) {
+        const errorReasons = []
+
         // check if attrs are consistent across xlists
         const allAttrLists = pathCourse.courses.map(xl => xl.attributes)
         const biggestAttrList = [...allAttrLists]
@@ -143,53 +156,52 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
         const biggestAttrSet = new Set<CourseAttribute>(biggestAttrList)
         const biggestIsSuperset = allAttrLists.every(al => al.every(a => biggestAttrSet.has(a)))
         if (!biggestIsSuperset) {
+            errorReasons.push('attributes inconsistent across crosslists ' +
+                allAttrLists
+                    .map((al,i) => {
+                        return {c: pathCourse.courses[i].code(), al: al}
+                    })
+                    .filter(cal => cal.al.length > 0)
+                    .map(cal => cal.c + ' has ' + cal.al.map(a => a).join(',')).join(', '))
+            // don't bother reporting on attrs, since we aren't sure what the right answer is
             errorsFound.push({
                 codes: pathCourse.codesStr(),
                 title: pathCourse.title,
-                reason: 'attributes inconsistent across crosslists ' +
-                    allAttrLists
-                        .map((al,i) => {
-                            return {c: pathCourse.courses[i].code(), al: al}
-                        })
-                        .filter(cal => cal.al.length > 0)
-                        .map(cal => cal.c + ' has ' + cal.al.map(a => a).join(',')).join(', ')
+                reason: errorReasons.join('; ')
             })
-            // don't bother reporting on attrs, since we aren't sure what the right answer is
             continue
+        }
+
+        // check if attributes are non-mutually-exclusive
+        const attrIntersection = mutuallyExclusiveAttrs.filter(mea => biggestAttrSet.has(mea))
+        if (attrIntersection.length > 1) {
+            errorReasons.push('has incompatible attributes ' + attrIntersection)
         }
 
         // check if Path course has correct attrs
         for (const atc of attrsToCheck) {
             if (biggestAttrSet.has(atc) && !pathCourse.attributes.has(atc)) {
                 if (atc == CourseAttribute.Engineering && pathCourse.attributes.has(CourseAttribute.MathNatSciEngr)) {
-                    errorsFound.push({
-                        codes: pathCourse.codesStr(),
-                        title: pathCourse.title,
-                        reason: `replace ${CourseAttribute.MathNatSciEngr} with ${CourseAttribute.Engineering}`
-                    })
+                    errorReasons.push(`replace ${CourseAttribute.MathNatSciEngr} with ${CourseAttribute.Engineering}`)
                 } else {
-                    errorsFound.push({
-                        codes: pathCourse.codesStr(),
-                        title: pathCourse.title,
-                        reason: 'missing attribute ' + atc
-                    })
+                    errorReasons.push('missing attribute ' + atc)
                 }
             }
             if (!biggestAttrSet.has(atc) && pathCourse.attributes.has(atc)) {
-                errorsFound.push({
-                    codes: pathCourse.codesStr(),
-                    title: pathCourse.title,
-                    reason: 'has incorrect attribute ' + atc
-                })
+                errorReasons.push('has incorrect attribute ' + atc)
             }
         }
 
         // no more EUMS
         if (pathCourse.attributes.has(CourseAttribute.MathNatSciEngr) && !biggestAttrSet.has(CourseAttribute.Engineering)) {
+            errorReasons.push('has deprecated attribute ' + CourseAttribute.MathNatSciEngr)
+        }
+
+        if (errorReasons.length > 0) {
             errorsFound.push({
                 codes: pathCourse.codesStr(),
                 title: pathCourse.title,
-                reason: 'has deprecated attribute ' + CourseAttribute.MathNatSciEngr
+                reason: errorReasons.join('; ')
             })
         }
     }
@@ -223,11 +235,11 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
         !e.title.toLowerCase().includes('study abroad') &&
         !e.title.toLowerCase().includes('transfer credit') &&
         !e.title.toLowerCase().includes('credit away'))
-        .filter(e => e.codes.includes('BCHE') || // filter out some PSOM courses
-            e.codes.includes('BMB') ||
-            e.codes.includes('CAMB') ||
-            e.codes.includes('GCB') ||
-            e.codes.includes('IMUN'))
+        .filter(e => !e.codes.includes('BCHE') && // filter out some PSOM courses
+            !e.codes.includes('BMB') &&
+            !e.codes.includes('CAMB') &&
+            !e.codes.includes('GCB') &&
+            !e.codes.includes('IMUN'))
 
     const csvStr = csvStringify.stringify(errorsFound,
         {
@@ -240,9 +252,11 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
         })
     fs.writeFileSync('course-attr-problems.csv', csvStr)
 
-    const suhInconsistencies = errorsFound.filter(e => e.reason.startsWith('attributes inconsistent across')).length
-    const attrMissing = errorsFound.filter(e => e.reason.startsWith('missing attribute')).length
-    const attrWrong = errorsFound.filter(e => e.reason.startsWith('has incorrect attribute')).length
+    const suhInconsistencies =
+        errorsFound.filter(e => e.reason.includes('attributes inconsistent across')).length +
+        errorsFound.filter(e => e.reason.includes('has incompatible attributes')).length
+    const attrMissing = errorsFound.filter(e => e.reason.includes('missing attribute')).length
+    const attrWrong = errorsFound.filter(e => e.reason.includes('has incorrect attribute')).length
     console.log(`SUMMARY: ${suhInconsistencies} SUH inconsistencies, ${attrMissing} missing attrs and ${attrWrong} wrong attrs`)
 }
 
