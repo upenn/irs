@@ -379,7 +379,7 @@ const CsciProjectElectives = [
     "CIS 5050","CIS 5530",
     "ESE 3500"
 ]
-const AscsProjectElectives = CsciProjectElectives.concat(["CIS 4710","CIS 5710","CIS 3800","CIS 5480"])
+const AscsProjectElectives = CsciProjectElectives.concat(["CIS 4710","CIS 5710","CIS 3800","CIS 4480","CIS 5480"])
 const ArinCogSciCourses = [
     "COGS 1001",
     "LING 0500",
@@ -4280,7 +4280,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(15, "Major", ["CIS 2620","CIS 5110"]),
                 new RequirementNamedCourses(16, "Major", ["CIS 3200","CIS 5020"]),
                 new RequirementNamedCourses(17, "Major", ["CIS 4710","CIS 5710"]),
-                new RequirementNamedCourses(18, "Major", ["CIS 3800", "CIS 5480"]),
+                new RequirementNamedCourses(18, "Major", ["CIS 3800", "CIS 4480", "CIS 5480"]),
                 new RequirementNamedCourses(19, "Senior Design", SeniorDesign1stSem),
                 new RequirementNamedCourses(20, "Senior Design", SeniorDesign2ndSem),
 
@@ -4446,7 +4446,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(17, "Major", ["CIS 3500","CIS 4600","CIS 5600"]),
                 new RequirementNamedCourses(18, "Major", ["ESE 3700"]),
                 new RequirementNamedCourses(19, "Major", ["CIS 4710","CIS 5710"]),
-                new RequirementNamedCourses(20, "Major", ["CIS 3800", "CIS 5480"]),
+                new RequirementNamedCourses(20, "Major", ["CIS 3800", "CIS 4480", "CIS 5480"]),
                 new RequirementNamedCourses(21, "Major", ["CIS 4410","CIS 5410"]),
                 new RequirementNamedCourses(22, "Networking", ["ESE 4070","CIS 5530"]),
                 new RequirementNamedCourses(23, "Concurrency Lab", ["CIS 4550","CIS 5550","CIS 5050","ESE 5320","CIS 5650"]),
@@ -4709,7 +4709,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(12, "Major", ["CIS 2400"]),
                 new RequirementNamedCourses(13, "Math", ["CIS 2620","CIS 5110"]),
                 new RequirementNamedCourses(14, "Major", ["CIS 3200","CIS 5020"]),
-                new RequirementNamedCourses(15, "Major", ["CIS 3800","CIS 5480"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 3800","CIS 4480","CIS 5480"]),
                 new RequirementNamedCourses(16, "Major", ["CIS 4710","CIS 5710"]),
                 new RequirementNamedCourses(17, "Senior Design", SeniorDesign1stSem),
                 new RequirementNamedCourses(18, "Senior Design", SeniorDesign2ndSem),
@@ -4773,7 +4773,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(12, "Major", ["CIS 2400"]),
                 new RequirementNamedCourses(13, "Math", ["CIS 2620","CIS 5110"]),
                 new RequirementNamedCourses(14, "Major", ["CIS 3200","CIS 5020"]),
-                new RequirementNamedCourses(15, "Major", ["CIS 3800","CIS 5480"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 3800","CIS 4480","CIS 5480"]),
                 new RequirementNamedCourses(16, "Major", ["CIS 4710","CIS 5710"]),
                 new RequirementNamedCourses(17, "Senior Design", SeniorDesign1stSem),
                 new RequirementNamedCourses(18, "Senior Design", SeniorDesign2ndSem),
@@ -4887,7 +4887,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(16, "Major", ["ESE 3500"]).withCUs(1.5),
                 new RequirementNamedCourses(17, "Major", ["CIS 3500","CIS 4600","CIS 5600"]),
                 new RequirementNamedCourses(18, "Major", ["ESE 3700"]),
-                new RequirementNamedCourses(19, "Major", ["CIS 3800","CIS 5480"]),
+                new RequirementNamedCourses(19, "Major", ["CIS 3800","CIS 4480","CIS 5480"]),
                 new RequirementNamedCourses(20, "Major", ["CIS 4410","CIS 5410","CIS 5470"]),
                 new RequirementNamedCourses(21, "Major", ["CIS 4710","CIS 5710"]),
                 new RequirementNamedCourses(22, "Networking", ["ESE 4070","ESE 5070","CIS 5530"]),
