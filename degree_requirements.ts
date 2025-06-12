@@ -306,7 +306,7 @@ function generateApcProbationList(csvFilePath: string) {
     const coursesForStudent = new Map<number,ProbationStudentInfo>();
     courseTakenCsvRecords.forEach((row) => {
         const pennid = Number.parseInt(row['pennid'])
-        myAssert(!Number.isNaN(pennid))
+        myAssert(!Number.isNaN(pennid), `bad pennid ${JSON.stringify(row)}`)
 
         if (!coursesForStudent.has(pennid)) {
             const psi = {
@@ -320,9 +320,9 @@ function generateApcProbationList(csvFilePath: string) {
         const existingCourses = coursesForStudent.get(pennid)
 
         const cus = Number.parseFloat(row['CUs'])
-        myAssert(!Number.isNaN(cus))
+        myAssert(!Number.isNaN(cus), `bad CUs ${JSON.stringify(row)}`)
         const term = Number.parseInt(row['term'])
-        myAssert(!Number.isNaN(term))
+        myAssert(!Number.isNaN(term), `bad term ${JSON.stringify(row)}`)
         const newCourse = new CourseTaken(
             row['course subject'],
             row['course number'],
@@ -365,8 +365,9 @@ const CompletedGrades = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","F",
 /** academic terms during which students could take unlimited P/F courses */
 const CovidTerms = [202010, 202020, 202030, 202110]
 
-const CURRENT_TERM = 202410
-const PREVIOUS_TERM = 202330
+// TODO: these should get computed automatically...
+const CURRENT_TERM = 202510
+const PREVIOUS_TERM = 202430
 
 enum CourseAttribute {
     Writing = "AUWR",
@@ -1169,6 +1170,14 @@ function myAssertEquals(a: any, b: any, message: string = "") {
 }
 function myAssertUnreachable(x: never): never {
     throw new Error("Didn't expect to get here");
+}
+
+/** Helper function to pluralize a word. Return "s" if i>1, "" otherwise */
+function plrl(i: number): string {
+    if (i > 1) {
+        return "s"
+    }
+    return ""
 }
 
 export enum GradeType {
@@ -2442,7 +2451,8 @@ export class CourseTaken {
             return true
         }
 
-        const engrSubjects = ["ENGR", "TCOM", "NETS", "BE", "CBE", "CIS", "ESE", "MEAM", "MSE", "IPD"]
+        const engrSubjects = ["ENGR", "TCOM", "NETS", "BE", "CBE", "CIS", "ESE", "MEAM", "MSE", "IPD",
+            "NANO", "ROBO", "SCMP", "BIOT", "DATS"]
         const notEngrCourses = [
             "CIS 1050", "CIS 1060", "CIS 1070", "CIS 1250", "CIS 4230", "CIS 5230", "CIS 7980",
             "ESE 1120", "ESE 5670",
@@ -2677,6 +2687,13 @@ abstract class CourseParser {
             let ese3500NotCmpe = c.code() == "ESE 3500" && degrees.undergrad != "37cu CMPE"
             if (c.getCUs() > 0 && (CoursesWith15CUsToSplit.includes(c.code()) || ese3500NotCmpe) && !nosplit) {
                 console.log(`splittingB ${c}`)
+                c.setCUs(c.getCUs() - 0.5)
+                const half = c.split(0.5, c.courseNumber + "half")
+                halfCuCourses.push(half)
+            }
+            // some students got 1.5 CUs for CIS 4190 when abroad
+            if (c.code() == "CIS 4190" && c.getCUs() == 1.5) {
+                console.log(`splitting ${c}`)
                 c.setCUs(c.getCUs() - 0.5)
                 const half = c.split(0.5, c.courseNumber + "half")
                 halfCuCourses.push(half)
@@ -4170,6 +4187,8 @@ class ProbationCheckResult {
     stemGpa: number = 0
     fallCUs: number = 0
     springCUs: number = 0
+    fallIncompletes: number = 0
+    springIncompletes: number = 0
     notes: string[] = []
 
     hasProbationRisk(): boolean {
@@ -4184,11 +4203,17 @@ class ProbationCheckResult {
         if (this.notEnoughCUs != null) {
             n.push(`notEnoughCUs: ${this.notEnoughCUs}`)
         }
+        if (this.fallIncompletes > 0) {
+            n.push(`${this.fallIncompletes} Incomplete${plrl(this.fallIncompletes)} in Fall`)
+        }
+        if (this.springIncompletes > 0) {
+            n.push(`${this.springIncompletes} Incomplete${plrl(this.springIncompletes)} in Spring`)
+        }
         if (this.lowStemGpa != null) {
-            n.push(`lowStemGpa: ${this.lowStemGpa}`)
+            n.push(`lowStemGpa: ${this.lowStemGpa.toFixed(2)}`)
         }
         if (this.lowOverallGpa != null) {
-            n.push(`lowOverallGpa: ${this.lowOverallGpa}`)
+            n.push(`lowOverallGpa: ${this.lowOverallGpa.toFixed(2)}`)
         }
         return n.join(', ')
     }
@@ -4200,7 +4225,12 @@ function probationRisk(rr: RunResult, allCourses: CourseTaken[], termsThisYear: 
 
     // completed 8 CUs this past academic year?
     const cusThisYear = allCourses.filter(c => termsThisYear.includes(c.term))
-        .map(c => c.getCompletedCUs())
+        .map(c => {
+            if (c.code() == 'INTL 2980') {
+                return c.getCUs()
+            }
+            return c.getCompletedCUs()
+        })
         .reduce((psum, a) => psum+a, 0)
     const fallCourses = allCourses.filter(c => termsThisYear[0] == c.term)
     const springCourses = allCourses.filter(c => termsThisYear[1] == c.term)
@@ -4208,6 +4238,18 @@ function probationRisk(rr: RunResult, allCourses: CourseTaken[], termsThisYear: 
         psum + c.getCompletedCUs(), 0)
     pcr.springCUs = springCourses.reduce((psum, c) =>
         psum + c.getCompletedCUs(), 0)
+    pcr.fallIncompletes = fallCourses.reduce((psum, c) => {
+        if (c.letterGrade == 'I') {
+            return psum + 1
+        }
+        return psum
+    }, 0)
+    pcr.springIncompletes = springCourses.reduce((psum, c) => {
+        if (c.letterGrade == 'I') {
+            return psum + 1
+        }
+        return psum
+    }, 0)
     if (fallCourses.length > 0 && springCourses.length > 0 && cusThisYear < 8) {
         pcr.notEnoughCUs = cusThisYear
     }
