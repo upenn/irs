@@ -83,6 +83,10 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
     }) as CsvRecord[]
     console.log(`parsed ${cattrCsvRecords.length} CSV records`)
 
+    const response = await fetch("https://advising.cis.upenn.edu/assets/json/37cu_csci_tech_elective_list.json")
+    TECH_ELECTIVE_LIST = await response.json()
+    console.log(`parsed ${TECH_ELECTIVE_LIST.length} entries from CSCI technical electives list`)
+
     // 1: BUILD UP LIST OF ALL COURSES
 
     // each object has ≥1 course code (like "ACCT1010") and a list of attributes (like "EUHS")
@@ -220,7 +224,7 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
                 202510,
                 '',
                 true)
-            if (teCourse.suhSaysNoCredit()) {
+            if (teCourse.suhSaysNoCredit() && te.status != "no") {
                 errorsFound.push({
                     codes: te.course4d,
                     title: te.title,
@@ -2233,13 +2237,20 @@ export class CourseTaken {
             switch (teHit.status) {
                 case "restricted":
                     this.attributes.push(CourseAttribute.CsciRestrictedTechElective)
+                    this.validateAttribute(true, CourseAttribute.CsciRestrictedTechElective)
+                    this.validateAttribute(false, CourseAttribute.CsciUnrestrictedTechElective)
                     break
                 case "unrestricted":
                     this.attributes.push(CourseAttribute.CsciUnrestrictedTechElective)
+                    this.validateAttribute(true, CourseAttribute.CsciUnrestrictedTechElective)
+                    this.validateAttribute(false, CourseAttribute.CsciRestrictedTechElective)
                     break
                 default:
                     break
             }
+        } else {
+            this.validateAttribute(false, CourseAttribute.CsciRestrictedTechElective)
+            this.validateAttribute(false, CourseAttribute.CsciUnrestrictedTechElective)
         }
 
         // we have definitive categorization for TBS, Math, Natural Science and Engineering courses
