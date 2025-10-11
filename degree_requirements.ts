@@ -90,7 +90,7 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
     // 1: BUILD UP LIST OF ALL COURSES
 
     // each object has ≥1 course code (like "ACCT1010") and a list of attributes (like "EUHS")
-    const AllCourses: CourseWithAttrs[] = []
+    let AllCourses: CourseWithAttrs[] = []
 
     let currentCourse = new CourseWithAttrs(cattrCsvRecords[0]['Primary Course'], cattrCsvRecords[0]['Course Title'])
     const skippedCourses = []
@@ -126,6 +126,17 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
     if (skippedCourses.length > 0) {
         console.log(`skipped ${skippedCourses.length} courses that couldn't be parsed: ${skippedCourses}`)
     }
+
+    // exclude some courses from the attribute analysis
+    const priorCourseCount = AllCourses.length
+    AllCourses = AllCourses.filter(c =>
+        0 == [...c.codes].filter(code => COURSES_TO_EXCLUDE_FROM_ATTR_ANALYSIS.has(code)).length
+    );
+    const excludedCourseCount = priorCourseCount - AllCourses.length;
+    if (excludedCourseCount > 0) {
+        console.log(`excluding ${excludedCourseCount} courses...`);
+    }
+
     console.log(`checking ${AllCourses.length} courses...`)
 
     // 2: CHECK ATTRIBUTES
@@ -370,8 +381,37 @@ const CompletedGrades = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","F",
 const CovidTerms = [202010, 202020, 202030, 202110]
 
 // TODO: these should get computed automatically...
-const CURRENT_TERM = 202510
-const PREVIOUS_TERM = 202430
+const CURRENT_TERM = 202530
+const PREVIOUS_TERM = 202510
+
+/** These are courses that we exclude from the course attribute analysis. Usually
+ * this is because the dept that owns the course doesn't want SEAS attributes on their
+ * courses, e.g., the course is for study abroad and they don't anticipate it being used
+ * in a SEAS degree. While this technically contradicts the SEAS Ugrad Handbook and some
+ * dual-degree/dual-major student might end up taking the course, it didn't seem worthwhile
+ * to try to argue these cases so we just defer to the dept. */
+const COURSES_TO_EXCLUDE_FROM_ATTR_ANALYSIS: Set<string> = new Set([
+    'BIOL1850',
+    'BIOL2301',
+    'BIOL2701',
+    'BIOL3431',
+    'BIOL5062',
+    'BIOL5262',
+    'BIOL6010',
+    'CHIN3999',
+    'CHIN4982',
+    'HEBR4983',
+    'HEBR4984',
+    'HEBR4999',
+    'JPAN4982',
+    'PERS1999',
+    'PERS2982',
+    'PERS2999',
+    'PERS3999',
+    'PHYS5501',
+    'TURK4999',
+    'URBS4050',
+])
 
 enum CourseAttribute {
     Writing = "AUWR",
