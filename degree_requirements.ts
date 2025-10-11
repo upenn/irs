@@ -2498,7 +2498,7 @@ export class CourseTaken {
      * NB: this IS intended to be a definitive classification */
     public suhSaysEngr(): boolean {
         // OIDD courses are cross-listed with MEAM
-        if (["VIPR 1200","VIPR 1210","NSCI 3010","OIDD 4110","OIDD 4150"].includes(this.code())) {
+        if (["VIPR 1200","VIPR 1210","NSCI 3010","OIDD 4110","OIDD 4150","ESE 6650"].includes(this.code())) {
             return true
         }
 
