@@ -71,7 +71,7 @@ class CourseWithAttrs {
         return JSON.stringify(js)
     }
 }
-async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
+async function analyzeCourseAttributeSpreadsheet(csvFilePath: string, makeChatbotBenchmark: boolean) {
     const fs = require('fs')
     const csv = require('csv-parse/sync')
     const csvStringify = require('csv-stringify/sync')
@@ -158,6 +158,42 @@ async function analyzeCourseAttributeSpreadsheet(csvFilePath: string) {
         CourseAttribute.Humanities,
         CourseAttribute.TBS
     ]
+
+    let benchmarkQuestions: {question: string, answer: boolean}[] = []
+    for (const pathCourse of AllCourses.slice(0)) {
+        for (const crs of pathCourse.courses) {
+            benchmarkQuestions.push({
+                question: `Does ${crs.code()} count as a SEAS Mathematics course?`,
+                answer: crs.suhSaysMath()
+            })
+            benchmarkQuestions.push({
+                question: `Does ${crs.code()} count as a SEAS Natural Science course?`,
+                answer: crs.suhSaysNatSci()
+            })
+            benchmarkQuestions.push({
+                question: `Does ${crs.code()} count as a SEAS Engineering course?`,
+                answer: crs.suhSaysEngr()
+            })
+            benchmarkQuestions.push({
+                question: `Does ${crs.code()} count as a SEAS Technology in Business & Society course?`,
+                answer: crs.suhSaysTbs()
+            })
+            benchmarkQuestions.push({
+                question: `Is ${crs.code()} on the SEAS No-Credit List?`,
+                answer: crs.suhSaysNoCredit()
+            })
+            benchmarkQuestions.push({
+                question: `Does ${crs.code()} count as a SEAS Humanities course?`,
+                answer: crs.suhSaysHum()
+            })
+            benchmarkQuestions.push({
+                question: `Does ${crs.code()} count as a SEAS Social Science course?`,
+                answer: crs.suhSaysSS()
+            })
+        }
+    }
+    console.log(`writing ${benchmarkQuestions.length} chatbot benchmark questions...`)
+    fs.writeFileSync('suh-chatbot-benchmark-questions.json', JSON.stringify(benchmarkQuestions, null, 2))
 
     let errorsFound: {codes: string, title: string, reason: string}[] = []
 
@@ -3924,9 +3960,18 @@ if (typeof window === 'undefined') {
         name: 'course-attrs',
         args: {
             courseAttrCsv: CmdTs.positional({ type: CmdTsFs.File, description: 'course attributes CSV file (from Pennant Reports)' }),
+            chatbotBenchmark: CmdTs.flag({
+                type: CmdTs.boolean,
+                long: 'chatbot-benchmark',
+                description: 'create SEAS Undergrad Handbook course attribute questions (in JSON) for chatbot benchmark',
+                defaultValue(): boolean {
+                    return false
+                },
+                defaultValueIsSerializable: true,
+            })
         },
-        handler: async ({ courseAttrCsv }: {courseAttrCsv: string}) => {
-            await analyzeCourseAttributeSpreadsheet(courseAttrCsv)
+        handler: async ({ courseAttrCsv, chatbotBenchmark }: {courseAttrCsv: string, chatbotBenchmark: boolean}) => {
+            await analyzeCourseAttributeSpreadsheet(courseAttrCsv, chatbotBenchmark)
         },
     })
     const apcProbationList = CmdTs.command({
@@ -5560,4 +5605,3 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
         gpaOverall, gpaStem, gpaMns
     )
 }
-
