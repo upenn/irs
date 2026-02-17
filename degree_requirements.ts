@@ -2510,24 +2510,25 @@ export class CourseTaken {
         const nsCourses = [
             "ASTR 1211", "ASTR 1212","ASTR 1250","ASTR 3392",
             //"CIS 3980", // NB: CIS 3980 is EUNS only for CIS majors
-            "BE 3050", "BIOL 0992", "EESC 4320", "ESE 1120", "MSE 2210",
+            "BE 3050", "BE 5130", "BIOL 0992", "EESC 4320", "ESE 1120", "MSE 2210",
             "MEAM 1100", "MEAM 1470",
             "PHYS 0050", "PHYS 0051", "PHYS 0140", "PHYS 0141",
+            "PSYC 1210",
 
             // jld: EAS 0091 is, practically speaking, EUNS. We check for the conflict with CHEM 1012 elsewhere
             "EAS 0091"
     ]
-        // all courses with these subjects are ook
+        // all courses with these subjects are ok
         const nsSubjects = ["BCHE", "BMB", "CAMB", "GCB"]
 
         return nsCourses.includes(this.code()) ||
             nsSubjects.includes(this.subject) ||
             (this.subject == "BIBB" && !["010","050","060","160","227"].includes(this.courseNumber)) ||
-            (this.subject == "NRSC" && !["0050","0060","1160","2249"].includes(this.courseNumber)) ||
+            (this.subject == "NRSC" && !["0050","0060","1159","1160","2217","2227","2249","4417"].includes(this.courseNumber)) ||
             (this.subject == "BIOL" && this.courseNumberInt > 1000 && this.courseNumberInt != 2510) ||
-            (this.subject == "CHEM" && ![1000, 1200, 250, 1011].includes(this.courseNumberInt)) ||
-            (this.subject == "EESC" && ([1000,1030,1090,2120,2500,3300,3600,4200,4360,4440,4630].includes(this.courseNumberInt))) ||
-            (this.subject == "PHYS" && this.courseNumberInt >= 150 && ![3314,5500].includes(this.courseNumberInt))
+            (this.subject == "CHEM" && ![1000, 1011, 1200, 250].includes(this.courseNumberInt)) ||
+            (this.subject == "EESC" && ([1000,1030,2120,2500,3300,3600,4200,4320,4360,4440,4630].includes(this.courseNumberInt))) ||
+            (this.subject == "PHYS" && this.courseNumberInt >= 150 && ![3314,3360,5500].includes(this.courseNumberInt))
     }
 
     /** If this returns true, the SEAS Undergraduate Handbook classifies the course as Engineering.
