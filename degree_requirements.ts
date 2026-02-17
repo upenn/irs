@@ -2470,12 +2470,13 @@ export class CourseTaken {
             5900, 5950
         ]
         const tbsCourses = [
-            "CIS 1070","CIS 1250","CIS 4230","CIS 5230",
+            "CIS 1070", "CIS 1250", "CIS 4230", "CIS 5230",
             "DSGN 0020", "DSGN 2570", "EAS 0010", "ENGR 5020", "ENVS 3700", "IPD 5090", "IPD 5450",
-            "LGST 2220", "LGST 2440", "LAWM 5060", "MKTG 2270", "MKTG 2470",
+            "LGST 2220", "LGST 2440", "LAWM 5060",
             "MGMT 2370", "MGMT 2640", "MGMT 2650",
+            "MKTG 2270", "MKTG 2470",
             "NURS 3570",
-            "OIDD 2360","OIDD 2340","OIDD 2550","OIDD 3140","OIDD 3150","OIDD 3990","WH 1010",
+            "OIDD 2360", "OIDD 2340", "OIDD 2550", "OIDD 3140", "OIDD 3150", "OIDD 3990", "WH 1010",
         ]
         return tbsCourses.includes(this.code()) ||
             (this.subject == "EAS" && easCourseNums.includes(this.courseNumberInt)) ||
