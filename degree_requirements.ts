@@ -2543,7 +2543,10 @@ export class CourseTaken {
         const engrSubjects = ["ENGR", "TCOM", "NETS", "BE", "CBE", "CIS", "ESE", "MEAM", "MSE", "IPD",
             "NANO", "ROBO", "SCMP", "BIOT", "DATS"]
         const notEngrCourses = [
+            "BE 5130",
+            // NB: CIS/ESE EUMA courses are handled via suhSaysMath(), below
             "CIS 1050", "CIS 1060", "CIS 1070", "CIS 1250", "CIS 4230", "CIS 5230", "CIS 7980",
+            "ENGR 5020",
             "ESE 1120", "ESE 5670",
             // IPD courses cross listed with ARCH, EAS or FNAR do not count as Engineering
             // TODO: these IPD cross-lists are hard-coded, look them up automatically instead
