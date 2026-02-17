@@ -2489,7 +2489,7 @@ export class CourseTaken {
         const mathCourses = [
             "CIS 1600", "CIS 2610", "CIS 3333",
             "EAS 205",
-            "ESE 2030", "ESE 3010", "ESE 4020", "ESE 5420",
+            "ESE 2030", "ESE 2100", "ESE 3010", "ESE 4020", "ESE 5420", "ESE 5300",
             "PHIL 1710", "PHIL 4723",
             "STAT 4300", "STAT 4310", "STAT 4320", "STAT 4330"
         ]
@@ -2497,7 +2497,7 @@ export class CourseTaken {
             // 3-digit MATH courses that don't have translations
             150, 151, 172, 174, 180, 212, 220, 475,
             // 4-digit MATH courses
-            1100, 1510, 1234, 1248, 1300, 1700, 2100, 2800
+            1100, 1234, 1248, 1300, 1700, 1720, 1800, 2100, 2800
         ]
         return this.subject == "ENM" ||
             mathCourses.includes(this.code()) ||
