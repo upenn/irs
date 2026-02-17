@@ -2511,7 +2511,7 @@ export class CourseTaken {
         const nsCourses = [
             "ASTR 1211", "ASTR 1212","ASTR 1250","ASTR 3392",
             //"CIS 3980", // NB: CIS 3980 is EUNS only for CIS majors
-            "BE 3050", "BE 5130", "BIOL 0992", "EESC 4320", "ESE 1120", "MSE 2210",
+            "BE 3050", "BE 5130", "BIOL 0992", "ESE 1120", "MSE 2210",
             "MEAM 1100", "MEAM 1470",
             "PHYS 0050", "PHYS 0051", "PHYS 0140", "PHYS 0141",
             "PSYC 1210",
@@ -2528,7 +2528,7 @@ export class CourseTaken {
             (this.subject == "NRSC" && !["0050","0060","1159","1160","2217","2227","2249","4417"].includes(this.courseNumber)) ||
             (this.subject == "BIOL" && this.courseNumberInt > 1000 && this.courseNumberInt != 2510) ||
             (this.subject == "CHEM" && ![1000, 1011, 1200, 250].includes(this.courseNumberInt)) ||
-            (this.subject == "EESC" && ([1000,1030,2120,2500,3300,3600,4200,4320,4360,4440,4630].includes(this.courseNumberInt))) ||
+            (this.subject == "EESC" && ([1000,1030,1090,2120,2500,3300,3600,4200,4320,4360,4440,4630].includes(this.courseNumberInt))) ||
             (this.subject == "PHYS" && this.courseNumberInt >= 150 && ![3314,3360,5500].includes(this.courseNumberInt))
     }
 
