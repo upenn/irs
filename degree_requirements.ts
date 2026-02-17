@@ -2498,7 +2498,7 @@ export class CourseTaken {
             // 3-digit MATH courses that don't have translations
             150, 151, 172, 174, 180, 212, 220, 475,
             // 4-digit MATH courses
-            1100, 1234, 1248, 1300, 1700, 1720, 1800, 2100, 2800
+            1100, 1234, 1248, 1300, 1510, 1700, 1720, 1800, 2100, 2800
         ]
         return this.subject == "ENM" ||
             mathCourses.includes(this.code()) ||
@@ -2563,7 +2563,7 @@ export class CourseTaken {
         const noCreditStat = this.subject == "STAT" && this.courseNumberInt < 4300 && !["STAT 4050", "STAT 4220"].includes(this.code())
         const noCreditPhys = this.subject == "PHYS" && this.courseNumberInt < 140 && !["PHYS 0050", "PHYS 0051"].includes(this.code())
 
-        const noCreditList = ["ASTRO 0001", "EAS 5030", "EAS 5050", "MATH 1300", "MATH 1510", "MATH 1700",
+        const noCreditList = ["ASTRO 0001", "CHEM 1011", "EAS 5030", "EAS 5050", "MATH 1300", "MATH 1510", "MATH 1700",
             "FNCE 0001", "FNCE 0002", "HCMG 0001", "MGMT 0004", "MKTG 0001", "OIDD 0001", "PHYS 1100"]
 
         // no-credit subject areas
