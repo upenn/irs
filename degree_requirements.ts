@@ -885,6 +885,55 @@ const NetsLightTechElectives = new Set<string>([
     "STAT 4350",
 ])
 
+const VicCisElectiveAlternatives = [
+    "ESE 3030",
+    "ESE 3600",
+    "ESE 5390",
+    "ESE 5460",
+    "BMIN 5010"
+]
+const VicFineArtsDesignElectives = new Set<string>([
+"DSGN 0010",
+"DSGN 0020",
+"DSGN 1020",
+"DSGN 1030",
+"DSGN 1050",
+"DSGN 1070",
+"DSGN 1200",
+"DSGN 2010",
+"DSGN 2060",
+"DSGN 2220",
+"DSGN 2230",
+"DSGN 2260",
+"DSGN 2500",
+"DSGN 2550",
+"DSGN 2540",
+"DSGN 2570",
+"DSGN 2580",
+"DSGN 3030",
+"DSGN 3060",
+"DSGN 3070",
+//"DSGN XXXX", Design for the Body, can't find it anywhere
+"FNAR 0010",
+"FNAR 1010",
+"FNAR 1040",
+"FNAR 1050",
+"FNAR 1060",
+"FNAR 1070",
+"FNAR 1080",
+"FNAR 1090",
+"FNAR 1100",
+"FNAR 2010",
+"FNAR 2030",
+"FNAR 2040",
+"FNAR 2090",
+"FNAR 2100",
+"FNAR 2110",
+"FNAR 2200",
+"FNAR 2210",
+"FNAR 3180",
+])
+
 // CIS MSE imported 16 Oct 2022
 const CisMseNonCisElectivesRestrictions1 = new Set<string>([
     "EAS 500",
@@ -1273,7 +1322,7 @@ export interface TechElectiveDecision {
 }
 
 type UndergradDegree = "40cu CSCI" | "40cu ASCS" | "40cu CMPE" | "40cu ASCC" | "40cu NETS" | "40cu DMD" | "40cu EE" | "40cu SSE" |
-    "37cu ASCS" | "37cu CSCI preFall24" | "37cu CSCI" | "37cu CMPE" | "37cu ARIN" | "37cu NETS" | "37cu DMD" | "37cu BE" | "37cu ASBS" | "none" |
+    "37cu ASCS" | "37cu CSCI preFall24" | "37cu CSCI" | "37cu CMPE" | "37cu ARIN" | "37cu VIC" | "37cu NETS" | "37cu DMD" | "37cu BE" | "37cu ASBS" | "none" |
     "CIS minor" | "DATS minor" // TODO: handle minors properly as their own kind of degree
 type MastersDegree = "CIS-MSE" | "DATS" | "ROBO" | "CGGT" | "none"
 
@@ -1736,6 +1785,105 @@ class RequireCis1100 extends DegreeRequirement {
 
     public toString(): string {
         return "Major: CIS 1100"
+    }
+}
+
+/** Require CIS 1100, or a CIS/NETS Engineering course, or other VIC-approved courses */
+class RequireCis1100Vic extends DegreeRequirement {
+    constructor(displayIndex: number) {
+        super(displayIndex)
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        const found1100 = courses.find((c: CourseTaken): boolean => {
+            return c.code() == "CIS 1100" &&
+                c.grading == GradeType.ForCredit &&
+                this.applyCourse(c)
+        })
+        if (found1100 != undefined) {
+            return found1100
+        }
+
+        const foundSpecificCourse = courses.find((c: CourseTaken): boolean => {
+            return VicCisElectiveAlternatives.includes(c.code()) &&
+                c.grading == GradeType.ForCredit &&
+                this.applyCourse(c)
+        })
+        if (foundSpecificCourse != undefined) {
+            return foundSpecificCourse
+        }
+
+        // they didn't take CIS 1100, use a CIS/NETS Engineering course instead
+        return courses.slice() // NB: have to use slice since sort() is in-place
+            // try lower-number courses first
+            .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
+            .find((c: CourseTaken): boolean => {
+                const cisNetsEngr = (c.subject == "CIS" || c.subject == "NETS") && !c.attributes.includes(CourseAttribute.NonEngr)
+                return (cisNetsEngr || c.code() == "ENGR 1050") &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c)
+            })
+    }
+
+    public toString(): string {
+        return "Major: VIC CIS 1100"
+    }
+}
+
+class RequirementVicCisElective extends DegreeRequirement {
+    constructor(displayIndex: number) {
+        super(displayIndex)
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+        // prefer VIC-specific CIS alternatives
+        const foundSpecificCourse = courses.find((c: CourseTaken): boolean => {
+            return VicCisElectiveAlternatives.includes(c.code()) &&
+                c.grading == GradeType.ForCredit &&
+                this.applyCourse(c)
+        })
+        if (foundSpecificCourse != undefined) {
+            return foundSpecificCourse
+        }
+
+        return courses.slice() // NB: have to use slice since sort() is in-place
+            // try to pull in CIS 19x courses
+            .sort((a,b) => a.courseNumberInt - b.courseNumberInt)
+            .find((c: CourseTaken): boolean => {
+                const foundMatch = (c.subject == "CIS" || c.subject == "NETS") && c.suhSaysEngr()
+                return foundMatch &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c)
+            })
+    }
+
+    public toString(): string {
+        return `VIC CIS Elective >= ${this.minLevel}`
+    }
+}
+
+class RequirementFineArtsDesignElective extends DegreeRequirement {
+
+    constructor(displayIndex: number) {
+        super(displayIndex)
+    }
+
+    satisfiedBy(courses: CourseTaken[]): CourseTaken | undefined {
+
+        return courses.slice()
+            .sort(byHighestCUsFirst)
+            .find((c: CourseTaken): boolean => {
+                return VicFineArtsDesignElectives.has(c.code()) &&
+                    c.grading == GradeType.ForCredit &&
+                    c.courseNumberInt >= this.minLevel &&
+                    this.applyCourse(c)
+            })
+    }
+
+    public toString(): string {
+        return "Fine Arts & Design Elective"
     }
 }
 
@@ -3145,6 +3293,8 @@ class DegreeWorksDiagnosticsReportParser extends CourseParser {
                 d.undergrad = "37cu NETS"
             } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+DMD\s+`, "m")) != -1) {
                 d.undergrad = "37cu DMD"
+            } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+VIC\s+`, "m")) != -1) {
+                d.undergrad = "37cu VIC"
             // } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+EE\s+`, "m")) != -1) {
             //     d.undergrad = "40cu EE"
             // } else if (worksheetText.search(new RegExp(String.raw`^RA\d+:\s+MAJOR\s+=\s+SSE\s+`, "m")) != -1) {
@@ -4021,11 +4171,36 @@ if (typeof window === 'undefined') {
             await analyzeWorksheets(majorsListCsv, makePennPathwaysWorksheets, limit, worksheets)
         }
     })
+    const checkAttrList = CmdTs.command({
+        name: 'check-attr-list',
+        args: {
+            courseListFile: CmdTs.positional({ type: CmdTsFs.File, description: 'list of courses with a given attribute (from AI)' }),
+        },
+        handler: ({ courseListFile }: {courseListFile: string}) => {
+            checkAttributeList(courseListFile)
+        },
+    })
     const app = CmdTs.subcommands({
         name: 'irs',
-        cmds: { courseAttrs, apcProbationList, dwWorksheets },
+        cmds: { courseAttrs, apcProbationList, dwWorksheets, checkAttrList },
     })
     CmdTs.run(app, process.argv.slice(2))
+}
+async function checkAttributeList(courseListFile: string) {
+    const fileContent = fs.readFileSync(courseListFile, { encoding: 'utf-8' });
+    const courseList: string[] = JSON.parse(fileContent);
+    let numCorrect = 0, numIncorrect = 0;
+    for (const cs of courseList) {
+        const parts = cs.split(' ')
+        const ct = new CourseTaken(parts[0], parts[1], "", null, 1.0, GradeType.ForCredit, 'A', 202510, "", true);
+        if (!ct.suhSaysNatSci()) {
+            numIncorrect++;
+            console.log(`AI put ${ct} in the list but IRS says it's not`);
+        } else {
+            numCorrect++;
+        }
+    }
+    console.log(`Checked ${courseList.length} courses, ${numCorrect} correct and ${numIncorrect} wrong`);
 }
 async function analyzeWorksheets(majorsListCsv: string,
                                  makePennPathwaysWorksheets: boolean,
@@ -5182,6 +5357,55 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 aiElecGroup,
                 aiElecTag,
                 false)
+            break
+        case "37cu VIC":
+            const vicIntermediate = ["CIS 4610","CIS 5610","CIS 4620","CIS 5620","CIS 3500","CIS 4710","CIS 5710","CIS 4120","CIS 5120"]
+            ugradDegreeRequirements = [
+                new RequirementNamedCourses(1, "Math", ["MATH 1400"]),
+                new RequirementNamedCourses(2, "Math", ["MATH 1410","MATH 1610"]),
+                new RequirementNamedCourses(3, "Linear Algebra", ["ESE 2030", "ENM 2030", "ENM 2400"]),
+                new RequirementNamedCourses(4, "Math", ["CIS 1600"]),
+                new RequirementNamedCourses(5, "Probability", ["ESE 3010", "STAT 4300"]),
+                new RequirementNamedCourses(6, "Physics", ["PHYS 0150","PHYS 0170","MEAM 1100","MEAM 1470"]).withCUs(1.5),
+                new RequirementNamedCourses(7, "Natural Science",
+                    ["BIOL 1101","BIOL 1121","BIOL 1123","CHEM 1012","CHEM 1101","PHYS 0151","PHYS 0171","ESE 1120"]).withCUs(1.5),
+                new RequirementAttributes(8, "Math/Natural Science Elective", [CourseAttribute.Math, CourseAttribute.NatSci]),
+
+                // NB: CIS 1100 below
+                new RequirementNamedCourses(10, "Major", ["CIS 1200"]),
+                new RequirementNamedCourses(11, "Major", ["CIS 1210"]),
+                new RequirementNamedCourses(12, "Major", ["CIS 2400"]),
+                new RequirementNamedCourses(13, "AI", ["CIS 2210"]),
+                new RequirementNamedCourses(14, "Major", ["CIS 3200","CIS 5020"]),
+                new RequirementNamedCourses(15, "Major", ["CIS 4600","CIS 5600"]),
+                new RequirementNamedCourses(16, "Major", vicIntermediate),
+                new RequirementNamedCourses(17, "Major", vicIntermediate),
+                new RequirementNamedCourses(18, "DMD Senior Project", ["CIS 4970"]),
+
+                new RequireCis1100Vic(9),
+                new RequirementVicCisElective(18).withMinLevel(2000),
+                new RequirementVicCisElective(21).withMinLevel(2000),
+                new RequirementVicCisElective(22).withMinLevel(2000),
+                new RequirementVicCisElective(20),
+
+                new RequirementNamedCourses(23, "Drawing", ["FNAR 0010","FNAR 1080","FNAR 2090","FNAR 2200",]),
+                new RequirementNamedCourses(24, "3D Modeling", ["DSGN 1030","DSGN 2220"]),
+                new RequirementNamedCourses(25, "Animation", ["DSGN 2040", "FNAR 1050", "FNAR 2100"]),
+                new RequirementFineArtsDesignElective(26),
+                new RequirementFineArtsDesignElective(27),
+                new RequirementFineArtsDesignElective(28),
+
+                new RequirementSsh(29, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(30, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(31, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(32, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(33, [CourseAttribute.SocialScience,CourseAttribute.Humanities]),
+                new RequirementSsh(34, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                new RequirementSsh(35, [CourseAttribute.TBS,CourseAttribute.Humanities,CourseAttribute.SocialScience]),
+                // NB: Writing requirement is @ index 45
+
+                new RequirementFreeElective(50),
+            ]
             break
         case "37cu NETS":
             ugradDegreeRequirements = [
