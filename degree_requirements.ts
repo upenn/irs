@@ -3741,6 +3741,7 @@ async function webMain(): Promise<void> {
         degrees.masters = <MastersDegree>$("input[name='masters_degree']:checked").val()
         parseResults = await parser.parse(worksheetText, degrees)
     }
+    console.log(`${autoDegrees} ${JSON.stringify(degrees)}`)
     const coursesTaken = parseResults.courses
 
     if (parseResults.degrees.hasWrongDwCatalogYear()) {
@@ -4187,6 +4188,7 @@ if (typeof window === 'undefined') {
     CmdTs.run(app, process.argv.slice(2))
 }
 async function checkAttributeList(courseListFile: string) {
+    const fs = require('fs');
     const fileContent = fs.readFileSync(courseListFile, { encoding: 'utf-8' });
     const courseList: string[] = JSON.parse(fileContent);
     let numCorrect = 0, numIncorrect = 0;
@@ -5383,7 +5385,7 @@ export function run(csci37techElectiveList: TechElectiveDecision[], degrees: Deg
                 new RequirementNamedCourses(18, "DMD Senior Project", ["CIS 4970"]),
 
                 new RequireCis1100Vic(9),
-                new RequirementVicCisElective(18).withMinLevel(2000),
+                new RequirementVicCisElective(19).withMinLevel(2000),
                 new RequirementVicCisElective(21).withMinLevel(2000),
                 new RequirementVicCisElective(22).withMinLevel(2000),
                 new RequirementVicCisElective(20),
